@@ -1,0 +1,14 @@
+.vscode/
+
+log.txt
+
+obj/
+bin/
+limine/
+ovmf-aarch64
+ovmf-x86_64
+iso_root
+
+*.o
+*.elf
+*.iso
