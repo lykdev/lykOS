@@ -96,17 +96,12 @@ void vmm_init()
         if (entry->type == LIMINE_MEMMAP_USABLE)
         {
             for (uptr addr = entry->base; addr < entry->base + entry->length; addr += PAGE_SIZE)
-            {
                 vmm_map_page(&kernelmap, HHDM + addr, addr, PTE_USER | PTE_RW | PTE_VALID);
-            } 
         }
         else if (entry->type == LIMINE_MEMMAP_FRAMEBUFFER)
         {
             for (uptr addr = entry->base; addr < entry->base + entry->length; addr += PAGE_SIZE)
-            {
-                vmm_map_page(&kernelmap, addr, addr, PTE_USER | PTE_RW | PTE_VALID);
                 vmm_map_page(&kernelmap, HHDM + addr, addr, PTE_USER | PTE_RW | PTE_VALID);
-            } 
         }
     }
 
