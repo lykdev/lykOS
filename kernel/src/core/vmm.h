@@ -5,7 +5,7 @@
 #define VMM_PRESENT 1
 #define VMM_WRITE 1 << 1
 #define VMM_USER 1 << 2
-#define VMM_EXECUTE 1 << 3
+#define VMM_NX 1 << 3
 
 typedef u64 vmm_flags;
 

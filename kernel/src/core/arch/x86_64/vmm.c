@@ -88,7 +88,7 @@ void vmm_init()
     log("A");
 
     // Map the first 4GiB mandated by the limine spec.
-    for (u64 i = 0; i < 5 * GIB; i += PAGE_SIZE)
+    for (u64 i = 0; i < 4 * GIB; i += PAGE_SIZE)
     {   
         vmm_map_page(&kernelmap, HHDM + i, i, PTE_USER | PTE_WRITABLE | PTE_PRESENT);
         vmm_map_page(&kernelmap, i, i, PTE_USER | PTE_WRITABLE | PTE_PRESENT); // Also indetity map.

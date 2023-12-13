@@ -3,34 +3,25 @@
 #include <core/pmm.h>
 #include <lib/utils.h>
 
-#define PTE_PRESENT (1ull << 0ull)
-#define PTE_WRITABLE (1ull << 1ull)
-#define PTE_USER (1ull << 2ull)
-#define PTE_NX (1ull << 63ull)
+#define PTE_VALID (1ull << 0ull)
+
+#define PTE_TABLE (1ull << 1ull)
+#define PTE_BLOCK (0ull << 1ull)
+
+#define PTE_KERNEL (0ull << 6ull)
+#define PTE_USER (1ull << 6ull)
+
+#define PTE_RW (0ull << 7ull)
+#define PTE_RO (1ull << 7ull)
+#define PTE_NX (1ull << 54ull)
 
 #define PTE_GET_ADDR(VALUE) ((VALUE) & 0x000FFFFFFFFFF000ull)
 
 struct vmm_pagemap kernelmap;
 
-static u64 translate_flags(VMM_FLAGS flags)
-{
-    u64 ret = 0;
-
-    if (flags & VMM_PRESENT)
-        ret |= PTE_PRESENT;
-    if (flags & VMM_WRITE)
-        ret |= PTE_WRITABLE;
-    if (flags & VMM_USER)
-        ret |= PTE_USER;
-    if (flags & VMM_EXECUTE)
-        ret |= PTE_NX;
-
-    return ret;
-}
-
 static u64* vmm_get_next_level(u64 *top_level, u64 idx, bool alloc)
 {   
-    if (((top_level[idx]) & PTE_PRESENT) != 0)
+    if (((top_level[idx]) & PTE_VALID) != 0)
         return (u64*)(PTE_GET_ADDR(top_level[idx]) + HHDM);
 
     if (!alloc)
@@ -42,11 +33,11 @@ static u64* vmm_get_next_level(u64 *top_level, u64 idx, bool alloc)
         
     memset(next_level, 0, PAGE_SIZE);
 
-    top_level[idx] = (u64)(next_level - HHDM) | PTE_PRESENT | PTE_WRITABLE | PTE_USER;
+    top_level[idx] = (u64)(next_level - HHDM) | PTE_VALID | PTE_TABLE;
     return (u64*)next_level;
 }
 
-void vmm_map_page(struct vmm_pagemap *map, uptr virt, uptr phys, VMM_FLAGS flags)
+void vmm_map_page(struct vmm_pagemap *map, uptr virt, uptr phys, vmm_flags flags)
 {
     u64 pml4e = (virt >> 39) & 0x1FF;
     u64 pml3e = (virt >> 30) & 0x1FF;
@@ -58,7 +49,7 @@ void vmm_map_page(struct vmm_pagemap *map, uptr virt, uptr phys, VMM_FLAGS flags
     u64 *pml2 = vmm_get_next_level(pml3, pml3e, true);
     u64 *pml1 = vmm_get_next_level(pml2, pml2e, true);
     
-    pml1[pml1e] = phys | translate_flags(flags);
+    pml1[pml1e] = phys | PTE_RW | PTE_USER | PTE_VALID | PTE_BLOCK;
 }
 
 void vmm_setup_page_map(struct vmm_pagemap *map)
@@ -69,12 +60,11 @@ void vmm_setup_page_map(struct vmm_pagemap *map)
 
 void vmm_switch_to_map(struct vmm_pagemap *map)
 {
-    asm volatile (
-        "movq %0, %%cr3"
-        :
-        : "r" ((uptr)map->top_level - HHDM)
-        : "memory"
-    );
+    asm volatile("msr ttbr1_el1, %0" : : "r" (map));
+
+    asm volatile("tlbi vmalle1is");
+
+    asm volatile("dsb ish");
 }
 
 void vmm_init()
@@ -88,17 +78,17 @@ void vmm_init()
     log("A");
 
     // Map the first 4GiB mandated by the limine spec.
-    for (u64 i = 0; i < 5 * GIB; i += PAGE_SIZE)
+    for (u64 i = 0; i < 4 * GIB; i += PAGE_SIZE)
     {   
-        vmm_map_page(&kernelmap, HHDM + i, i, PTE_USER | PTE_WRITABLE | PTE_PRESENT);
-        vmm_map_page(&kernelmap, i, i, PTE_USER | PTE_WRITABLE | PTE_PRESENT); // Also indetity map.
+        vmm_map_page(&kernelmap, HHDM + i, i, PTE_USER | PTE_RW | PTE_VALID);
+        vmm_map_page(&kernelmap, i, i, PTE_USER | PTE_RW | PTE_VALID); // Also indetity map.
     }
         
     log("B");
 
     // Map the kernel to the last 2GiB of the virt addr space.
     for (u64 i = 0; i < 2 * GIB; i += PAGE_SIZE)
-        vmm_map_page(&kernelmap, KERNEL_ADDR_VIRT + i, KERNEL_ADDR_PHYS + i, PTE_USER | PTE_WRITABLE | PTE_PRESENT);
+        vmm_map_page(&kernelmap, KERNEL_ADDR_VIRT + i, KERNEL_ADDR_PHYS + i, PTE_USER | PTE_RW | PTE_VALID);
 
     log("C");
 
@@ -110,15 +100,15 @@ void vmm_init()
         {
             for (uptr addr = entry->base; addr < entry->base + entry->length; addr += PAGE_SIZE)
             {
-                vmm_map_page(&kernelmap, HHDM + addr, addr, PTE_USER | PTE_WRITABLE | PTE_PRESENT);
+                vmm_map_page(&kernelmap, HHDM + addr, addr, PTE_USER | PTE_RW | PTE_VALID);
             } 
         }
         else if (entry->type == LIMINE_MEMMAP_FRAMEBUFFER)
         {
             for (uptr addr = entry->base; addr < entry->base + entry->length; addr += PAGE_SIZE)
             {
-                vmm_map_page(&kernelmap, addr, addr, PTE_USER | PTE_WRITABLE | PTE_PRESENT);
-                vmm_map_page(&kernelmap, HHDM + addr, addr, PTE_USER | PTE_WRITABLE | PTE_PRESENT);
+                vmm_map_page(&kernelmap, addr, addr, PTE_USER | PTE_RW | PTE_VALID);
+                vmm_map_page(&kernelmap, HHDM + addr, addr, PTE_USER | PTE_RW | PTE_VALID);
             } 
         }
     }
