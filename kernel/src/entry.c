@@ -6,7 +6,9 @@ LIMINE_BASE_REVISION(1)
 #include <video/video.h>
 #include <acpi/acpi.h>
 
-#include <int/idt.h>
+#if defined (__x86_64__)
+    #include <arch/x86_64/tables/idt.h>
+#endif
 
 #include <mm/pmm.h>
 #include <mm/vmm.h>
@@ -23,6 +25,5 @@ void _start()
 
     acpi_init();
 
-    // We're done, just hang...
     halt();
 }
