@@ -51,8 +51,8 @@ struct int_regs
 } __attribute__((packed));
 
 __attribute__((aligned(0x10)))
-struct idt_entry idt_entries[256];
-struct idt_desc idtr; 
+static struct idt_entry idt_entries[256];
+static struct idt_desc idtr; 
 
 void isr_handler(struct int_regs *regs)
 {

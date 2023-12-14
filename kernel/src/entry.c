@@ -7,6 +7,7 @@ LIMINE_BASE_REVISION(1)
 #include <acpi/acpi.h>
 
 #if defined (__x86_64__)
+    #include <arch/x86_64/tables/gdt.h>
     #include <arch/x86_64/tables/idt.h>
 #endif
 
@@ -18,6 +19,7 @@ void _start()
     video_init();
     log("This build has been compiled on %s at %s.", __DATE__, __TIME__);
 
+    gdt_init();
     idt_init();
     
     pmm_init();
