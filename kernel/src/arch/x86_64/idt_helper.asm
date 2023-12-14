@@ -1,7 +1,7 @@
 EXTERN INTHandler
 
 %macro int_stub 1
-global int_stub_%1
+GLOBAL int_stub_%1
 int_stub_%1:
     push 0
     push %1

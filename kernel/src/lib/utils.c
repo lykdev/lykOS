@@ -40,7 +40,7 @@ void halt(void)
     }
 }
 
-#include <hal/video/video.h>
+#include <video/video.h>
 
 static int console_row = 0;
 

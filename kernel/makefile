@@ -69,18 +69,18 @@ else ifeq ($(ARCH), aarch64)
 endif
 
 # Source files
-C_FILES = $(shell cd src && find -L * -type f -name '*.c' -not -path "*/arch/*")
-AS_FILES = $(shell cd src && find -L * -type f -name '*.S' -not -path "*/arch/*")
+C_FILES = $(shell cd src && find -L * -type f -name '*.c' -not -path "arch/*")
+AS_FILES = $(shell cd src && find -L * -type f -name '*.S' -not -path "arch/*")
 
 ifeq ($(ARCH), x86_64)
-	C_FILES += $(shell cd src && find -L * -type f -name '*.c' -path "*/arch/x86_64/*")
-	AS_FILES += $(shell cd src && find -L * -type f -name '*.S' -path "*/arch/x86_64/*")
+	C_FILES += $(shell cd src && find -L * -type f -name '*.c' -path "*arch/x86_64/*")
+	AS_FILES += $(shell cd src && find -L * -type f -name '*.S' -path "arch/x86_64/*")
 	NASM_FILES = $(shell cd src && find -L * -type f -name '*.asm')
 
 	OBJ_FILES = $(addprefix obj/,$(C_FILES:.c=.c.o) $(AS_FILES:.S=.S.o) $(NASM_FILES:.asm=.asm.o))
 else ifeq ($(ARCH), aarch64)
-	C_FILES += $(shell cd src && find -L * -type f -name '*.c' -path "*/arch/aarch64/*")
-	AS_FILES += $(shell cd src && find -L * -type f -name '*.S' -path "*/arch/aarch64/*")
+	C_FILES += $(shell cd src && find -L * -type f -name '*.c' -path "arch/aarch64/*")
+	AS_FILES += $(shell cd src && find -L * -type f -name '*.S' -path "arch/aarch64/*")
 
 	OBJ_FILES = $(addprefix obj/,$(C_FILES:.c=.c.o) $(AS_FILES:.S=.S.o))
 endif
