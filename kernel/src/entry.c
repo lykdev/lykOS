@@ -19,13 +19,14 @@ void _start()
     video_init();
     log("This build has been compiled on %s at %s.", __DATE__, __TIME__);
 
-    gdt_init();
-    idt_init();
-    
     pmm_init();
     vmm_init();
-
     acpi_init();
+
+#if defined (__x86_64__)
+    gdt_init();
+    idt_init();
+#endif    
 
     halt();
 }

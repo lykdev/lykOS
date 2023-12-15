@@ -6,7 +6,7 @@ ARCH=$1
 
 QEMU_FLAGS_X86_64="-M q35 -m 256M -smp 4 \
            -d int -M smm=off -D ./log.txt \
-           -no-shutdown -no-reboot"
+           -no-shutdown -no-reboot -monitor stdio" 
 
 get_ovmf() {
     if [ $ARCH = x86_64 ]; then
