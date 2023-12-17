@@ -24,7 +24,6 @@ void _start()
     acpi_init();
 
 #if defined (__x86_64__)
-    gdt_init();
     idt_init();
 #endif    
 
