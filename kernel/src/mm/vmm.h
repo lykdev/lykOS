@@ -1,5 +1,6 @@
 #pragma once
 
+#include <lib/slock.h>
 #include <lib/utils.h>
 
 #define VMM_PRESENT 1
@@ -12,6 +13,7 @@ typedef u64 vmm_flags;
 struct vmm_pagemap
 {
     u64 *top_level;
+    slock lock;
 };
 
 void vmm_init();

@@ -48,6 +48,8 @@ static u64* vmm_get_next_level(u64 *top_level, u64 idx, bool alloc)
 
 void vmm_map_page(struct vmm_pagemap *map, uptr virt, uptr phys, vmm_flags flags)
 {
+    slock_acquire(&map->lock);
+
     u64 pml4e = (virt >> 39) & 0x1FF;
     u64 pml3e = (virt >> 30) & 0x1FF;
     u64 pml2e = (virt >> 21) & 0x1FF;
@@ -59,12 +61,16 @@ void vmm_map_page(struct vmm_pagemap *map, uptr virt, uptr phys, vmm_flags flags
     u64 *pml1 = vmm_get_next_level(pml2, pml2e, true);
     
     pml1[pml1e] = phys | translate_flags(flags);
+
+    slock_release(&map->lock);
 }
 
 void vmm_setup_page_map(struct vmm_pagemap *map)
 {
     map->top_level = (u64*)pmm_get_page();
     memset(map->top_level, 0, PAGE_SIZE);
+
+    map->lock = SLOCK_INIT;
 }
 
 void vmm_switch_to_map(struct vmm_pagemap *map)

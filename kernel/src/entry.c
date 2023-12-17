@@ -7,7 +7,6 @@ LIMINE_BASE_REVISION(1)
 #include <acpi/acpi.h>
 
 #if defined (__x86_64__)
-    #include <arch/x86_64/tables/gdt.h>
     #include <arch/x86_64/tables/idt.h>
 #endif
 

@@ -1,8 +1,10 @@
 #include "pmm.h"
 
+#include <lib/slock.h>
 #include <lib/utils.h>
 
 static u64 *page_list = NULL;
+static slock lock = SLOCK_INIT;
 
 static u64 total_ram = 0;
 static u64 used_ram = 0;
@@ -25,15 +27,21 @@ u64 pmm_get_free_ram()
 
 void pmm_free_page(void *page)
 {
+    slock_acquire(&lock);
+
     *(u64*)page = (u64)page_list;
     page_list = (u64*)page;
 
     used_ram -= PAGE_SIZE;
     free_ram += PAGE_SIZE;
+
+    slock_release(&lock);
 }
 
 void* pmm_get_page()
 {
+    slock_acquire(&lock);
+
     void *ret = (void*)page_list;
     // We will not check to see if ret is null. In some cases we can still recover from this.
 
@@ -42,7 +50,7 @@ void* pmm_get_page()
     used_ram += PAGE_SIZE;
     free_ram -= PAGE_SIZE;
 
-    //log("%llx", ret);
+    slock_release(&lock);
     return ret;
 }
 
