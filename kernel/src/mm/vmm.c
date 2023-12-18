@@ -3,26 +3,26 @@
 #include <mm/pmm.h>
 #include <lib/utils.h>
 
+#if defined (__x86_64__)
+
 #define PTE_PRESENT (1ull << 0ull)
-#define PTE_WRITABLE (1ull << 1ull)
+#define PTE_WRITE (1ull << 1ull)
 #define PTE_USER (1ull << 2ull)
 #define PTE_NX (1ull << 63ull)
 
 #define PTE_GET_ADDR(VALUE) ((VALUE) & 0x000FFFFFFFFFF000ull)
 
-struct vmm_pagemap kernelmap;
-
-static u64 translate_flags(vmm_flags flags)
+static u64 translate_flags(u64 flags)
 {
     u64 ret = 0;
 
     if (flags & VMM_PRESENT)
         ret |= PTE_PRESENT;
     if (flags & VMM_WRITE)
-        ret |= PTE_WRITABLE;
+        ret |= PTE_WRITE;
     if (flags & VMM_USER)
         ret |= PTE_USER;
-    if (flags & VMM_NX)
+    if (flags & VMM_NOEXE)
         ret |= PTE_NX;
 
     return ret;
@@ -42,11 +42,11 @@ static u64* vmm_get_next_level(u64 *top_level, u64 idx, bool alloc)
         
     memset(next_level, 0, PAGE_SIZE);
 
-    top_level[idx] = (u64)(next_level - HHDM) | PTE_PRESENT | PTE_WRITABLE | PTE_USER;
+    top_level[idx] = (u64)(next_level - HHDM) | PTE_PRESENT | PTE_WRITE | PTE_USER;
     return (u64*)next_level;
 }
 
-void vmm_map_page(struct vmm_pagemap *map, uptr virt, uptr phys, vmm_flags flags)
+void vmm_map_page(struct vmm_pagemap *map, uptr virt, uptr phys, u64 flags)
 {
     slock_acquire(&map->lock);
 
@@ -65,7 +65,7 @@ void vmm_map_page(struct vmm_pagemap *map, uptr virt, uptr phys, vmm_flags flags
     slock_release(&map->lock);
 }
 
-void vmm_setup_page_map(struct vmm_pagemap *map)
+void vmm_new_pagemap(struct vmm_pagemap *map)
 {
     map->top_level = (u64*)pmm_get_page();
     memset(map->top_level, 0, PAGE_SIZE);
@@ -83,25 +83,29 @@ void vmm_switch_to_map(struct vmm_pagemap *map)
     );
 }
 
+#endif
+
+struct vmm_pagemap kernelmap;
+
 void vmm_init()
 {
     log("%llx", KERNEL_ADDR_PHYS);
     log("%llx", KERNEL_ADDR_VIRT);
     log("%llx", HHDM);
 
-    vmm_setup_page_map(&kernelmap);
+    vmm_new_pagemap(&kernelmap);
 
     log("A");
 
     // Map the first 4GiB mandated by the limine spec.
     for (u64 i = 0; i < 4 * GIB; i += PAGE_SIZE) 
-        vmm_map_page(&kernelmap, HHDM + i, i, PTE_USER | PTE_WRITABLE | PTE_PRESENT);
+        vmm_map_page(&kernelmap, HHDM + i, i, VMM_WRITE | VMM_PRESENT);
         
     log("B");
 
     // Map the kernel to the last 2GiB of the virt addr space.
     for (u64 i = 0; i < 2 * GIB; i += PAGE_SIZE)
-        vmm_map_page(&kernelmap, KERNEL_ADDR_VIRT + i, KERNEL_ADDR_PHYS + i, PTE_USER | PTE_WRITABLE | PTE_PRESENT);
+        vmm_map_page(&kernelmap, KERNEL_ADDR_VIRT + i, KERNEL_ADDR_PHYS + i, VMM_WRITE | VMM_PRESENT);
 
     log("C");
 
@@ -111,10 +115,10 @@ void vmm_init()
 
         if (entry->type == LIMINE_MEMMAP_USABLE)
             for (uptr addr = entry->base; addr < entry->base + entry->length; addr += PAGE_SIZE)
-                vmm_map_page(&kernelmap, HHDM + addr, addr, PTE_USER | PTE_WRITABLE | PTE_PRESENT);
+                vmm_map_page(&kernelmap, HHDM + addr, addr, VMM_WRITE | VMM_PRESENT);
         else if (entry->type == LIMINE_MEMMAP_FRAMEBUFFER)
             for (uptr addr = entry->base; addr < entry->base + entry->length; addr += PAGE_SIZE)
-                vmm_map_page(&kernelmap, HHDM + addr, addr, PTE_USER | PTE_WRITABLE | PTE_PRESENT);
+                vmm_map_page(&kernelmap, HHDM + addr, addr, VMM_WRITE | VMM_PRESENT);
     }
 
     log("D");
