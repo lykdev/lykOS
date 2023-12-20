@@ -18,6 +18,7 @@ extern volatile struct limine_hhdm_request hhdm_request;
 extern volatile struct limine_framebuffer_request framebuffer_request;
 extern volatile struct limine_kernel_address_request kernel_addr_request;
 extern volatile struct limine_rsdp_request rsdp_request;
+extern volatile struct limine_smp_request smp_request;
 
 #define HHDM (hhdm_request.response->offset)
 #define KERNEL_ADDR_VIRT (kernel_addr_request.response->virtual_base)

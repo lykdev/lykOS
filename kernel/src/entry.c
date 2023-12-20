@@ -8,6 +8,7 @@ LIMINE_BASE_REVISION(1)
 
 #if defined (__x86_64__)
     #include <arch/x86_64/tables/idt.h>
+    #include <arch/x86_64/cpu.h>
 #endif
 
 #include <mm/pmm.h>
@@ -20,6 +21,7 @@ void _start()
 
 #if defined (__x86_64__)
     idt_init();
+    cpu_init();
 #endif
 
     pmm_init();

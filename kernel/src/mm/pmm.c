@@ -54,6 +54,7 @@ void* pmm_get_page()
     return ret;
 }
 
+
 void pmm_init()
 {
     ASSERT_C(memmap_request.response != NULL && memmap_request.response->entry_count > 0,
