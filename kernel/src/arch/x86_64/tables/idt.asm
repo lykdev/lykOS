@@ -1,4 +1,5 @@
 [extern isr_handler]
+[extern irq_handler]
 [global idt_stub_addr_table]
 
 %macro PUSH_REGS 0
@@ -66,6 +67,21 @@ int_stub_%1:
     iretq
 %endmacro
 
+%macro irq_stub 1
+int_stub_%1:
+    push 0
+    push %1
+    PUSH_REGS
+
+    mov rdi, rsp
+    call irq_handler
+
+    POP_REGS
+
+    add rsp, 16
+    iretq
+%endmacro
+
 isr_no_err_stub 0
 isr_no_err_stub 1
 isr_no_err_stub 2
@@ -99,11 +115,13 @@ isr_no_err_stub 29
 isr_err_stub    30
 isr_no_err_stub 31
 
+irq_stub 32; IRQ 0
+
 section .data
 
 idt_stub_addr_table:
     %assign i 0
-    %rep 32
+    %rep 33
         dq int_stub_%+i
         %assign i i+1
     %endrep

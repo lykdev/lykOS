@@ -24,13 +24,15 @@ extern volatile struct limine_smp_request smp_request;
 #define KERNEL_ADDR_VIRT (kernel_addr_request.response->virtual_base)
 #define KERNEL_ADDR_PHYS (kernel_addr_request.response->physical_base)
 
-#define RGB(r, g, b) (r << 16) | (g << 8) | b
-
 typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
 typedef uint64_t u64;
 typedef uintptr_t uptr;
+
+#define TO_HHDM(VALUE) ((uptr)VALUE + HHDM)
+
+#define RGB(r, g, b) (r << 16) | (g << 8) | b
 
 void halt();
 

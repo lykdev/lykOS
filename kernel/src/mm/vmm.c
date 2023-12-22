@@ -12,6 +12,8 @@
 
 #define PTE_GET_ADDR(VALUE) ((VALUE) & 0x000FFFFFFFFFF000ull)
 
+struct vmm_pagemap kernelmap;
+
 static u64 translate_flags(u64 flags)
 {
     u64 ret = 0;
@@ -36,7 +38,7 @@ static u64* vmm_get_next_level(u64 *top_level, u64 idx, bool alloc)
     if (!alloc)
         return NULL;
     
-    void *next_level = pmm_get_page();
+    void *next_level = pmm_alloc() + HHDM;
     if (next_level == NULL)
         panic("VMM: Out of memory.");
         
@@ -67,7 +69,7 @@ void vmm_map_page(struct vmm_pagemap *map, uptr virt, uptr phys, u64 flags)
 
 void vmm_new_pagemap(struct vmm_pagemap *map)
 {
-    map->top_level = (u64*)pmm_get_page();
+    map->top_level = (u64*)(pmm_alloc() + HHDM);
     memset(map->top_level, 0, PAGE_SIZE);
 
     map->lock = SLOCK_INIT;
@@ -85,20 +87,18 @@ void vmm_switch_to_map(struct vmm_pagemap *map)
 
 #endif
 
-struct vmm_pagemap kernelmap;
-
 void vmm_init()
 {
-    log("%llx", KERNEL_ADDR_PHYS);
-    log("%llx", KERNEL_ADDR_VIRT);
-    log("%llx", HHDM);
+    log("KERNEL_ADDR_PHYS: %llx", KERNEL_ADDR_PHYS);
+    log("KERNEL_ADDR_VIRT: %llx", KERNEL_ADDR_VIRT);
+    log("HHDM: %llx", HHDM);
 
     vmm_new_pagemap(&kernelmap);
 
     log("A");
 
     // Map the first 4GiB mandated by the limine spec.
-    for (u64 i = 0; i < 4 * GIB; i += PAGE_SIZE) 
+    for (u64 i = 0x1000; i < 4 * GIB; i += PAGE_SIZE) 
         vmm_map_page(&kernelmap, HHDM + i, i, VMM_WRITE | VMM_PRESENT);
         
     log("B");
@@ -109,7 +109,7 @@ void vmm_init()
 
     log("C");
 
-    for (int i = 0; i < memmap_request.response->entry_count; i++)
+    for (u64 i = 0; i < memmap_request.response->entry_count; i++)
     {
         struct limine_memmap_entry *entry = memmap_request.response->entries[i];
 
@@ -125,5 +125,5 @@ void vmm_init()
 
     vmm_switch_to_map(&kernelmap);
 
-    log("E");
+    log("A new kernel pagemap has been generated and loaded.");
 }

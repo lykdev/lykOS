@@ -14,6 +14,8 @@ struct vmm_pagemap
     slock lock;
 };
 
+extern struct vmm_pagemap kernelmap;
+
 void vmm_init();
 void vmm_new_pagemap(struct vmm_pagemap *map);
 void vmm_map_page(struct vmm_pagemap *map, uptr virt, uptr phys, u64 flags);
