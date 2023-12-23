@@ -1,5 +1,6 @@
 [global arch_context_switch]
-[extern TASK_STRUCT_RSP_OFFSET]
+
+TASK_STRUCT_RSP_OFFSET equ 9
 
 arch_context_switch:
     ; rdi - old task
