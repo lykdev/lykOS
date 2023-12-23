@@ -11,6 +11,7 @@ enum
 
 struct task
 {
+    struct task *self;
     // `TASK_KERNEL` or `TASK_USER`.
     u8 type;
     // Pointer to the pagemap of the parent process.
