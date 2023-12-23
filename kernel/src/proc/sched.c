@@ -53,7 +53,9 @@ struct init_stack_kernel
 
 void sched_init()
 {
-    // task1.rsp = (u64)pmm_alloc() + PAGE_SIZE;
+    task1.pagemap = &kernelmap;
+
+    task2.pagemap = &kernelmap;
     task2.rsp = (u64)pmm_alloc() + PAGE_SIZE;
     memset((void*)((uptr)task2.rsp - PAGE_SIZE), 0, PAGE_SIZE);
 
