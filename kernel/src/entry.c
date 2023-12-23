@@ -24,6 +24,19 @@ void _start()
     cpu_core_setup();
 
     pmm_init();
+
+    void *a = pmm_alloc();
+    void *b = pmm_alloc();
+    void *c = pmm_alloc();
+    void *d = pmm_alloc();
+    void *e = pmm_alloc();
+
+    log("%llx", a);
+    log("%llx", b);
+    log("%llx", c);
+    log("%llx", d);
+    log("%llx", e);
+
     vmm_init();
 
     acpi_init();    
