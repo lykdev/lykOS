@@ -30,7 +30,7 @@ void pmm_free(void *page)
     slock_acquire(&lock);
 
     if ((u64)page > HHDM)
-        panic("Don't pmm_free a higher half address.");
+        panic("Don't pmm_free a higher half address >:C");
 
     *(u64*)(page + HHDM) = (u64)page_list;
     page_list = (u64*)page;

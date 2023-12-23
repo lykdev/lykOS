@@ -3,22 +3,19 @@
 #include <lib/utils.h>
 #include <mm/vmm.h>
 
-struct task_regs
+enum
 {
-    #if defined (__x86_64__)
-        u64 rax, rbx, rcx, rdx, rsi, rdi;
-        u64 r8, r9, r10, r11, r12, r13, r14, r15;
-        u64 rsp, rbp;
-        u64 rip;        
-    #endif
+    TASK_KERNEL,
+    TASK_USER
 };
 
 struct task
 {
+    // `TASK_KERNEL` or `TASK_USER`.
+    u8 type;
     // Pointer to the pagemap of the parent process.
     struct vmm_pagemap *pagemap;
-    // CPU task-specific registers.
-    struct task_regs regs;
-};
+    u64 rsp;
+} __attribute__((packed));
 
 void task_setup(struct task *t, uptr entry_addr);

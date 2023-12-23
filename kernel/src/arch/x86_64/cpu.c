@@ -8,7 +8,7 @@ void cpu_core_setup()
 //  gdt_init();
     idt_init();
     
-    //lapic_init();
+    lapic_init();
 }
 
 void cpu_core_entry(struct limine_smp_info *lcore)
