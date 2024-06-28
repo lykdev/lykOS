@@ -16,8 +16,6 @@ C_FLAGS := 					\
 	-fPIE					\
 	-O2						\
 	-g						\
-	-I src					\
-	-std=c23				\
 
 LD_FLAGS := 				\
 	-nostdlib				\
@@ -30,6 +28,7 @@ LD_FLAGS := 				\
 
 ifeq ($(ARCH), x86_64)
 	C_FLAGS += 	\
+		-masm=intel			\
 		-target x86_64-elf  \
         -m64 				\
         -march=x86-64 		\
@@ -52,7 +51,9 @@ endif
 
 # "USER" DEFINED FLAGS
 
-C_FLAGS += \
+C_FLAGS += 							\
+	-I src							\
+	-std=c23						\
 	-DPRINTF_DISABLE_SUPPORT_FLOAT
 
 # OBJECTS

@@ -91,7 +91,7 @@ end:
 void vmm_load_map(vmm_map_t *map)
 {
     __asm__ volatile (
-        "movq %0, %%cr3"
+        "mov cr3, %0"
         :
         : "r" ((uptr)map->pml4 - HHDM)
         : "memory"
