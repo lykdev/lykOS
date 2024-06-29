@@ -29,7 +29,7 @@ typedef struct
 idt_entry_t idt[256];
 extern uptr int_stubs[256];
 
-void x86_64_int_handler(int_stack_frame_t *regs)
+void x86_64_int_handler(x86_64_int_stack_frame_t *regs)
 {
     if (regs->int_no < 32)
     {

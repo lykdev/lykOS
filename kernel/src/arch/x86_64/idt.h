@@ -26,6 +26,6 @@ typedef struct
     u64 rflags;
     u64 rsp;
     u64 ss;
-} __attribute__((packed)) int_stack_frame_t;
+} __attribute__((packed)) x86_64_int_stack_frame_t;
 
 void x86_64_idt_load();

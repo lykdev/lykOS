@@ -8,7 +8,7 @@
 
 void serial_send_char(char c)
 {
-    io_outb(COM1, c);
+    x86_64_io_outb(COM1, c);
 }
 
 void serial_send_str(const char *str)
