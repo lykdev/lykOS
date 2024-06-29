@@ -1,5 +1,6 @@
 #include "idt.h"
 
+#include <arch/cpu.h>
 #include <arch/x86_64/gdt.h>
 
 #include <lib/def.h>
@@ -32,7 +33,7 @@ void x86_64_int_handler(int_stack_frame_t *regs)
 {
     if (regs->int_no < 32)
     {
-        log_err("CPU exception occurred %d", regs->int_no);
+        log_err("CPU exception occurred. Interrupt number: %d.", regs->int_no);
         cpu_halt();
     }
 }

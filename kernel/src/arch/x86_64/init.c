@@ -26,8 +26,6 @@ void x86_64_entry()
     x86_64_gdt_load();
     x86_64_idt_load();
 
-    asm ("int $18");
-
     // PMM
 
     pmm_init();
