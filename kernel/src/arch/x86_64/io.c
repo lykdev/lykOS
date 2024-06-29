@@ -2,7 +2,7 @@
 
 void io_outb(u16 port, u8 val)
 {
-    __asm__ volatile("outb %1, %0"
+    __asm__ volatile("outb %0, %1"
                     :
                     : "a"(val), "Nd"(port));
     }
@@ -18,7 +18,7 @@ u8 io_inb(u16 port)
 
 void io_outl(u16 port, u32 val)
 {
-    __asm__ volatile("outl %1, %0"
+    __asm__ volatile("outl %0, %1"
                     :
                     : "a" (val), "Nd" (port));
 }
@@ -27,7 +27,7 @@ u32 io_inl(u16 port)
 {
     u32 ret;
     __asm__ volatile("inl %1, %0"
-                    : "=a" (data)
+                    : "=a" (ret)
                     : "Nd" (port));
     return ret;
 }

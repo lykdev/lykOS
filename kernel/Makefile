@@ -28,16 +28,9 @@ LD_FLAGS := 				\
 
 ifeq ($(ARCH), x86_64)
 	C_FLAGS += 	\
-		-masm=intel			\
 		-target x86_64-elf  \
         -m64 				\
-        -march=x86-64 		\
         -mgeneral-regs-only \
-		-march=x86-64		\
-        -mno-80387			\
-        -mno-mmx			\
-        -mno-sse			\
-        -mno-sse2			\
         -mno-red-zone
 
 	LD_FLAGS += 		\
@@ -53,7 +46,7 @@ endif
 
 C_FLAGS += 							\
 	-I src							\
-	-std=c23						\
+	-std=gnu23						\
 	-DPRINTF_DISABLE_SUPPORT_FLOAT
 
 # OBJECTS

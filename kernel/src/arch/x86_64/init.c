@@ -2,6 +2,7 @@
 
 #include <arch/cpu.h>
 #include <arch/x86_64/gdt.h>
+#include <arch/x86_64/idt.h>
 
 #include <core/mm/pmm.h>
 #include <core/mm/vmm.h>
@@ -23,6 +24,9 @@ void x86_64_entry()
     // GDT
 
     x86_64_gdt_load();
+    x86_64_idt_load();
+
+    asm ("int $18");
 
     // PMM
 

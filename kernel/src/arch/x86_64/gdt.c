@@ -20,11 +20,11 @@ typedef struct
     u64 base;
 } __attribute__((packed)) gdtr_t;
 
-#define COMMON 0b10011011 // Present, Data segment, Read-write, Accessed
+#define COMMON 0b10010011 // Present, Code or Data segment, Read-write, Accessed
 #define KERNEL 0b00 << 5
 #define USER   0b11 << 5
-#define DATA   0b0  << 4
-#define CODE   0b1  << 4
+#define DATA   0b0  << 3
+#define CODE   0b1  << 3
 
 #define STR(S) #S
 #define XSTR(S) STR(S)
@@ -90,19 +90,17 @@ void x86_64_gdt_load()
 
     __asm__ volatile
     (
-        "lgdt %0                                         \n"
-        "push " XSTR(X86_64_GDT_SEL_CODE_RING0)         "\n"
-        "lea rax, [load_selectors]                       \n"
-        "push rax                                        \n"
-        "retf                                            \n"
-        "load_selectors:                                 \n"
-        "mov rax, " XSTR(X86_64_GDT_SEL_DATA_RING0)     "\n"
-        "mov ds, rax\n"
-        "mov ss, rax\n"
-        "mov es, rax\n"
-        :
-        : "m" (gdtr)
-        : "rax", "memory"
+        "lgdt %0                                        \n"
+        "push $" XSTR(X86_64_GDT_SEL_CODE_RING0)       "\n"
+        "lea 1f(%%rip), %%rax                           \n"
+        "push %%rax                                     \n"
+        "lretq                                          \n"
+        "1:                                             \n"
+        "mov $" XSTR(X86_64_GDT_SEL_DATA_RING0) ", %%rax\n"
+        "mov %%rax, %%ds                                \n"
+        "mov %%rax, %%ss                                \n"
+        "mov %%rax, %%es                                \n"
+        : : "m" (gdtr) : "rax", "memory"
     );
 
     log("GDT loaded.");
