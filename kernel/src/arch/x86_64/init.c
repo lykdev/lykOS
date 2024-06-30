@@ -3,7 +3,10 @@
 #include <arch/cpu.h>
 #include <arch/x86_64/gdt.h>
 #include <arch/x86_64/idt.h>
+#include <arch/x86_64/pit.h>
+#include <arch/x86_64/lapic.h>
 
+#include <core/graphics/video.h>
 #include <core/mm/pmm.h>
 #include <core/mm/vmm.h>
 
@@ -20,18 +23,23 @@ void x86_64_entry()
 
     // Ensure the bootloader actually understands our base revision.
     ASSERT(LIMINE_BASE_REVISION_SUPPORTED != false);
+
+    // Video
+
+    video_init();
     
-    // GDT
+    // Tables.
 
     x86_64_gdt_load();
     x86_64_idt_load();
 
-    // PMM
+    // APIC
+
+    x86_64_lapic_timer_init();
+
+    //
 
     pmm_init();
-
-    // VMM
-
     vmm_init();
 
     log("KERNEL END");
