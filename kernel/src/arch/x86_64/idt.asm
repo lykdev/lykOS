@@ -3,9 +3,9 @@
 
 %macro PUSH_REGS 0
     push rax
+    push rbx
     push rcx
     push rdx
-    push rbx
     push rbp
     push rsi
     push rdi
@@ -31,9 +31,9 @@
     pop rdi
     pop rsi
     pop rbp
-    pop rbx
     pop rdx
     pop rcx
+    pop rbx
     pop rax
 %endmacro
 

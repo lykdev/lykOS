@@ -1,14 +1,15 @@
 #include <limine.h>
 
 #include <arch/cpu.h>
-#include <arch/x86_64/gdt.h>
-#include <arch/x86_64/idt.h>
+#include <arch/x86_64/tables/gdt.h>
+#include <arch/x86_64/tables/idt.h>
 #include <arch/x86_64/pit.h>
 #include <arch/x86_64/lapic.h>
 
 #include <core/graphics/video.h>
 #include <core/mm/pmm.h>
 #include <core/mm/vmm.h>
+#include <core/sched/sched.h>
 
 #include <lib/def.h>
 #include <lib/log.h>
@@ -41,6 +42,10 @@ void x86_64_entry()
 
     pmm_init();
     vmm_init();
+
+    //
+
+    sched_init();
 
     log("KERNEL END");
     cpu_halt();
