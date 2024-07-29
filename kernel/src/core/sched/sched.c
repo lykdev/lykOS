@@ -1,17 +1,43 @@
 #include <core/sched/sched.h>
 
 #include <arch/cpu.h>
+#include <arch/int.h>
 
+#include <core/mm/pmm.h>
 #include <core/sched/task.h>
 
 #include <lib/def.h>
 #include <lib/log.h>
+#include <lib/assert.h>
 #include <lib/list.h>
 #include <lib/slock.h>
+#include <lib/hhdm.h>
+#include <lib/mem.h>
 
 extern void arch_context_switch(task_t *curr, task_t *next) __attribute__((naked));
 
-list_t  task_list;
+typedef struct
+{
+    u64 r15;
+    u64 r14;
+    u64 r13;
+    u64 r12;
+    u64 r11;
+    u64 r10;
+    u64 r9;
+    u64 r8;
+    u64 rdi;
+    u64 rsi;
+    u64 rbp;
+    u64 rbx;
+    u64 rdx;
+    u64 rcx;
+    u64 rax;
+    uptr init_func;
+    uptr entry;
+} __attribute__((packed)) task_entry_stack_t;
+
+list_t  task_list = LIST_INIT;
 slock_t task_list_lock = SLOCK_INIT;
 
 task_t t1, t2, t3, t4;
@@ -20,7 +46,7 @@ void f1()
 {
     for (u64 i = 0; i < 5; i++)
     {
-        log("TASK 1");
+        log("TASK 1 - %d", i);
         sched_yield();
     }
 }
@@ -29,7 +55,7 @@ void f2()
 {
     for (u64 i = 0; i < 5; i++)
     {
-        log("TASK 2");
+        log("TASK 2 - %d", i);
         sched_yield();
     }
         
@@ -39,7 +65,7 @@ void f3()
 {
     for (u64 i = 0; i < 5; i++)
     {
-        log("TASK 3");
+        log("TASK 3 - %d", i);
         sched_yield();
     }
         
@@ -49,20 +75,33 @@ void f4()
 {
     for (u64 i = 0; i < 5; i++)
     {
-        log("TASK 4");
+        log("TASK 4 - %d", i);
         sched_yield();
     }        
 }
 
-static u64 i = 0;
+static void task_init_func()
+{
+    int_enable();
+}
+
+static u64 _id = 0;
 
 void task_init(task_t *t, uptr entry)
 {
     t->self = t;
+    t->id = _id++;
 
-    t->id = i++;
+    uptr stack_region = pmm_alloc(3)->phys_addr + HHDM; // Allocate 8 pages (32KiB)
+    memset((void*)stack_region, 0, 32 * KIB);
+    
+    task_entry_stack_t *frame = (task_entry_stack_t*)(stack_region + 32 * KIB - sizeof(task_entry_stack_t));
+    frame->entry = entry;
+    frame->init_func = (uptr)&task_init_func;
 
-    list_append(&task_list, t->task_list_element);
+    t->kernel_stack = (uptr)frame;
+
+    list_append(&task_list, &t->task_list_element);
 }
 
 task_t* sched_next_task()
@@ -79,12 +118,19 @@ task_t* sched_next_task()
 
 void sched_yield()
 {
+    int_disable();
+
     task_t *curr = cpu_get_current_task();
+    ASSERT(curr != NULL);
     task_t *next = sched_next_task();
+    ASSERT(next != NULL);
 
-    log("curr: %u, next %u", curr->id, next->id);
-
+    cpu_set_current_task(next);
     arch_context_switch(curr, next);
+
+    list_append(&task_list, &curr->task_list_element);
+
+    int_enable();
 }
 
 void sched_init()
@@ -94,5 +140,8 @@ void sched_init()
     task_init(&t3, (uptr)f3);
     task_init(&t4, (uptr)f4);
 
-    __asm__ volatile ("jmp *%0\n" :: "r"(&f1));
+    log("Starting f1");
+
+    cpu_set_current_task(&t1);
+    f1();
 }

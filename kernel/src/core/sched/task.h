@@ -5,10 +5,11 @@
 
 typedef struct task
 {
+    // This field is needed for architecture specific reasons.
     struct task *self;
 
-    u64 id;
     uptr kernel_stack;
+    u64 id;
 
-    list_node_t *task_list_element;
+    list_node_t task_list_element;
 } __attribute__((packed)) task_t;
