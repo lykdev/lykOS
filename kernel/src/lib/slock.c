@@ -17,7 +17,7 @@ void slock_acquire(volatile slock_t *lock)
         
         while(__atomic_load_n(lock, __ATOMIC_RELAXED))
         {
-            cpu_relax();
+            cpu_lcore_relax();
 
             if (deadlock_cnt++ >= 100'000'000)
                 panic("Deadlock occured. Return addr: %llx", __builtin_return_address(0));

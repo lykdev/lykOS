@@ -35,6 +35,10 @@ struct pmm_region
 
 void pmm_init();
 
+u64 order_to_page_cnt(u8 order);
+
+u8 page_cnt_to_order(u64 page_cnt);
+
 void pmm_free(pmm_block_t *b);
 
 pmm_block_t *pmm_alloc(u8 order);
@@ -45,4 +49,4 @@ u64 pmm_get_free_ram();
 
 u64 pmm_get_used_ram();
 
-void pmm_debug_info_levels();
+void pmm_debug_info();

@@ -1,10 +1,10 @@
-#include <core/sched/sched.h>
+#include "sched.h"
 
 #include <arch/cpu.h>
 #include <arch/int.h>
 
 #include <core/mm/pmm.h>
-#include <core/sched/task.h>
+#include <core/tasking/task.h>
 
 #include <lib/def.h>
 #include <lib/log.h>
@@ -40,7 +40,7 @@ typedef struct
 list_t  task_list = LIST_INIT;
 slock_t task_list_lock = SLOCK_INIT;
 
-task_t t1, t2, t3, t4;
+task_t t1, t2, t3;
 
 void f1()
 {
@@ -58,7 +58,6 @@ void f2()
         log("TASK 2 - %d", i);
         sched_yield();
     }
-        
 }
 
 void f3()
@@ -68,16 +67,15 @@ void f3()
         log("TASK 3 - %d", i);
         sched_yield();
     }
-        
 }
 
-void f4()
+void sched_queue_add_task(task_t *t)
 {
-    for (u64 i = 0; i < 5; i++)
-    {
-        log("TASK 4 - %d", i);
-        sched_yield();
-    }        
+    slock_acquire(&task_list_lock);
+
+    list_append(&task_list, &t->task_list_element);
+
+    slock_release(&task_list_lock);
 }
 
 static void task_init_func()
@@ -101,7 +99,7 @@ void task_init(task_t *t, uptr entry)
 
     t->kernel_stack = (uptr)frame;
 
-    list_append(&task_list, &t->task_list_element);
+    sched_queue_add_task(t);
 }
 
 task_t* sched_next_task()
@@ -120,15 +118,13 @@ void sched_yield()
 {
     int_disable();
 
-    task_t *curr = cpu_get_current_task();
+    task_t *curr = cpu_lcore_get_current_task();
     ASSERT(curr != NULL);
     task_t *next = sched_next_task();
     ASSERT(next != NULL);
 
-    cpu_set_current_task(next);
-    arch_context_switch(curr, next);
-
-    list_append(&task_list, &curr->task_list_element);
+    cpu_lcore_set_current_task(next);
+    arch_context_switch(curr, next); // This also adds the old task back to the queue.
 
     int_enable();
 }
@@ -138,10 +134,7 @@ void sched_init()
     task_init(&t1, (uptr)f1);
     task_init(&t2, (uptr)f2);
     task_init(&t3, (uptr)f3);
-    task_init(&t4, (uptr)f4);
 
-    log("Starting f1");
-
-    cpu_set_current_task(&t1);
+    cpu_lcore_set_current_task(&t1);
     f1();
 }

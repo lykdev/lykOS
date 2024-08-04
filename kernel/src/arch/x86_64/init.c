@@ -9,7 +9,8 @@
 #include <core/graphics/video.h>
 #include <core/mm/pmm.h>
 #include <core/mm/vmm.h>
-#include <core/sched/sched.h>
+#include <core/tasking/sched.h>
+#include <core/vfs.h>
 
 #include <lib/def.h>
 #include <lib/log.h>
@@ -29,7 +30,7 @@ void x86_64_entry()
 
     video_init();
     
-    // Tables.
+    // Tables
 
     x86_64_gdt_load();
     x86_64_idt_load();
@@ -38,15 +39,19 @@ void x86_64_entry()
 
     x86_64_lapic_timer_init();
 
-    //
+    // Memory
 
     pmm_init();
     vmm_init();
 
-    //
+    // Tasking
 
     sched_init();
 
+    // Other
+
+    vfs_init();
+
     log("KERNEL END");
-    cpu_halt();
+    cpu_lcore_halt();
 }

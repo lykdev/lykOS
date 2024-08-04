@@ -34,7 +34,7 @@ void x86_64_int_handler(x86_64_int_stack_frame_t *regs)
     if (regs->int_no < 32)
     {
         log_err("CPU exception occurred. Interrupt number: %d.", regs->int_no);
-        cpu_halt();
+        cpu_lcore_halt();
     }
 }
 

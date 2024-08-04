@@ -15,12 +15,12 @@ static list_t free_regions = LIST_INIT;
 
 static u64 usable_ram = 0, free_ram = 0, used_ram = 0;
 
-static u64 order_to_page_cnt(u8 order)
+u64 order_to_page_cnt(u8 order)
 {
     return 1ull << order;
 }
 
-static u8 page_cnt_to_order(u64 page_cnt)
+u8 page_cnt_to_order(u64 page_cnt)
 {
     if(page_cnt == 1)
         return 0;
@@ -177,7 +177,7 @@ void pmm_init()
     log("Usable RAM: %llu MIB + %llu KIB", usable_ram / MIB, (usable_ram % MIB) / KIB);
 }
 
-void pmm_debug_info_levels()
+void pmm_debug_info()
 {
     log_warn("----------");
     for (u64 i = 0; i <= MAX_ORDER; i++)

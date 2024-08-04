@@ -14,5 +14,5 @@ void panic(const char *format, ...)
 
     va_end(list);
 
-    cpu_halt();
+    cpu_lcore_halt();
 }

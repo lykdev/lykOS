@@ -25,6 +25,9 @@ typedef struct
 
 #define LIST_LAST(T) ((T)->tail)
 
+#define FOREACH(NODE, LIST) \
+    for (list_node_t *NODE = LIST.head; NODE != NULL; NODE = NODE->next)
+
 bool list_is_empty(list_t *list);
 
 void list_append(list_t *list, list_node_t *node);
