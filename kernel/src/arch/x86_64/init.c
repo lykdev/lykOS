@@ -12,6 +12,9 @@
 #include <core/tasking/sched.h>
 #include <core/vfs.h>
 
+#include <dev/acpi/acpi.h>
+#include <dev/pci.h>
+
 #include <lib/def.h>
 #include <lib/log.h>
 #include <lib/assert.h>
@@ -51,6 +54,11 @@ void x86_64_entry()
     // Other
 
     vfs_init();
+
+    // Devices
+
+    acpi_init();
+    pci_init();
 
     log("KERNEL END");
     cpu_lcore_halt();

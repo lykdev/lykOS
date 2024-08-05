@@ -21,7 +21,7 @@ task_t *cpu_lcore_get_current_task()
     return ret;
 }
 
-void *cpu_lcore_set_current_task(task_t *t)
+void cpu_lcore_set_current_task(task_t *t)
 {
     x86_64_msr_write(X86_64_MSR_GS_BASE, (u64)t);
 }

@@ -53,11 +53,8 @@ void vfs_init()
 {
     vfs_mount("NONE", "NONE", "/");
     vfs_mount("NONE", "NONE", "/sys");
+    vfs_mount("NONE", "NONE", "/dev");
     vfs_mount("NONE", "NONE", "/home");
-    vfs_mount("NONE", "NONE", "/home/matei");
-    vfs_mount("NONE", "NONE", "/mnt");
-
-    log("%s", vfs_get_mountpoint("/home/mateiu/test")->mount_path);
 }
 
 void vfs_debug_info()
