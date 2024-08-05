@@ -13,7 +13,7 @@ typedef struct
   u32  oem_revision;
   u32  creator_id;
   u32  creator_revision;
-} __attribute__ ((packed)) acpi_sdt_hdr_t;
+} __attribute__((packed)) acpi_sdt_hdr_t;
 
 void acpi_init();
 
