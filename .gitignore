@@ -1,0 +1,7 @@
+iso_root
+limine
+qemu
+
+*.iso
+
+.vscode
