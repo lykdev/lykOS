@@ -19,6 +19,8 @@ typedef struct
 /// @return Pointer to the container.
 #define LIST_GET_CONTAINER(NODE, TYPE, MEMBER) ((TYPE *) ((uptr)(NODE) - __builtin_offsetof(TYPE, MEMBER)))
 
+#define LIST_NODE_INIT (list_node_t) { .prev = NULL, .next = NULL }
+
 #define LIST_INIT (list_t) { .length = 0, .head = NULL, .tail = NULL }
 
 #define LIST_FIRST(T) ((T)->head)

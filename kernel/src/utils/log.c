@@ -11,12 +11,20 @@ static slock_t slock = SLOCK_INIT;
 
 void _log(const char *module, int level, const char *format, ...)
 {
-    if (line > 60)
-        return;
-
     va_list list;
     va_start(list);
+
+    _n_log(module, level, format, list);
+    
+    va_end(list);    
+}
+
+void _n_log(const char *module, int level, const char *format, va_list list)
+{
     slock_acquire(&slock);
+
+    if (line > 60)
+        return;
 
     char buf[256] = {0};
     vsnprintf(buf, 256, format, list);
@@ -26,5 +34,4 @@ void _log(const char *module, int level, const char *format, ...)
     line++;
 
     slock_release(&slock);
-    va_end(list);    
 }

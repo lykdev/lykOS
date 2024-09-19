@@ -5,3 +5,5 @@
 #define log(LEVEL, FORMAT, ...) _log("my_module", LEVEL, FORMAT, ##__VA_ARGS__)
 
 void _log(const char *module, int level, const char *format, ...);
+
+void _n_log(const char *module, int level, const char *format, va_list list);

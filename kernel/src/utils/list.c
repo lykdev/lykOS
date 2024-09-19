@@ -1,11 +1,11 @@
 #include "list.h"
 
-//#include <lib/assert.h>
+#include <utils/assert.h>
 
 bool list_is_empty(list_t *list)
 {
     // Sanity check: make sure that the two statements are either both true or both false.
-    //ASSERT (!((list->head == NULL) ^ (list->length == 0)));
+    ASSERT (!((list->head == NULL) ^ (list->length == 0)));
 
     return list->head == NULL;
 }

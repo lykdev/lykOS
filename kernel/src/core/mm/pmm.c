@@ -2,11 +2,13 @@
 
 #include <arch/types.h>
 
+#include <utils/assert.h>
 #include <utils/def.h>
 #include <utils/hhdm.h>
 #include <utils/limine/requests.h>
 #include <utils/list.h>
 #include <utils/log.h>
+#include <utils/string.h>
 
 typedef struct
 {
@@ -23,7 +25,7 @@ list_t levels[PMM_MAX_ORDER + 1];
 
 // UTILS
 
-static u8 pagecount_to_order(size_t pages)
+static u8 pagecount_to_order(u64 pages)
 {
     if(pages == 1)
         return 0;
@@ -53,14 +55,73 @@ void pmm_debug_info()
 void* pmm_alloc(u8 order)
 {
     int i = order;
-
     while (list_is_empty(&levels[i]))
-        i++;
+    {
+        i++;   
 
+        if (i > PMM_MAX_ORDER)
+            panic("OUT OF MEMORY");
+    }    
+            
+    pmm_block_t *block = LIST_GET_CONTAINER(levels[i].head, pmm_block_t, list_elem);
+    list_remove(&levels[i], levels[i].head);
+    
     while (i != order)
     {
-           
+        // Left block.
+        u64 l_idx = block->addr / PAGE_GRAN;
+        pmm_block_t *left = &blocks[l_idx];
+        left->order = i - 1;
+        left->free  = true;
+
+        // Right block.
+        u64 r_idx = l_idx ^ order_to_pagecount(i - 1);
+        if (r_idx < block_count) // Check if within bounds.
+        {
+            pmm_block_t *right = &blocks[r_idx];
+            right->order = i - 1;
+            right->free = true;
+            list_append(&levels[i - 1], &right->list_elem);
+        }
+        
+        block = left;
+        i--;
     }    
+
+    block->order = order;
+    block->free  = false;
+    return (void*)block->addr;
+}
+
+void pmm_free(void *addr)
+{
+    u64 idx = (u64)addr / PAGE_GRAN;
+    pmm_block_t *block = &blocks[idx];
+    u8 i = block->order;
+
+    while (i < PMM_MAX_ORDER)
+    {
+        u64 b_idx = idx ^ order_to_pagecount(i);
+        if (b_idx >= block_count)
+            break;
+
+        pmm_block_t *buddy = &blocks[b_idx];
+        if (buddy->free == true && buddy->order == i)
+        {
+            list_remove(&levels[buddy->order], &buddy->list_elem);
+
+            // The new merged block is on the left.
+            block = idx < b_idx ? block : buddy;
+            idx = idx < b_idx ? idx : b_idx;
+            i++;
+        }
+        else
+            break;
+    }    
+
+    block->order = i;
+    block->free  = true;
+    list_append(&levels[i], &block->list_elem);
 }
 
 // INIT
@@ -96,10 +157,12 @@ void pmm_init()
     }
 
     // Set each block's address and mark them as used for now.
+    memset(blocks, 0, sizeof(pmm_block_t) * block_count);
     for (u64 i = 0; i < block_count; i++)
         blocks[i] = (pmm_block_t) {
             .addr = PAGE_GRAN * i,
-            .free = false
+            .free = false,
+            .list_elem = LIST_NODE_INIT
         };
 
     // Iterate through each entry and set the blocks corresponding to a usable memory entry as free using greedy.
@@ -121,15 +184,14 @@ void pmm_init()
                 continue;
             }
 
-            blocks[addr / PAGE_GRAN] = (pmm_block_t) {
-                .order = order,
-                .free = true
-            };
-            list_append(&levels[order], &blocks[addr / PAGE_GRAN].list_elem);
+            u64 idx = addr / PAGE_GRAN;
+            blocks[idx].order = order;
+            blocks[idx].free  = true;
+            list_append(&levels[order], &blocks[idx].list_elem);
 
             addr += span;
         }
     }
-
+    
     pmm_debug_info();
 }
