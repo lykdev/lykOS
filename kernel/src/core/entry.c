@@ -18,19 +18,23 @@ void _entry()
     
     pmm_init();
 
-    // for (size_t i = 0; i < 500000; i++)
-    //     pmm_alloc(0);
-
-    // for (size_t i = 0; i < 500000; i++)
-    //     pmm_free((void*)a[i]);    
-
-    for (size_t i = 0; i < 1000; i++)
-        a[i] = (uptr) pmm_alloc(i % PMM_MAX_ORDER);
+    for (size_t i = 0; i < 1024; i++)
+        a[i] = (uptr) pmm_alloc(0);
 
     pmm_debug_info();
 
-    for (size_t i = 0; i < 1000; i++)
-        pmm_free((void*)a[i]);   
+    for (size_t i = 0; i < 1024; i++)
+        pmm_free((void*)a[i]);    
+
+    // pmm_debug_info();
+
+    // for (size_t i = 0; i < 1000; i++)
+    //     a[i] = (uptr) pmm_alloc(i % PMM_MAX_ORDER);
+
+    // pmm_debug_info(); 
+
+    // for (size_t i = 0; i < 1000; i++)
+    //     pmm_free((void*)a[i]);   
 
     pmm_debug_info();
 

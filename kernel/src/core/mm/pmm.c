@@ -86,7 +86,7 @@ void* pmm_alloc(u8 order)
         
         block = left;
         i--;
-    }    
+    }
 
     block->order = order;
     block->free  = false;
@@ -173,7 +173,7 @@ void pmm_init()
             continue;
 
         u8 order = PMM_MAX_ORDER;
-        uptr addr = e->base;
+        u64 addr = e->base;
         while (addr != e->base + e->length)
         {
             u64 span = order_to_pagecount(order) * PAGE_GRAN;

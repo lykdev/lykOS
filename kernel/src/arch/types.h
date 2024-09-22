@@ -2,4 +2,4 @@
 
 #include <utils/def.h>
 
-#define PAGE_GRAN (4 * KIB)
+#define PAGE_GRAN (4ull * KIB)
