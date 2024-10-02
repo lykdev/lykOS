@@ -8,7 +8,7 @@
 #include <utils/def.h>
 #include <utils/log.h>
 
-uptr a[500000];
+u64 a[500000];
 
 void _entry()
 {
@@ -18,25 +18,21 @@ void _entry()
     
     pmm_init();
 
-    for (size_t i = 0; i < 1024; i++)
-        a[i] = (uptr) pmm_alloc(0);
+    for (size_t i = 0; i < 124000; i++)
+        a[i] = (u64) pmm_alloc(0);
 
-    pmm_debug_info();
-
-    for (size_t i = 0; i < 1024; i++)
+    for (size_t i = 0; i < 124000; i++)
         pmm_free((void*)a[i]);    
 
-    // pmm_debug_info();
-
-    // for (size_t i = 0; i < 1000; i++)
-    //     a[i] = (uptr) pmm_alloc(i % PMM_MAX_ORDER);
-
-    // pmm_debug_info(); 
-
-    // for (size_t i = 0; i < 1000; i++)
-    //     pmm_free((void*)a[i]);   
-
     pmm_debug_info();
+
+    for (size_t i = 0; i < 1000; i++)
+        a[i] = (u64) pmm_alloc(i % PMM_MAX_ORDER);
+
+    for (size_t i = 0; i < 1000; i++)
+        pmm_free((void*)a[i]);   
+
+    // pmm_debug_info();
 
     log(0, "Kernel end.");
     arch_cpu_halt();

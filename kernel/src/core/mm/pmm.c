@@ -66,26 +66,14 @@ void* pmm_alloc(u8 order)
     pmm_block_t *block = LIST_GET_CONTAINER(levels[i].head, pmm_block_t, list_elem);
     list_remove(&levels[i], levels[i].head);
     
-    while (i != order)
+    for (; i > order; i--)
     {
-        // Left block.
-        u64 l_idx = block->addr / PAGE_GRAN;
-        pmm_block_t *left = &blocks[l_idx];
-        left->order = i - 1;
-        left->free  = true;
-
         // Right block.
-        u64 r_idx = l_idx ^ order_to_pagecount(i - 1);
-        if (r_idx < block_count) // Check if within bounds.
-        {
-            pmm_block_t *right = &blocks[r_idx];
-            right->order = i - 1;
-            right->free = true;
-            list_append(&levels[i - 1], &right->list_elem);
-        }
-        
-        block = left;
-        i--;
+        u64 r_idx = (block->addr / PAGE_GRAN) ^ order_to_pagecount(i - 1);
+        pmm_block_t *right = &blocks[r_idx];
+        right->order = i - 1;
+        right->free  = true;
+        list_append(&levels[i - 1], &right->list_elem);
     }
 
     block->order = order;
@@ -98,6 +86,8 @@ void pmm_free(void *addr)
     u64 idx = (u64)addr / PAGE_GRAN;
     pmm_block_t *block = &blocks[idx];
     u8 i = block->order;
+
+    ASSERT (block->free == false);
 
     while (i < PMM_MAX_ORDER)
     {
@@ -117,7 +107,7 @@ void pmm_free(void *addr)
         }
         else
             break;
-    }    
+    }
 
     block->order = i;
     block->free  = true;
@@ -129,7 +119,7 @@ void pmm_free(void *addr)
 void pmm_init()
 {
     for (int i = 0; i <= PMM_MAX_ORDER; i++)
-        levels[i] = LIST_INIT;    
+        levels[i] = LIST_INIT; 
 
     // Find the last usable memory entry to determine how many blocks our pmm should manage.
     struct limine_memmap_entry *last_usable_entry;
@@ -155,6 +145,7 @@ void pmm_init()
                 break;
             }                
     }
+    ASSERT (blocks != NULL);
 
     // Set each block's address and mark them as used for now.
     memset(blocks, 0, sizeof(pmm_block_t) * block_count);
@@ -172,8 +163,16 @@ void pmm_init()
         if (e->type != LIMINE_MEMMAP_USABLE)
             continue;
 
+        // for (u64 addr = e->base; addr != e->base + e->length; addr += PAGE_GRAN)
+        // {
+        //     u64 idx = addr / PAGE_GRAN;
+        //     blocks[idx].free = true;
+        //     blocks[idx].order = 0;
+        //     list_append(&levels[0], &blocks[idx].list_elem);
+        // }
+
         u8 order = PMM_MAX_ORDER;
-        u64 addr = e->base;
+        u64 addr = e->base;        
         while (addr != e->base + e->length)
         {
             u64 span = order_to_pagecount(order) * PAGE_GRAN;
@@ -185,6 +184,8 @@ void pmm_init()
             }
 
             u64 idx = addr / PAGE_GRAN;
+            ASSERT (idx < block_count);
+            
             blocks[idx].order = order;
             blocks[idx].free  = true;
             list_append(&levels[order], &blocks[idx].list_elem);
