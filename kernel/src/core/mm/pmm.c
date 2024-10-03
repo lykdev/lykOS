@@ -163,34 +163,26 @@ void pmm_init()
         if (e->type != LIMINE_MEMMAP_USABLE)
             continue;
 
-        // for (u64 addr = e->base; addr != e->base + e->length; addr += PAGE_GRAN)
-        // {
-        //     u64 idx = addr / PAGE_GRAN;
-        //     blocks[idx].free = true;
-        //     blocks[idx].order = 0;
-        //     list_append(&levels[0], &blocks[idx].list_elem);
-        // }
-
         u8 order = PMM_MAX_ORDER;
         u64 addr = e->base;        
         while (addr != e->base + e->length)
         {
             u64 span = order_to_pagecount(order) * PAGE_GRAN;
 
-            if (addr + span > e->base + e->length)
+            if (addr + span > e->base + e->length || addr % span != 0)
             {
                 order--;
                 continue;
             }
-
-            u64 idx = addr / PAGE_GRAN;
-            ASSERT (idx < block_count);
             
+            u64 idx = addr / PAGE_GRAN;
             blocks[idx].order = order;
             blocks[idx].free  = true;
             list_append(&levels[order], &blocks[idx].list_elem);
 
             addr += span;
+
+            order = PMM_MAX_ORDER;
         }
     }
     
