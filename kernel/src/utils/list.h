@@ -32,6 +32,10 @@ typedef struct
 
 bool list_is_empty(list_t *list);
 
+void list_insert_after(list_t *list, list_node_t *pos, list_node_t *new);
+
+void list_insert_before(list_t *list, list_node_t *pos, list_node_t *new);
+
 void list_append(list_t *list, list_node_t *node);
 
 void list_prepend(list_t *list, list_node_t *node);

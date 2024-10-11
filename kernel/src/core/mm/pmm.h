@@ -1,5 +1,6 @@
 #pragma once
 
+#include <arch/types.h>
 #include <utils/def.h>
 
 #define PMM_MAX_ORDER 10

@@ -1,6 +1,7 @@
 #include "slock.h"
 
 #include <arch/cpu.h>
+#include <utils/panic.h>
 
 void slock_acquire(volatile slock_t *lock)
 {
@@ -15,8 +16,8 @@ void slock_acquire(volatile slock_t *lock)
         {
             arch_cpu_relax();
 
-            // if (deadlock_cnt++ >= 100'000'000)
-            //     panic("Deadlock occured. Return addr: %llx", __builtin_return_address(0));
+            if (deadlock_cnt++ >= 100'000'000)
+                panic("Deadlock occured. Return addr: %llx", __builtin_return_address(0));
         }
 
     }

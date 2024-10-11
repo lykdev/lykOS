@@ -15,7 +15,6 @@ void _entry()
     log(0, "Kernel compiled on %s at %s.", __DATE__, __TIME__);
     
     pmm_init();
-    
 
     log(0, "Kernel end.");
     arch_cpu_halt();

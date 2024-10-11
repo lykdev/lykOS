@@ -2,4 +2,22 @@
 
 #include <utils/def.h>
 
-#define PAGE_GRAN (4ull * KIB)
+#if defined (__x86_64__)
+
+#define ARCH_PAGE_SIZE_4K 0x1000
+#define ARCH_PAGE_SIZE_2M 0x200000
+#define ARCH_PAGE_SIZE_1G 0x40000000
+#define ARCH_PAGE_GRAN    ARCH_PAGE_SIZE_4K
+
+#define ARCH_PAGE_SIZES ((u64[]) {ARCH_PAGE_SIZE_4K, ARCH_PAGE_SIZE_2M, ARCH_PAGE_SIZE_1G})
+
+#elif defined (__aarch64__)
+
+#define ARCH_PAGE_SIZE_4K 0x1000
+#define ARCH_PAGE_SIZE_2M 0x200000
+#define ARCH_PAGE_SIZE_1G 0x40000000
+#define ARCH_PAGE_GRAN    ARCH_PAGE_SIZE_64K
+
+#define ARCH_PAGE_SIZES ((u64[]) {ARCH_PAGE_SIZE_4K, ARCH_PAGE_SIZE_2M, ARCH_PAGE_SIZE_1G})
+
+#endif

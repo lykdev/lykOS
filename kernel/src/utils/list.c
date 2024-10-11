@@ -10,38 +10,70 @@ bool list_is_empty(list_t *list)
     return list->head == NULL;
 }
 
-void list_append(list_t *list, list_node_t *node)
+void list_insert_after(list_t *list, list_node_t *pos, list_node_t *new)
 {
-    if (list->tail != NULL) 
-        list->tail->next = node;
+    if (pos == NULL) // This case works only if the list is empty.
+    {
+        ASSERT (list_is_empty(list));
 
-    // Set appended node info.
-    node->prev = list->tail;
-    node->next = NULL;
+        list->head = new;
+        list->tail = new; 
+        new->prev = NULL;
+        new->next = NULL;
+    }
+    else
+    {
+        // Set `new` node info.
+        new->prev = pos;
+        new->next = pos->next;
 
-    // Update head and tail.
-    list->tail = node;
-    if (list->head == NULL)
-        list->head = list->tail;
+        // Set `pos` node info.
+        pos->next = new;
+
+        // Update tail if needed.
+        if (list->tail == pos)
+            list->tail = new;
+    }
 
     list->length++;
 }
 
-void list_prepend(list_t *list, list_node_t *node)
+void list_insert_before(list_t *list, list_node_t *pos, list_node_t *new)
 {
-    if (list->head != NULL)
-        list->head->prev = node;
+    if (pos == NULL) // This case works only if the list is empty.
+    {
+        ASSERT (list_is_empty(list));
 
-    // Set prepended node info.
-    node->prev = NULL;
-    node->next = list->head;
+        list->head = new;
+        list->tail = new; 
+        new->prev = NULL;
+        new->next = NULL;
+    }
+    else
+    {
+        // Set `new` node info.
+        new->prev = pos->prev;
+        new->next = pos;
 
-    // Update head and tail.
-    list->head = node;
-    if (list->tail == NULL)
-        list->tail = list->head;
+        // Set `pos` node info.
+        pos->prev = new;
+
+        // Update head if needed.
+        if (list->head == pos)
+            list->head = new;
+    }
 
     list->length++;
+}
+
+void list_append(list_t *list, list_node_t *node)
+{
+    list_insert_after(list, list->tail, node);
+}
+
+void list_prepend(list_t *list, list_node_t *node)
+{
+    list_insert_before(list, list->head, node);
 }
 
 void list_remove(list_t *list, list_node_t *node)
