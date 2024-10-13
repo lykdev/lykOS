@@ -12,7 +12,7 @@
 #define GLOBAL  (1ull <<  8)
 #define NX      (1ull << 63)
 
-#define GET_ADDR(VALUE) ((VALUE) & 0x000FFFFFFFFFF000ull)
+#define PTE_GET_ADDR(VALUE) ((VALUE) & 0x000FFFFFFFFFF000ull)
 
 pte_t *vmm_get_next_level(pte_t *top_level, u64 idx, bool alloc)
 {
@@ -25,25 +25,25 @@ pte_t *vmm_get_next_level(pte_t *top_level, u64 idx, bool alloc)
     pte_t *next_level = (pte_t*)((uptr)pmm_alloc(0) + HHDM);
     memset(next_level, 0, ARCH_PAGE_GRAN);
 
-    top_level[idx] = (pte_t)((uptr)next_level - HHDM) | PRESENT;
+    top_level[idx] = (pte_t)((uptr)next_level - HHDM) | PRESENT | WRITE;
     return next_level;
 } 
 
-void entry_split(pte_t *pte)
-{
-    pte_t *entries = (pte_t*)((uptr)pmm_alloc(0) + HHDM);
-    memset(next_level, 0, ARCH_PAGE_GRAN);
+// void entry_split(pte_t *pte)
+// {
+//     pte_t *entries = (pte_t*)((uptr)pmm_alloc(0) + HHDM);
+//     memset(next_level, 0, ARCH_PAGE_GRAN);
 
-    pte = (pte_t)((uptr)next_level - HHDM) | PRESENT;
+//     pte = (pte_t)((uptr)next_level - HHDM) | PRESENT;
     
 
-    for (u64 i = 0; i < 512; i++)
-    {
+//     for (u64 i = 0; i < 512; i++)
+//     {
         
-    }
-}
+//     }
+// }
 
-bool arch_ptm_map(ptm_map_t *map, uptr virt, uptr phys, u64 size, u64 flags)
+bool arch_ptm_map(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size, u64 flags)
 {
     ASSERT(virt % size == 0);
     ASSERT(phys % size == 0);
@@ -61,7 +61,25 @@ bool arch_ptm_map(ptm_map_t *map, uptr virt, uptr phys, u64 size, u64 flags)
     {
         pte_t *table = vmm_get_next_level(table, table_entries[i], true);
     }
-    table[table_entries[i]] = phys | PRESENT;
+    table[table_entries[i]] = phys | PRESENT | WRITE;
 }
 
+void arch_ptm_load_map(arch_ptm_map_t *map)
+{
+    __asm__ volatile (
+        "movq %0, %%cr3"
+        :
+        : "r" ((uptr)map->pml4 - HHDM)
+        : "memory"
+    );
+}
 
+arch_ptm_map_t arch_ptm_new_map()
+{
+    arch_ptm_map_t map;
+
+    map.pml4 = (pte_t*)((uptr)pmm_alloc(0) + HHDM);
+    memset(map.pml4, 0, ARCH_PAGE_GRAN);
+
+    return map;
+}

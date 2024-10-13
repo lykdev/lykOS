@@ -45,12 +45,12 @@ void pmm_debug_info()
 
     u64 fram = 0;
     for (int i = 0; i <= PMM_MAX_ORDER; i++)
-        fram += order_to_pagecount(i) * levels[i].length * PAGE_GRAN;
+        fram += order_to_pagecount(i) * levels[i].length * ARCH_PAGE_GRAN;
     
     log(2, "Free RAM: %lluMiB +  %lluKiB", fram / MIB, fram % MIB / KIB);
 }
 
-// 
+// ALLOC & FREE
 
 void* pmm_alloc(u8 order)
 {
@@ -69,7 +69,7 @@ void* pmm_alloc(u8 order)
     for (; i > order; i--)
     {
         // Right block.
-        u64 r_idx = (block->addr / PAGE_GRAN) ^ order_to_pagecount(i - 1);
+        u64 r_idx = (block->addr / ARCH_PAGE_GRAN) ^ order_to_pagecount(i - 1);
         pmm_block_t *right = &blocks[r_idx];
         right->order = i - 1;
         right->free  = true;
@@ -83,7 +83,7 @@ void* pmm_alloc(u8 order)
 
 void pmm_free(void *addr)
 {
-    u64 idx = (u64)addr / PAGE_GRAN;
+    u64 idx = (u64)addr / ARCH_PAGE_GRAN;
     pmm_block_t *block = &blocks[idx];
     u8 i = block->order;
 
@@ -132,7 +132,7 @@ void pmm_init()
         if (e->type == LIMINE_MEMMAP_USABLE)
             last_usable_entry = e;
     }
-    block_count = (last_usable_entry->base + last_usable_entry->length) / PAGE_GRAN;
+    block_count = (last_usable_entry->base + last_usable_entry->length) / ARCH_PAGE_GRAN;
 
     // Find a usable memory entry at the start of which the blocks array will be placed.
     for (u64 i = 0; i < request_memmap.response->entry_count; i++)
@@ -151,7 +151,7 @@ void pmm_init()
     memset(blocks, 0, sizeof(pmm_block_t) * block_count);
     for (u64 i = 0; i < block_count; i++)
         blocks[i] = (pmm_block_t) {
-            .addr = PAGE_GRAN * i,
+            .addr = ARCH_PAGE_GRAN * i,
             .free = false,
             .list_elem = LIST_NODE_INIT
         };
@@ -167,7 +167,7 @@ void pmm_init()
         u64 addr = e->base;        
         while (addr != e->base + e->length)
         {
-            u64 span = order_to_pagecount(order) * PAGE_GRAN;
+            u64 span = order_to_pagecount(order) * ARCH_PAGE_GRAN;
 
             if (addr + span > e->base + e->length || addr % span != 0)
             {
@@ -175,7 +175,7 @@ void pmm_init()
                 continue;
             }
             
-            u64 idx = addr / PAGE_GRAN;
+            u64 idx = addr / ARCH_PAGE_GRAN;
             blocks[idx].order = order;
             blocks[idx].free  = true;
             list_append(&levels[order], &blocks[idx].list_elem);

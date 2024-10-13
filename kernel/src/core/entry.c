@@ -4,6 +4,7 @@
 
 #include <core/graphics/video.h>
 #include <core/mm/pmm.h>
+#include <core/mm/vmm.h>
 
 #include <utils/def.h>
 #include <utils/log.h>
@@ -15,6 +16,7 @@ void _entry()
     log(0, "Kernel compiled on %s at %s.", __DATE__, __TIME__);
     
     pmm_init();
+    vmm_init();
 
     log(0, "Kernel end.");
     arch_cpu_halt();
