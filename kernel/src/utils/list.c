@@ -23,11 +23,15 @@ void list_insert_after(list_t *list, list_node_t *pos, list_node_t *new)
     }
     else
     {
-        // Set `new` node info.
+        // Middle node.
         new->prev = pos;
         new->next = pos->next;
 
-        // Set `pos` node info.
+        // Right node.
+        if (new->next != NULL)
+            new->next->prev = new;
+
+        // Left node.
         pos->next = new;
 
         // Update tail if needed.
@@ -51,11 +55,15 @@ void list_insert_before(list_t *list, list_node_t *pos, list_node_t *new)
     }
     else
     {
-        // Set `new` node info.
+        // Middle node.
         new->prev = pos->prev;
         new->next = pos;
 
-        // Set `pos` node info.
+        // Left node
+        if (new->prev != NULL)
+            new->prev->next = new;
+
+        // Right node.
         pos->prev = new;
 
         // Update head if needed.

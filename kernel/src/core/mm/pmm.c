@@ -185,6 +185,4 @@ void pmm_init()
             order = PMM_MAX_ORDER;
         }
     }
-    
-    pmm_debug_info();
 }
