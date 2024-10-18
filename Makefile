@@ -39,7 +39,7 @@ build: clean limine
 
 	mkdir -p iso_root/EFI/BOOT
 
-	cp kernel/bin/kernel.elf limine.conf limine/limine-uefi-cd.bin test.elf \
+	cp kernel/bin/kernel.elf limine.conf limine/limine-uefi-cd.bin initrd.tar \
 		./iso_root/
 
 ifeq ($(ARCH), aarch64)

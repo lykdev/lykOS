@@ -39,15 +39,15 @@ static u64 order_to_pagecount(u8 order)
 
 void pmm_debug_info()
 {
-    log(2, "Free blocks per order:");
+    log("Free blocks per order:");
     for (int i = 0; i <= PMM_MAX_ORDER; i++)
-        log(2, "Order %d: %llu", i, levels[i].length);
+        log("Order %d: %llu", i, levels[i].length);
 
     u64 fram = 0;
     for (int i = 0; i <= PMM_MAX_ORDER; i++)
         fram += order_to_pagecount(i) * levels[i].length * ARCH_PAGE_GRAN;
     
-    log(2, "Free RAM: %lluMiB +  %lluKiB", fram / MIB, fram % MIB / KIB);
+    log("Free RAM: %lluMiB +  %lluKiB", fram / MIB, fram % MIB / KIB);
 }
 
 // ALLOC & FREE

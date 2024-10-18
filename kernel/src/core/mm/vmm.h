@@ -16,6 +16,12 @@ vmm_addr_space_t;
 
 typedef enum
 {
+    VMM_FIXED,
+}
+vmm_flags_t;
+
+typedef enum
+{
     VMM_ANON,
 }
 vmm_seg_type_t;
@@ -31,7 +37,7 @@ typedef struct
 }
 vmm_seg_t;
 
-void* vmm_map(vmm_addr_space_t *addr_space, void *addr, u64 length, bool fixed, vmm_seg_type_t type);
+void* vmm_map(vmm_addr_space_t *addr_space, void *addr, u64 len, vmm_flags_t flags);
 
 vmm_addr_space_t vmm_new_addr_space();
 

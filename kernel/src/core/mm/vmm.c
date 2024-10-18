@@ -5,13 +5,11 @@
 #include <utils/list.h>
 #include <utils/log.h>
 
-// #define ADDR_IN_BOUNDS(ADDRESS_SPACE, ADDRESS) ((ADDRESS) >= (ADDRESS_SPACE)->start && (ADDRESS) < (ADDRESS_SPACE)->end)
-#define ADDR_IN_SEGMENT(ADDRESS, BASE, LENGTH) ((ADDRESS) >= (BASE) && (ADDRESS) < ((BASE) + (LENGTH)))
-
-// #define SEG_IN_BOUNDS(ADDRESS_SPACE, BASE, LENGTH) (ADDR_IN_BOUNDS((ADDRESS_SPACE), (BASE)) && ((ADDRESS_SPACE)->end - (BASE)) >= (LENGTH))
 #define SEG_INTERSECTS(BASE1, LENGTH1, BASE2, LENGTH2) ((BASE1) < ((BASE2) + (LENGTH2)) && (BASE2) < ((BASE1) + (LENGTH1)))
 
-list_t free_seg_list = LIST_INIT;
+#define MAX_VIRT_ADDR ((u64)1 << 48 - 1)
+
+static list_t free_seg_list = LIST_INIT;
 
 static vmm_seg_t* alloc_segment()
 {
@@ -33,8 +31,10 @@ static vmm_seg_t* alloc_segment()
     return LIST_GET_CONTAINER(node, vmm_seg_t, list_elem);
 }
 
-void vmm_map_seg(vmm_addr_space_t *addr_space, uptr base, uptr len, vmm_seg_type_t type)
+static void vmm_map_seg(vmm_addr_space_t *addr_space, uptr base, u64 len, vmm_seg_type_t type)
 {
+    // TODO: free the actual segments.
+
     FOREACH (n, addr_space->segments)
     {
         vmm_seg_t *seg = LIST_GET_CONTAINER(n, vmm_seg_t, list_elem);
@@ -85,6 +85,26 @@ void vmm_map_seg(vmm_addr_space_t *addr_space, uptr base, uptr len, vmm_seg_type
             pos = n;
     }
     list_insert_after(&addr_space->segments, pos, &created_seg->list_elem);
+}
+
+void* vmm_map(vmm_addr_space_t *addr_space, void *addr, u64 len, vmm_flags_t flags)
+{
+    uptr caddr = (uptr)addr;
+
+    if (len == 0 or len % ARCH_PAGE_GRAN !=0)
+        return NULL;
+    if (caddr % ARCH_PAGE_GRAN != 0)
+    {
+        if (flags & VMM_FIXED)
+            return NULL;
+        else
+            caddr -= caddr % ARCH_PAGE_GRAN;
+    }
+
+    FOREACH (n, addr_space->segments)
+    {
+           
+    }
 }
 
 vmm_addr_space_t vmm_new_addr_space()

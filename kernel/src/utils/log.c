@@ -9,17 +9,17 @@
 static int line = 0;
 static slock_t slock = SLOCK_INIT;
 
-void _log(const char *module, int level, const char *format, ...)
+void _log(const char *file, const char *format, ...)
 {
     va_list list;
     va_start(list);
 
-    _n_log(module, level, format, list);
+    _n_log(file, format, list);
     
     va_end(list);    
 }
 
-void _n_log(const char *module, int level, const char *format, va_list list)
+void _n_log(const char *file, const char *format, va_list list)
 {
     slock_acquire(&slock);
 

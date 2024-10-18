@@ -2,6 +2,8 @@
 
 #include <arch/cpu.h>
 
+#include <core/fs/vfs.h>
+#include <core/fs/initrd.h>
 #include <core/graphics/video.h>
 #include <core/mm/pmm.h>
 #include <core/mm/vmm.h>
@@ -12,12 +14,14 @@
 void _entry()
 {
     video_init();
-    log(0, "Kernel start.");
-    log(0, "Kernel compiled on %s at %s.", __DATE__, __TIME__);
+    log("Kernel start.");
+    log("Kernel compiled on %s at %s.", __DATE__, __TIME__);
     
     pmm_init();
     vmm_init();
 
-    log(0, "Kernel end.");
+    initrd_init();
+
+    log("Kernel end.");
     arch_cpu_halt();
 }
