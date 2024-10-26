@@ -135,6 +135,7 @@ void pmm_init()
     block_count = (last_usable_entry->base + last_usable_entry->length) / ARCH_PAGE_GRAN;
 
     // Find a usable memory entry at the start of which the blocks array will be placed.
+    blocks = NULL; // Useful for the assert.
     for (u64 i = 0; i < request_memmap.response->entry_count; i++)
     {
         struct limine_memmap_entry *e = request_memmap.response->entries[i];
@@ -164,7 +165,11 @@ void pmm_init()
             continue;
 
         u8 order = PMM_MAX_ORDER;
-        u64 addr = e->base;        
+        uptr addr = e->base;        
+        // We don't want to mark as free the pages that contain the pmm block array.
+        // Remember the block array is placed at the start of a free region.
+        if (addr == (uptr)blocks - HHDM)
+            addr += (block_count * sizeof(pmm_block_t) + (ARCH_PAGE_GRAN - 1)) / ARCH_PAGE_GRAN * ARCH_PAGE_GRAN;
         while (addr != e->base + e->length)
         {
             u64 span = order_to_pagecount(order) * ARCH_PAGE_GRAN;
