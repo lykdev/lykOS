@@ -19,9 +19,10 @@ typedef enum
     ARCH_PTM_EXECUTE = 1 << 2
 } arch_ptm_flags_t;
 
-bool arch_ptm_map(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size, u64 flags);
+void arch_ptm_map(arch_ptm_map_t *map, uptr virt, uptr phys);
 
 void arch_ptm_load_map(arch_ptm_map_t *map);
 
 arch_ptm_map_t arch_ptm_new_map();
 
+void arch_ptm_init();

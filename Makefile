@@ -12,6 +12,8 @@ QEMU_FLAGS := -m 2G					\
 			  -boot d 				\
 			  -d int				\
 			  -D qemu/log.txt		\
+			  -S 					\
+			  -s					\
 			  -serial stdio
 
 OVMF := qemu/ovmf-$(ARCH)

@@ -84,10 +84,12 @@ void list_prepend(list_t *list, list_node_t *node)
     list_insert_before(list, list->head, node);
 }
 
+#include <utils/hhdm.h>
+
 void list_remove(list_t *list, list_node_t *node)
 {
     if (node->prev != NULL)
-        node->prev->next = node->next;
+        node->prev->next = node->next;        
     if (node->next != NULL)
         node->next->prev = node->prev;
 

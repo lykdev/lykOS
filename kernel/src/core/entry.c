@@ -20,7 +20,7 @@ void _entry()
     pmm_init();
     vmm_init();
 
-    initrd_init();
+    //initrd_init();
 
     log("Kernel end.");
     arch_cpu_halt();

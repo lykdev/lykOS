@@ -6,17 +6,22 @@
 #include <utils/list.h>
 #include <utils/slock.h>
 
+// Types
+
 typedef struct
 {
     slock_t slock;
     list_t segments;
+    uptr limit_low;
+    uptr limit_high;
+
     arch_ptm_map_t ptm_map;
 }
 vmm_addr_space_t;
 
 typedef enum
 {
-    VMM_FIXED,
+    VMM_FIXED = 1 << 0,
 }
 vmm_flags_t;
 
@@ -37,8 +42,12 @@ typedef struct
 }
 vmm_seg_t;
 
-void* vmm_map(vmm_addr_space_t *addr_space, void *addr, u64 len, vmm_flags_t flags);
+// Public
 
-vmm_addr_space_t vmm_new_addr_space();
+extern vmm_addr_space_t vmm_kernel_addr_space;
+
+uptr vmm_map(vmm_addr_space_t *addr_space, uptr virt, uptr phys, size_t len, vmm_seg_type_t type);
+
+vmm_addr_space_t vmm_new_addr_space(uptr limit_low, uptr limit_high);
 
 void vmm_init();
