@@ -23,7 +23,7 @@ void list_insert_after(list_t *list, list_node_t *pos, list_node_t *new)
     }
     else
     {
-        // Middle node.
+        // Middle/new node.
         new->prev = pos;
         new->next = pos->next;
 
@@ -55,7 +55,7 @@ void list_insert_before(list_t *list, list_node_t *pos, list_node_t *new)
     }
     else
     {
-        // Middle node.
+        // Middle/new node.
         new->prev = pos->prev;
         new->next = pos;
 
@@ -83,8 +83,6 @@ void list_prepend(list_t *list, list_node_t *node)
 {
     list_insert_before(list, list->head, node);
 }
-
-#include <utils/hhdm.h>
 
 void list_remove(list_t *list, list_node_t *node)
 {

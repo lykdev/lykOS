@@ -1,6 +1,7 @@
 #include <utils/limine/requests.h>
 
 #include <arch/cpu.h>
+#include <arch/int.h>
 
 #include <core/fs/vfs.h>
 #include <core/fs/initrd.h>
@@ -17,8 +18,9 @@ void _entry()
     log("Kernel start.");
     log("Kernel compiled on %s at %s.", __DATE__, __TIME__);
     
+    arch_int_init();
     pmm_init();
-    vmm_init();
+    //vmm_init();
 
     //initrd_init();
 

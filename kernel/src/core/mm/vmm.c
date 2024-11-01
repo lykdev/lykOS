@@ -107,20 +107,23 @@ static void insert_seg(vmm_addr_space_t *addr_space, uptr base, u64 len, vmm_seg
 
 // Actual VMM logic
 
-// uptr vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, size_t len)
-// {
-//     ASSERT(virt % ARCH_PAGE_GRAN == 0 and
-//            phys % ARCH_PAGE_GRAN == 0 and
-//            len  % ARCH_PAGE_GRAN == 0
-//     );
+uptr vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, size_t len)
+{
+    ASSERT(virt % ARCH_PAGE_GRAN == 0 and
+           len  % ARCH_PAGE_GRAN == 0
+    );
 
-//     slock_acquire(&addr_space->slock);
+    slock_acquire(&addr_space->slock);
 
-//     insert_seg(addr_space, virt, len, VMM_ANON);
+    insert_seg(addr_space, virt, len, VMM_ANON);
+    for (uptr addr = 0; addr < virt + len; addr += ARCH_PAGE_SIZE_4K)
+    {
+        arch_ptm_map(&addr_space->ptm_map, virt + addr, phys + addr, ARCH_PAGE_SIZE_4K, 0);
+    }    
 
-//     slock_release(&addr_space->slock);
-//     return 0;
-// }
+    slock_release(&addr_space->slock);
+    return 0;
+}
 
 uptr vmm_map_direct(vmm_addr_space_t *addr_space, uptr virt, size_t len, uptr phys)
 {

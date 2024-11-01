@@ -190,4 +190,6 @@ void pmm_init()
             order = PMM_MAX_ORDER;
         }
     }
+
+    log("PMM init.");
 }
