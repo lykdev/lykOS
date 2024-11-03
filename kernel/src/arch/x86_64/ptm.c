@@ -5,7 +5,6 @@
 #include <utils/hhdm.h>
 #include <utils/log.h>
 #include <utils/string.h>
-
 #include <utils/limine/requests.h>
 
 #define PRESENT (1ull <<  0)
@@ -59,6 +58,29 @@ void arch_ptm_map(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size)
     table[table_entries[i]] = phys | PRESENT | WRITE;
 }
 
+void arch_ptm_unmap(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size)
+{
+    ASSERT(virt % size == 0);
+    ASSERT(phys % size == 0);
+
+    u64 table_entries[] = {
+        (virt >> 12) & 0x1FF, // PML1 entry
+        (virt >> 21) & 0x1FF, // PML2 entry
+        (virt >> 30) & 0x1FF, // PML3 entry
+        (virt >> 39) & 0x1FF  // PML4 entry
+    };
+
+    pte_t *table = map->pml4;
+    u64 i;
+    for (i = 3; i >= 1; i--)
+    {
+        table = vmm_get_next_level(table, table_entries[i], false);
+        if (table == NULL)
+            return;
+    }
+    table[table_entries[i]] = 0;
+}
+
 void arch_ptm_load_map(arch_ptm_map_t *map)
 {
     __asm__ volatile (
@@ -82,20 +104,8 @@ arch_ptm_map_t arch_ptm_new_map()
     return map;
 }
 
-arch_ptm_map_t vmm_kernelmap;
-
 void arch_ptm_init()
 {
     for (int i = 0; i < 256; i++)   
         higher_half_entries[i] = (pte_t)pmm_alloc(0) | PRESENT | WRITE;
-
-    vmm_kernelmap = arch_ptm_new_map();
-    // Map the first 4GiB of memory as mandated by the limine specification.
-    for (uptr addr = 0; addr < 4 * GIB; addr += ARCH_PAGE_SIZE_4K) 
-        arch_ptm_map(&vmm_kernelmap, HHDM + addr, addr, ARCH_PAGE_SIZE_4K);
-    // Map the kernel to the last 2GiB of the virt addr space.
-    for (uptr addr = 0; addr < 2 * GIB; addr += ARCH_PAGE_SIZE_4K)
-        arch_ptm_map(&vmm_kernelmap, request_kernel_addr.response->virtual_base + addr, request_kernel_addr.response->physical_base + addr, ARCH_PAGE_SIZE_4K);
-
-    arch_ptm_load_map(&vmm_kernelmap);
 }

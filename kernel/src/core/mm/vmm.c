@@ -7,6 +7,7 @@
 #include <utils/hhdm.h>
 #include <utils/list.h>
 #include <utils/log.h>
+#include <utils/limine/requests.h>
 
 #define SEG_INTERSECTS(BASE1, LENGTH1, BASE2, LENGTH2) ((BASE1) < ((BASE2) + (LENGTH2)) && (BASE2) < ((BASE1) + (LENGTH1)))
 
@@ -116,10 +117,9 @@ uptr vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, size_t len)
     slock_acquire(&addr_space->slock);
 
     insert_seg(addr_space, virt, len, VMM_ANON);
-    for (uptr addr = 0; addr < virt + len; addr += ARCH_PAGE_SIZE_4K)
-    {
-        arch_ptm_map(&addr_space->ptm_map, virt + addr, phys + addr, ARCH_PAGE_SIZE_4K, 0);
-    }    
+
+    for (uptr addr = 0; addr < len; addr += ARCH_PAGE_SIZE_4K)
+        arch_ptm_map(&addr_space->ptm_map, virt + addr, (uptr)pmm_alloc(0), ARCH_PAGE_SIZE_4K);
 
     slock_release(&addr_space->slock);
     return 0;
@@ -134,12 +134,10 @@ uptr vmm_map_direct(vmm_addr_space_t *addr_space, uptr virt, size_t len, uptr ph
 
     slock_acquire(&addr_space->slock);
 
-    //insert_seg(addr_space, virt, len, VMM_ANON);
+    insert_seg(addr_space, virt, len, VMM_ANON);
 
-    // for (uptr addr = 0; addr < virt + len; addr += ARCH_PAGE_SIZE_4K)
-    // {
-    //     arch_ptm_map(&addr_space->ptm_map, virt + addr, phys + addr, ARCH_PAGE_SIZE_4K, 0);
-    // }
+    for (uptr addr = 0; addr < len; addr += ARCH_PAGE_SIZE_4K)
+        arch_ptm_map(&addr_space->ptm_map, virt + addr, phys + addr, ARCH_PAGE_SIZE_4K);
 
     slock_release(&addr_space->slock);
     return 0;
@@ -149,11 +147,11 @@ vmm_addr_space_t vmm_new_addr_space(uptr limit_low, uptr limit_high)
 {
     vmm_addr_space_t addr_space;
 
-    addr_space.slock    = SLOCK_INIT;
-    addr_space.segments = LIST_INIT;
-    addr_space.limit_low = limit_low;
+    addr_space.slock      = SLOCK_INIT;
+    addr_space.segments   = LIST_INIT;
+    addr_space.limit_low  = limit_low;
     addr_space.limit_high = limit_high;
-    addr_space.ptm_map  = arch_ptm_new_map();
+    addr_space.ptm_map    = arch_ptm_new_map();
 
     return addr_space;
 }
@@ -167,15 +165,12 @@ void vmm_init()
 {
     arch_ptm_init();
 
-    // log("a");
+    vmm_kernel_addr_space = vmm_new_addr_space(ARCH_HIGHER_HALF_START, ARCH_MAX_VIRT_ADDR);
 
-    // vmm_kernel_addr_space = vmm_new_addr_space(ARCH_HIGHER_HALF_START, ARCH_MAX_VIRT_ADDR);
+    vmm_map_direct(&vmm_kernel_addr_space, HHDM, 4 * GIB, 0);
+    vmm_map_direct(&vmm_kernel_addr_space, request_kernel_addr.response->virtual_base, 2 * GIB, request_kernel_addr.response->physical_base);
 
-    // log("b");
+    vmm_load_addr_space(&vmm_kernel_addr_space);
 
-    // vmm_map_direct(&vmm_kernel_addr_space, HHDM, 4 * GIB, 0);
-
-    // log("c");
-
-    // vmm_load_addr_space(&vmm_kernel_addr_space);
+    log("VMM init.");
 }
