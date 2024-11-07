@@ -33,8 +33,7 @@ static vmm_seg_t* alloc_segment()
         }
     }
     
-    list_node_t *node = free_seg_list.head;
-    list_remove(&free_seg_list, node);
+    list_node_t *node = list_pop_head(&free_seg_list);
 
     return LIST_GET_CONTAINER(node, vmm_seg_t, list_elem);
 }

@@ -9,7 +9,7 @@ typedef struct list_node
 
 typedef struct 
 {
-    u64 length;
+    size_t length;
     list_node_t *head, *tail;
 } list_t;
 
@@ -41,3 +41,7 @@ void list_append(list_t *list, list_node_t *node);
 void list_prepend(list_t *list, list_node_t *node);
 
 void list_remove(list_t *list, list_node_t *node);
+
+list_node_t* list_pop_head(list_t *list);
+
+list_node_t* list_pop_tail(list_t *list);

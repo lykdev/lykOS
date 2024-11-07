@@ -86,6 +86,8 @@ void list_prepend(list_t *list, list_node_t *node)
 
 void list_remove(list_t *list, list_node_t *node)
 {
+    ASSERT(node != NULL);
+
     if (node->prev != NULL)
         node->prev->next = node->next;        
     if (node->next != NULL)
@@ -97,4 +99,22 @@ void list_remove(list_t *list, list_node_t *node)
         list->tail = node->prev;
 
     list->length--;
+}
+
+list_node_t* list_pop_head(list_t *list)
+{
+    list_node_t *node = list->head;
+    if (node != NULL)
+        list_remove(list, list->head);
+    
+    return node;
+}
+
+list_node_t* list_pop_tail(list_t *list)
+{
+    list_node_t *node = list->tail;
+    if (node != NULL)
+        list_remove(list, list->tail);
+    
+    return node;
 }
