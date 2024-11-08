@@ -162,12 +162,20 @@ void vmm_load_addr_space(vmm_addr_space_t *addr_space)
 
 void vmm_init()
 {
+    log("A");
+
     arch_ptm_init();
+
+    log("B");
 
     vmm_kernel_addr_space = vmm_new_addr_space(ARCH_HIGHER_HALF_START, ARCH_MAX_VIRT_ADDR);
 
+    log("C");
+
     vmm_map_direct(&vmm_kernel_addr_space, HHDM, 4 * GIB, 0);
     vmm_map_direct(&vmm_kernel_addr_space, request_kernel_addr.response->virtual_base, 2 * GIB, request_kernel_addr.response->physical_base);
+
+    log("D");
 
     vmm_load_addr_space(&vmm_kernel_addr_space);
 

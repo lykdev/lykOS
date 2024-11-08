@@ -9,6 +9,8 @@ typedef struct
 {
 #if defined (__x86_64__)
     pte_t *pml4;
+#elif defined (__aarch64__)
+    pte_t *pml4[2];
 #endif
 } arch_ptm_map_t;
 

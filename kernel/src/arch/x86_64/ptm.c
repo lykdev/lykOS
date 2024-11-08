@@ -18,7 +18,7 @@
 
 // GLOBAL DATA
 
-pte_t higher_half_entries[256];
+static pte_t higher_half_entries[256];
 
 // PTM LOGIC
 
