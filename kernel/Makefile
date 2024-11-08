@@ -43,10 +43,13 @@ ifeq ($(ARCH), x86_64)
 else ifeq ($(ARCH), aarch64)
 	C_FLAGS +=							\
 		-target aarch64-unknown-none  	\
-        -mgeneral-regs-only 			\
+        -mgeneral-regs-only
 
-	LD_FLAGS += 			\
+	LD_FLAGS += 						\
 		-m aarch64elf
+
+	AS_FLAGS += 						\
+		-target aarch64-unknown-none
 endif
 
 # CODE-SPECIFIC COMPILER FLAGS
@@ -89,7 +92,7 @@ obj/%.c.o: src/%.c
 
 obj/%.S.o: src/%.S
 	mkdir -p $(@D)
-	$(CC) $(AS_FLAGS) -o $@ $<
+	$(CC) $(AS_FLAGS) -c -o $@ $<
 
 obj/%.asm.o: src/%.asm
 	mkdir -p $(@D)
