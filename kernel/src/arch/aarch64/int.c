@@ -25,4 +25,6 @@ void arch_int_init()
 {
     arch_int_setup();
     arch_int_unmask();
+
+    log("Loaded exception vector");
 }

@@ -22,9 +22,9 @@ static pte_t higher_half_entries[256];
 
 // PTM LOGIC
 
-pte_t *vmm_get_next_level(pte_t *top_level, u64 idx, bool alloc)
+static pte_t *get_next_level(pte_t *top_level, u64 idx, bool alloc)
 {
-    if ((top_level[idx] & PRESENT) != 0)
+    if (top_level[idx] & PRESENT)
         return (pte_t*)(PTE_GET_ADDR(top_level[idx]) + HHDM);
 
     if (!alloc)
@@ -36,6 +36,21 @@ pte_t *vmm_get_next_level(pte_t *top_level, u64 idx, bool alloc)
     top_level[idx] = (pte_t)((uptr)next_level - HHDM) | PRESENT | WRITE;
     return next_level;
 } 
+
+static void delete_level(pte_t *lvl, u8 depth)
+{
+    if (depth != 1)
+    {
+        for (u64 i = 0; i < 512; i++)
+        {
+            if (!(lvl[i] & PRESENT) or lvl[i] & HUGE)
+                continue;
+
+            delete_level((pte_t*)(PTE_GET_ADDR(lvl[i]) + HHDM), depth - 1);
+        }
+    }
+    pmm_free((void*)((uptr)lvl - HHDM));
+}
 
 void arch_ptm_map(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size)
 {
@@ -53,7 +68,7 @@ void arch_ptm_map(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size)
     u64 i;
     for (i = 3; i >= 1; i--)
     {
-        table = vmm_get_next_level(table, table_entries[i], true);
+        table = get_next_level(table, table_entries[i], true);
     }
     table[table_entries[i]] = phys | PRESENT | WRITE;
 }
@@ -74,7 +89,7 @@ void arch_ptm_unmap(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size)
     u64 i;
     for (i = 3; i >= 1; i--)
     {
-        table = vmm_get_next_level(table, table_entries[i], false);
+        table = get_next_level(table, table_entries[i], false);
         if (table == NULL)
             return;
     }
@@ -102,6 +117,11 @@ arch_ptm_map_t arch_ptm_new_map()
         map.pml4[i + 256] = higher_half_entries[i];
 
     return map;
+}
+
+void arch_ptm_clear_map(arch_ptm_map_t *map)
+{
+    delete_level(map->pml4, 4);
 }
 
 void arch_ptm_init()

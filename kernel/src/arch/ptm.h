@@ -27,4 +27,6 @@ void arch_ptm_load_map(arch_ptm_map_t *map);
 
 arch_ptm_map_t arch_ptm_new_map();
 
+void arch_ptm_clear_map(arch_ptm_map_t *map);
+
 void arch_ptm_init();
