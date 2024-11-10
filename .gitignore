@@ -1,6 +1,6 @@
-iso_root
-limine
-qemu
+/iso_root
+/limine
+/qemu
 
 *.iso
 
