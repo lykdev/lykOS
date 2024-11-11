@@ -46,4 +46,3 @@ volatile struct limine_smp_request request_smp = {
     .id = LIMINE_SMP_REQUEST,
     .revision = 0
 };
-

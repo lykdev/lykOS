@@ -1,5 +1,6 @@
 #include "log.h"
 
+#include <arch/serial.h>
 #include <core/graphics/draw.h>
 #include <core/graphics/font_basic.h>
 
@@ -32,6 +33,11 @@ void _n_log(const char *file, const char *format, va_list list)
     for (int i = 0; buf[i] != '\0'; i++)
         draw_char(&video_fb, i * font_basic.width, line * font_basic.height, buf[i], &font_basic, 0xFFFFFF);
     line++;
+
+#if defined (__x86_64__)
+    arch_serial_send_str(buf);
+    arch_serial_send_str("\n");
+#endif
 
     slock_release(&slock);
 }

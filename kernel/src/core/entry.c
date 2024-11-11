@@ -8,6 +8,7 @@
 #include <core/graphics/video.h>
 #include <core/mm/pmm.h>
 #include <core/mm/vmm.h>
+#include <core/smp.h>
 
 #include <utils/def.h>
 #include <utils/log.h>
@@ -21,6 +22,8 @@ void _entry()
     arch_int_init();
     pmm_init();
     vmm_init();
+
+    //smp_init();
 
     //initrd_init();
 

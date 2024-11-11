@@ -24,6 +24,9 @@ static pte_t higher_half_entries[256];
 
 static pte_t *get_next_level(pte_t *top_level, u64 idx, bool alloc)
 {
+    log("%#llx %llu", top_level, idx);
+    log("> %#llx", top_level[idx]);
+
     if (top_level[idx] & PRESENT)
         return (pte_t*)(PTE_GET_ADDR(top_level[idx]) + HHDM);
 

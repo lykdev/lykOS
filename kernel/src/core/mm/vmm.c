@@ -172,7 +172,12 @@ void vmm_init()
 
     log("C");
 
+    log("%#llx, %#llx", request_kernel_addr.response->virtual_base, request_kernel_addr.response->physical_base);
+
     vmm_map_direct(&vmm_kernel_addr_space, HHDM, 4 * GIB, 0);
+
+    log("CC");
+
     vmm_map_direct(&vmm_kernel_addr_space, request_kernel_addr.response->virtual_base, 2 * GIB, request_kernel_addr.response->physical_base);
 
     log("D");
