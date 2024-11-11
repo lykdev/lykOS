@@ -24,20 +24,22 @@ void _n_log(const char *file, const char *format, va_list list)
 {
     slock_acquire(&slock);
 
-    if (line > 60)
-        return;
-
     char buf[256] = {0};
     vsnprintf(buf, 256, format, list);
+
+    #if defined (__x86_64__)
+        arch_serial_send_str(buf);
+        arch_serial_send_str("\n");
+    #endif
+
+    if (line > 60) {
+        slock_release(&slock);
+        return;
+    }
 
     for (int i = 0; buf[i] != '\0'; i++)
         draw_char(&video_fb, i * font_basic.width, line * font_basic.height, buf[i], &font_basic, 0xFFFFFF);
     line++;
-
-#if defined (__x86_64__)
-    arch_serial_send_str(buf);
-    arch_serial_send_str("\n");
-#endif
 
     slock_release(&slock);
 }
