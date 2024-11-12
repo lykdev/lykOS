@@ -24,9 +24,6 @@ static pte_t higher_half_entries[256];
 
 static pte_t *get_next_level(pte_t *top_level, u64 idx, bool alloc)
 {
-    log("%#llx %llu", top_level, idx);
-    log("> %#llx", top_level[idx]);
-
     if (top_level[idx] & PRESENT)
         return (pte_t*)(PTE_GET_ADDR(top_level[idx]) + HHDM);
 
@@ -129,6 +126,11 @@ void arch_ptm_clear_map(arch_ptm_map_t *map)
 
 void arch_ptm_init()
 {
-    for (int i = 0; i < 256; i++)   
-        higher_half_entries[i] = (pte_t)pmm_alloc(0) | PRESENT | WRITE;
+    for (int i = 0; i < 256; i++)
+    {
+        pte_t *table = (pte_t*)((uptr)pmm_alloc(0) + HHDM);
+        memset(table, 0, ARCH_PAGE_GRAN);
+
+        higher_half_entries[i] = (pte_t)((uptr)table - HHDM) | PRESENT | WRITE;
+    }        
 }

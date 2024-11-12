@@ -32,7 +32,8 @@ void _n_log(const char *file, const char *format, va_list list)
         arch_serial_send_str("\n");
     #endif
 
-    if (line > 60) {
+    if (line > 45)
+    {
         slock_release(&slock);
         return;
     }
