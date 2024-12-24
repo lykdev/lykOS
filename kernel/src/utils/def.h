@@ -16,6 +16,8 @@ typedef int16_t     i16;
 typedef int32_t     i32;
 typedef int64_t     i64;
 
+typedef unsigned int uint;
+
 #define KIB 1024ull
 #define MIB (KIB * 1024ull)
 #define GIB (MIB * 1024ull)

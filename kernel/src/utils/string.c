@@ -33,6 +33,20 @@ void strcpy(char *dest, const char *src)
     while ((*dest++ = *src++));
 }
 
+// Concatenation
+
+char* strcat(char *dest, const char *src)
+{
+    char *ret = dest;
+
+    while (*dest)
+        dest++;
+    while (*dest++ = *src++)
+        ;
+
+    return ret;
+}
+
 // Comparison
 
 int memcmp(const void *s1, const void *s2, size_t n)

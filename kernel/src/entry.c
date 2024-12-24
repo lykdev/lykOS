@@ -8,7 +8,8 @@
 #include <core/graphics/video.h>
 #include <core/mm/pmm.h>
 #include <core/mm/vmm.h>
-#include <core/smp.h>
+#include <core/mm/heap.h>
+#include <core/sched/sched.h>
 
 #include <utils/def.h>
 #include <utils/log.h>
@@ -23,9 +24,7 @@ void _entry()
     pmm_init();
     vmm_init();
 
-    //smp_init();
-
-    //initrd_init();
+    sched_init();
 
     log("Kernel end.");
     arch_cpu_halt();

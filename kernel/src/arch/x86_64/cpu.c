@@ -1,24 +1,29 @@
 #include <arch/cpu.h>
 
+#include <arch/x86_64/msr.h>
+
 #include <utils/log.h>
 
-arch_cpu_core_t arch_cpu_cores[128];
-size_t arch_cpu_core_count;
+void* arch_cpu_read_thread_reg()
+{
+    void *thread = NULL;
+    asm volatile("mov %%gs:0, %0" : "=r" (thread));
+
+    return thread;
+}
+
+void arch_cpu_write_thread_reg(void *t)
+{
+    x86_64_msr_write(X86_64_MSR_GS_BASE, (u64)t);
+}
 
 void arch_cpu_halt()
 {
     while (true)
-        __asm__ volatile ("hlt");
+        asm volatile ("hlt");
 }
 
 void arch_cpu_relax()
 {
-    __asm__ volatile ("pause");
-}
-
-void arch_cpu_core_init()
-{
-    log("NEW CORE");
-
-    arch_cpu_halt();
+    asm volatile ("pause");
 }

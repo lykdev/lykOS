@@ -19,20 +19,20 @@ typedef struct
     list_node_t list_elem;
 } pmm_block_t;
 
-pmm_block_t *blocks;
-u64 block_count;
-list_t levels[PMM_MAX_ORDER + 1];
+static pmm_block_t *blocks;
+static u64 block_count;
+static list_t levels[PMM_MAX_ORDER + 1];
 
 // UTILS
 
-static u8 pagecount_to_order(u64 pages)
+u8 pmm_pagecount_to_order(u64 pages)
 {
     if(pages == 1)
         return 0;
     return (u8)(64 - __builtin_clzll(pages - 1));
 }
 
-static u64 order_to_pagecount(u8 order)
+u64 pmm_order_to_pagecount(u8 order)
 {
     return (u64)1 << order;
 }
@@ -45,7 +45,7 @@ void pmm_debug_info()
 
     u64 fram = 0;
     for (int i = 0; i <= PMM_MAX_ORDER; i++)
-        fram += order_to_pagecount(i) * levels[i].length * ARCH_PAGE_GRAN;
+        fram += pmm_order_to_pagecount(i) * levels[i].length * ARCH_PAGE_GRAN;
     
     log("Free RAM: %lluMiB +  %lluKiB", fram / MIB, fram % MIB / KIB);
 }
@@ -69,7 +69,7 @@ void* pmm_alloc(u8 order)
     for (; i > order; i--)
     {
         // Right block.
-        u64 r_idx = (block->addr / ARCH_PAGE_GRAN) ^ order_to_pagecount(i - 1);
+        u64 r_idx = (block->addr / ARCH_PAGE_GRAN) ^ pmm_order_to_pagecount(i - 1);
         pmm_block_t *right = &blocks[r_idx];
         right->order = i - 1;
         right->free  = true;
@@ -91,7 +91,7 @@ void pmm_free(void *addr)
 
     while (i < PMM_MAX_ORDER)
     {
-        u64 b_idx = idx ^ order_to_pagecount(i);
+        u64 b_idx = idx ^ pmm_order_to_pagecount(i);
         if (b_idx >= block_count)
             break;
 
@@ -172,7 +172,7 @@ void pmm_init()
             addr += (block_count * sizeof(pmm_block_t) + (ARCH_PAGE_GRAN - 1)) / ARCH_PAGE_GRAN * ARCH_PAGE_GRAN;
         while (addr != e->base + e->length)
         {
-            u64 span = order_to_pagecount(order) * ARCH_PAGE_GRAN;
+            u64 span = pmm_order_to_pagecount(order) * ARCH_PAGE_GRAN;
 
             if (addr + span > e->base + e->length || addr % span != 0)
             {

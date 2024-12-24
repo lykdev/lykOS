@@ -2,7 +2,7 @@
 
 #include <utils/def.h>
 
-typedef enum : u64
+typedef enum
 {
     X86_64_MSR_APIC_BASE       = 0x1B,
     X86_64_MSR_PAT             = 0x277,
