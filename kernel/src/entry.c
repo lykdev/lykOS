@@ -8,6 +8,7 @@
 #include <core/graphics/video.h>
 #include <core/mm/pmm.h>
 #include <core/mm/vmm.h>
+#include <core/mm/kmem.h>
 #include <core/mm/heap.h>
 #include <core/sched/sched.h>
 
@@ -23,6 +24,7 @@ void _entry()
     arch_int_init();
     pmm_init();
     vmm_init();
+    kmem_init();
 
     sched_init();
 

@@ -14,11 +14,11 @@ proc_t *proc_new(char *name, bool privileged)
 
     proc->id = g_last_id++;
     strcpy(proc->name, name);
-    if (!privileged)
-        proc->addr_space = vmm_new_addr_space(0, ARCH_HIGHER_HALF_START - 1);
-    else
-        proc->addr_space = NULL;
-    proc->threads = LIST_INIT;
+    // if (!privileged)
+    //     proc->addr_space = vmm_new_addr_space(0, ARCH_HIGHER_HALF_START - 1);
+    // else
+    //     proc->addr_space = NULL;
+    // proc->threads = LIST_INIT;
 
     list_append(&sched_proc_list, &proc->list_elem);
     return proc;

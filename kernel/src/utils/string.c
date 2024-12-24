@@ -41,7 +41,7 @@ char* strcat(char *dest, const char *src)
 
     while (*dest)
         dest++;
-    while (*dest++ = *src++)
+    while ((*dest++ = *src++))
         ;
 
     return ret;

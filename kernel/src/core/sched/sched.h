@@ -45,7 +45,7 @@ extern list_t sched_cpu_core_list;
 extern list_t sched_thread_list;
 extern list_t sched_proc_list;
 
-proc_t *proc_new(char *name, bool privileged)
+proc_t *proc_new(char *name, bool privileged);
 
 proc_t* proc_find_id(u64 id);
 
