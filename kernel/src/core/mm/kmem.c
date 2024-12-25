@@ -19,7 +19,6 @@ list_t g_cache_list = LIST_INIT;
 
 static kmem_slab_t* kmem_new_slab(uint obj_size)
 {
-    log("NEW SLAB WAS MADE %d", obj_size);
     kmem_slab_t *slab = (kmem_slab_t*)((uptr)pmm_alloc(pmm_pagecount_to_order(0x4000 /* 16 KIB */ / ARCH_PAGE_GRAN)) + HHDM);
     slab->obj_cnt = (0x4000 - sizeof(kmem_slab_t)) / obj_size;
     slab->obj_free = slab->obj_cnt;

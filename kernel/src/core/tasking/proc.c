@@ -1,6 +1,6 @@
 #include "proc.h"
 
-#include <core/mm/heap.h>
+#include <core/mm/kmem.h>
 #include <core/mm/vmm.h>
 #include <core/tasking/sched.h>
 
@@ -11,7 +11,7 @@ static u64 g_last_id = 0;
 
 proc_t *proc_new(char *name, uint flags)
 {
-    proc_t *proc = heap_alloc(sizeof(proc_t));
+    proc_t *proc = kmem_alloc(sizeof(proc_t));
 
     proc->id = g_last_id++;
     strcpy(proc->name, name);

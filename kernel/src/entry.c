@@ -9,7 +9,6 @@
 #include <core/mm/pmm.h>
 #include <core/mm/vmm.h>
 #include <core/mm/kmem.h>
-#include <core/mm/heap.h>
 #include <core/tasking/sched.h>
 
 #include <utils/def.h>
