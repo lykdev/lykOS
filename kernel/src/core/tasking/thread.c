@@ -13,7 +13,7 @@ thread_t *thread_new(proc_t *parent_proc, void *entry)
     thread->id = g_last_id++;
 
     list_append(&parent_proc->threads, &thread->list_elem_inside_proc);
-    list_append(&sched_proc_list, &thread->list_elem_thread);
+    list_append(&g_proc_list, &thread->list_elem_thread);
     
     return thread;
 }

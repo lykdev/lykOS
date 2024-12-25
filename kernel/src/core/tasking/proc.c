@@ -9,25 +9,23 @@
 /// @brief Last ID assigned to a process.
 static u64 g_last_id = 0;
 
-proc_t *proc_new(char *name, bool privileged)
+proc_t *proc_new(char *name, uint flags)
 {
     proc_t *proc = heap_alloc(sizeof(proc_t));
 
     proc->id = g_last_id++;
     strcpy(proc->name, name);
-    // if (!privileged)
-    //     proc->addr_space = vmm_new_addr_space(0, ARCH_HIGHER_HALF_START - 1);
-    // else
-    //     proc->addr_space = NULL;
-    // proc->threads = LIST_INIT;
+    if (flags & PROC_KERNEL)
+        proc->addr_space = &vmm_kernel_addr_space;
+    proc->threads = LIST_INIT;
 
-    list_append(&sched_proc_list, &proc->list_elem);
+    list_append(&g_proc_list, &proc->list_elem);
     return proc;
 }
 
 proc_t* proc_find_id(u64 id)
 {
-    FOREACH (n, sched_proc_list)
+    FOREACH (n, g_proc_list)
     {
         proc_t *proc = LIST_GET_CONTAINER(n, proc_t, list_elem);
         if (proc->id == id)

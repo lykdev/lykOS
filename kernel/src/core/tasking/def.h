@@ -11,7 +11,6 @@ typedef struct proc proc_t;
 
 struct cpu_core
 {
-    struct cpu_core_t *self;
     u64 id;
     thread_t *curr_thread;
     thread_t *idle_thread;
@@ -29,6 +28,9 @@ struct proc
 
 struct thread
 {
+#if defined (__x86_64__)
+    thread_t *self;
+#endif
     u64 id;
     proc_t *parent_proc;
     cpu_core_t *assigned_core;
@@ -39,3 +41,9 @@ struct thread
     list_node_t list_elem_inside_proc;
 }
 __attribute__((packed));
+
+extern list_t g_cpu_core_list;
+extern list_t g_thread_list;
+extern list_t g_proc_list;
+
+extern bool g_smp_initialized;
