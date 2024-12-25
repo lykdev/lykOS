@@ -3,6 +3,7 @@
 #include <core/mm/pmm.h>
 #include <core/mm/vmm.h>
 
+#include <utils/assert.h>
 #include <utils/hhdm.h>
 #include <utils/string.h>
 #include <utils/log.h>
@@ -30,6 +31,24 @@ kmem_cache_t* kmem_new_cache(char *name, uint obj_size)
     list_append(&g_cache_list, &cache->list_elem);
 }
 
+void* kmem_alloc_from(kmem_cache_t *cache)
+{
+    
+}
+
+void* kmem_alloc(uint size)
+{
+    FOREACH (n, g_cache_list)
+    {
+        kmem_cache_t *cache = LIST_GET_CONTAINER(n, kmem_cache_t, list_elem);
+
+        if (cache->obj_size >= size)
+            return kmem_alloc_from(cache);
+    }
+    // This should simply not happen unless we try allocate an obj too big.
+    ASSERT_C(false, "Invalid obj size provided for kmem_alloc.");
+}
+
 void kmem_init()
 {
     if (request_smp.response == NULL)
@@ -41,7 +60,7 @@ void kmem_init()
         char name[32] = "slab-", buf[8];
         sprintf(buf, "%u", i);
         strcat(name, buf);
-        
+
         kmem_new_cache(name, i);
     }
 }

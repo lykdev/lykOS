@@ -1,6 +1,7 @@
-#include "sched.h"
+#include "thread.h"
 
 #include <core/mm/heap.h>
+#include <core/tasking/sched.h>
 
 /// @brief Last ID assigned to a thread.
 static u64 g_last_id = 0;

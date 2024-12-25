@@ -1,7 +1,8 @@
-#include "sched.h"
+#include "proc.h"
 
 #include <core/mm/heap.h>
 #include <core/mm/vmm.h>
+#include <core/tasking/sched.h>
 
 #include <utils/string.h>
 

@@ -10,7 +10,7 @@
 #include <core/mm/vmm.h>
 #include <core/mm/kmem.h>
 #include <core/mm/heap.h>
-#include <core/sched/sched.h>
+#include <core/tasking/sched.h>
 
 #include <utils/def.h>
 #include <utils/log.h>
@@ -25,8 +25,6 @@ void _entry()
     pmm_init();
     vmm_init();
     kmem_init();
-
-    sched_init();
 
     log("Kernel end.");
     arch_cpu_halt();
