@@ -68,11 +68,7 @@ void initrd_init()
         return;
     }
 
-    vfs_mount("/initrd/", &g_mp);
-    vfs_mount("/initrd/test", &g_mp);
-    vfs_mount("/initrd/test/mate", &g_mp);
-    vfs_mount("/initrd/matei", &g_mp);
-    vfs_mount("/miau/", &g_mp);
+    vfs_mount("/initrd", &g_mp);
 
     log("Initrd ramdisk loaded.");
 }
