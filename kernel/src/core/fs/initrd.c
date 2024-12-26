@@ -1,5 +1,7 @@
 #include "initrd.h"
 
+#include <core/fs/vfs.h>
+
 #include <utils/def.h>
 #include <utils/limine/requests.h>
 #include <utils/log.h>
@@ -34,7 +36,7 @@ ustar_hdr_t;
 static u64 read_field(const char *str, u64 size)
 {
     u64 n = 0;
-    const unsigned char *c = str;
+    const u8 *c = str;
     while (size-- > 0)
     {
         n *= 8;
@@ -44,9 +46,11 @@ static u64 read_field(const char *str, u64 size)
     return n;
 }
 
-//
+static ustar_hdr_t *root = NULL;
 
-ustar_hdr_t *root = NULL;
+static vfs_mountpoint_t g_mp = (vfs_mountpoint_t) {
+    
+};
 
 void initrd_init()
 {
@@ -63,6 +67,12 @@ void initrd_init()
         log("Initrd module is invalid!");
         return;
     }
+
+    vfs_mount("/initrd/", &g_mp);
+    vfs_mount("/initrd/test", &g_mp);
+    vfs_mount("/initrd/test/mate", &g_mp);
+    vfs_mount("/initrd/matei", &g_mp);
+    vfs_mount("/miau/", &g_mp);
 
     log("Initrd ramdisk loaded.");
 }

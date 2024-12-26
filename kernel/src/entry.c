@@ -6,9 +6,9 @@
 #include <core/fs/vfs.h>
 #include <core/fs/initrd.h>
 #include <core/graphics/video.h>
+#include <core/mm/kmem.h>
 #include <core/mm/pmm.h>
 #include <core/mm/vmm.h>
-#include <core/mm/kmem.h>
 #include <core/tasking/tasking.h>
 
 #include <utils/def.h>
@@ -24,6 +24,11 @@ void _entry()
     pmm_init();
     vmm_init();
     kmem_init();
+
+    vfs_init();
+    initrd_init();
+
+    vfs_debug();
 
     tasking_init();
 
