@@ -37,6 +37,8 @@ endif
 build: clean limine
 	make -C kernel ARCH=$(ARCH)
 
+	tar -cvf initrd.tar --format=ustar initrd/
+
 	mkdir -p iso_root/EFI/BOOT
 
 	cp kernel/bin/kernel.elf limine.conf limine/limine-uefi-cd.bin initrd.tar \
@@ -75,3 +77,4 @@ clean:
 distclean: clean
 	rm -rf limine
 	rm -rf qemu
+	rm -rf initrd.tar

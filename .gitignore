@@ -1,6 +1,7 @@
 /iso_root
 /limine
 /qemu
+/initrd.tar
 
 *.iso
 
