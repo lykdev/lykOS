@@ -2,7 +2,10 @@
 
 #include <core/mm/kmem.h>
 
+#include <utils/assert.h>
 #include <utils/log.h>
+#include <utils/path.h>
+#include <utils/panic.h>
 #include <utils/string.h>
 
 typedef struct trie_node_t trie_node_t;
@@ -10,77 +13,110 @@ typedef struct trie_node_t trie_node_t;
 struct trie_node_t
 {
     /// @brief The path component separated by delimiting characters.
-    char *token;
+    char comp[32];
     /// @brief Pointer to the mountpoint, NULL if no mount here.
     vfs_mountpoint_t *mp;
     trie_node_t *children[16];
     uint children_cnt;
 };
+static trie_node_t g_trie_root;
 
-static trie_node_t g_root;
-
-static trie_node_t* find_child(trie_node_t *parent, const char *token, uint n)
+static trie_node_t* find_child(trie_node_t *parent, const char *comp)
 {
     for (uint i = 0; i < parent->children_cnt; i++)
-        if (strncmp(parent->children[i]->token, token, n) == 0)
+        if (strcmp(parent->children[i]->comp, comp) == 0)
             return parent->children[i];
     return NULL;
 }
 
+static char* vfs_get_mountpoint(const char *path, vfs_mountpoint_t **out)
+{
+    trie_node_t *current = &g_trie_root;
+
+    while (*path != '\0')
+    {
+        char comp[32];
+        char *path_next = path_consume_comp(path, comp);
+
+        if (*comp == '\0') // Handle empty components gracefully
+            panic("CCC");
+
+        trie_node_t *child = find_child(current, comp);
+        if (child)
+            current = child;
+        else
+            break;
+
+        path = path_next;
+    }
+    *out = current->mp;
+
+    return (char*)path;
+}
+
 int vfs_mount(const char *path, vfs_mountpoint_t *mp)
 {
-    trie_node_t *current = &g_root;
-    const char *start = path;
-    const char *end;
+    trie_node_t *current = &g_trie_root;
 
-    if (*start++ != '/') // When mounting the given path must be absolute.
-        return -1;
-    while (*start != '\0')
+    while (*path != '\0')
     {
-        // Find the next delimiter.
-        end = start;
-        while (*end != '/' && *end != '\0')
-            end++;
-        uint length = end - start;
+        char comp[32];
+        path = path_consume_comp(path, comp);
 
         // Search for the token among the current node's children.
-        trie_node_t *child = find_child(current, start, length);
+        trie_node_t *child = find_child(current, comp);
         if (child == NULL)
         {
             child = kmem_alloc(sizeof(trie_node_t));
-            child->token = kmem_alloc(length);
-            strcpy(child->token, start);
+            strcpy(child->comp, comp);
             child->children_cnt = 0;
-
             current->children[current->children_cnt++] = child;
         }
         current = child;
-
-        // Move to the next path token.
-        start = (*end == '/') ? end + 1 : end;
     }
     current->mp = mp;
     return 0;
 }
 
-void vfs_init()
+int vfs_lookup(const char *path, vfs_node_t **out)
 {
-    g_root.token = kmem_alloc(8);
-    *g_root.token = '\0';
-    g_root.children_cnt = 0;
+    vfs_mountpoint_t *mp;
+    path = vfs_get_mountpoint(path, &mp);
+    ASSERT(mp != NULL);
+
+    vfs_node_t *curr = mp->root_node;
+    while (curr != NULL)
+    {
+        char comp[64] = "";
+        path = path_consume_comp(path, comp);
+        
+        if (comp[0] != '\0')
+            curr->ops->lookup(curr, comp, &curr);
+        else
+        {
+            *out = curr;
+            return 0;
+        }
+    }   
 }
 
-void _vfs_debug(trie_node_t *node, uint depth)
+void vfs_init()
+{
+    strcpy(g_trie_root.comp, "");
+    g_trie_root.children_cnt = 0;
+}
+
+static void _vfs_debug(trie_node_t *node, uint depth)
 {
     char pad[16] = {0};
     for (uint i = 0; i < depth; i++)
         strcat(pad, " ");    
-    log("%s%s - %u", pad, node->token, node->children_cnt);
+    log("%s%s - %u", pad, node->comp, node->children_cnt);
     for (uint i = 0; i < node->children_cnt; i++)
         _vfs_debug(node->children[i], depth + 4);
 }
 
 void vfs_debug()
 {
-    _vfs_debug(&g_root, 0);
+    _vfs_debug(&g_trie_root, 0);
 }

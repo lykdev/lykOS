@@ -1,19 +1,15 @@
 #pragma once
 
 #include <utils/def.h>
+#include <utils/slock.h>
 
 typedef struct vfs_node vfs_node_t;
-
 typedef struct vfs_mountpoint vfs_mountpoint_t;
+typedef struct vfs_node_ops vfs_node_ops_t;
 
-typedef struct vfs_mountpoint
+struct vfs_mountpoint
 {
-    int a;
-    /**
-     * @brief Get the root node of the mountpoint.
-     * @returns `0` on success, `-errno` on failure.
-     */
-    int (*get_root) (vfs_mountpoint_t *self, vfs_node_t **out);
+    vfs_node_t *root_node; 
 };
 
 typedef enum
@@ -25,11 +21,13 @@ vfs_node_type_t;
 
 struct vfs_node
 {   
-    const char *name;
     vfs_node_type_t type;
+    vfs_node_ops_t *ops;
+    void *mp_node;
+};
 
-    // FILE
-
+struct vfs_node_ops
+{
     /**
      * @brief Reads the contents of a file.
      * @returns `0` on success, `-errno` on failure.
@@ -41,8 +39,6 @@ struct vfs_node
      * @returns `0` on success, `-errno` on failure.
      */
     int (*write)(vfs_node_t *self, u64 offset, u64 size, void *buffer);
-
-    // DIRECTORY
     
     /**
      * @brief Look up a node by name.
@@ -62,6 +58,8 @@ struct vfs_node
 };
 
 int vfs_mount(const char *path, vfs_mountpoint_t *mp);
+
+int vfs_lookup(const char *path, vfs_node_t **out);
 
 void vfs_init();
 

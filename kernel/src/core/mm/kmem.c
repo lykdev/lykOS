@@ -48,6 +48,8 @@ kmem_cache_t* kmem_new_cache(char *name, uint obj_size)
         cache->per_cpu_active_slab[i] = kmem_new_slab(obj_size);
 
     list_append(&g_cache_list, &cache->list_elem);
+
+    return cache;
 }
 
 void* kmem_alloc_from(kmem_cache_t *cache)
@@ -89,6 +91,7 @@ void* kmem_alloc(uint size)
     }
     // This should simply not happen unless we try allocate an obj too big.
     ASSERT_C(false, "Invalid obj size provided for kmem_alloc.");
+    return NULL;
 }
 
 void kmem_init()

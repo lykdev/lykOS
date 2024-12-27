@@ -30,6 +30,10 @@ void _entry()
 
     vfs_debug();
 
+    vfs_node_t *v1, *v2;
+    vfs_lookup("initrd/dir1/matei.out", &v1);
+    log("%#llx", v1);
+
     tasking_init();
 
     log("Kernel end.");

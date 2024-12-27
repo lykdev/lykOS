@@ -1,11 +1,16 @@
 #include "initrd.h"
 
 #include <core/fs/vfs.h>
+#include <core/mm/kmem.h>
 
 #include <utils/def.h>
-#include <utils/limine/requests.h>
+#include <utils/list.h>
 #include <utils/log.h>
+#include <utils/path.h>
+#include <utils/panic.h>
 #include <utils/string.h>
+
+#include <utils/limine/requests.h>
 
 // USTAR
 
@@ -46,29 +51,96 @@ static u64 read_field(const char *str, u64 size)
     return n;
 }
 
-static ustar_hdr_t *root = NULL;
+typedef struct
+{
+    ustar_hdr_t *ustar_data;
+    vfs_node_t  vfs_node;
 
-static vfs_mountpoint_t g_mp = (vfs_mountpoint_t) {
-    
+    list_node_t list_elem;
+}
+initrd_entry_t;
+static list_t g_entry_list;
+
+static int lookup(vfs_node_t *self, char *name, vfs_node_t **out)
+{
+    if (self->type != VFS_NODE_DIR)
+    {
+        *out = NULL;
+        return -1;
+    }
+        
+    char path[100] = "";
+    strcat(path, ((initrd_entry_t*)self->mp_node)->ustar_data->filename);
+    strcat(path, "/");
+    strcat(path, name);
+
+    log("$$$ %s", path);
+
+    FOREACH(n, g_entry_list)
+    {
+        initrd_entry_t *node = LIST_GET_CONTAINER(n, initrd_entry_t, list_elem);
+        if (strcmp(path, node->ustar_data->filename) == 0)
+        {
+            log("FOUND");
+            *out = &node->vfs_node;
+            return 0;
+        }
+    }
+
+    *out = NULL;
+    return 0;
+}
+
+static vfs_node_ops_t g_node_ops = (vfs_node_ops_t) {
+    .lookup = lookup
 };
+
+static vfs_mountpoint_t g_mountpoint;
+
+static void process_entry(ustar_hdr_t *hdr)
+{
+    path_normalize(hdr->filename, hdr->filename);
+    // if (strlen(hdr->filename) == 0) // Discard the root entry.
+    //     return;
+    log("%s", hdr->filename);
+
+    initrd_entry_t *node = kmem_alloc(sizeof(initrd_entry_t));
+    node->ustar_data = hdr;
+
+    node->vfs_node = (vfs_node_t) {
+        .type = hdr->type == '5' ? VFS_NODE_DIR : VFS_NODE_FILE,
+        .mp_node = node,
+        .ops = &g_node_ops
+    };
+
+    list_append(&g_entry_list, &node->list_elem);
+}
 
 void initrd_init()
 {
     if (request_module.response == NULL
     ||  request_module.response->module_count == 0)
+        panic("Initrd module not found!");
+
+    ustar_hdr_t *hdr = (ustar_hdr_t*)request_module.response->modules[0]->address;
+    if (strcmp(hdr->magic, USTAR_MAGIC) != 0)
+        panic("Initrd module is invalid!");
+
+    while (hdr->magic[0] != '\0')
     {
-        log("Initrd module not found!");
-        return;
+        if (strcmp(hdr->magic, USTAR_MAGIC) != 0)
+            panic("Invalid USTAR entry!");
+
+        process_entry(hdr);
+
+        uint file_size = read_field(hdr->size, 12);
+        size_t blocks = (file_size + 512 - 1) / 512; 
+        hdr = (ustar_hdr_t *)((uptr)hdr + 512 + blocks * 512);
     }
 
-    root = (ustar_hdr_t*)request_module.response->modules[0]->address;
-    if (strcmp(root->magic, USTAR_MAGIC) != 0)
-    {
-        log("Initrd module is invalid!");
-        return;
-    }
-
-    vfs_mount("/initrd", &g_mp);
+    g_mountpoint.root_node = &LIST_GET_CONTAINER(g_entry_list.head, initrd_entry_t, list_elem)->vfs_node;
+    vfs_mount("initrd", &g_mountpoint);
 
     log("Initrd ramdisk loaded.");
 }
+
