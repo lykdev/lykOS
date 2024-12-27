@@ -69,19 +69,17 @@ static int lookup(vfs_node_t *self, char *name, vfs_node_t **out)
         return -1;
     }
         
+    // Maybe optimise this later... if you care enough.
     char path[100] = "";
     strcat(path, ((initrd_entry_t*)self->mp_node)->ustar_data->filename);
     strcat(path, "/");
     strcat(path, name);
-
-    log("$$$ %s", path);
 
     FOREACH(n, g_entry_list)
     {
         initrd_entry_t *node = LIST_GET_CONTAINER(n, initrd_entry_t, list_elem);
         if (strcmp(path, node->ustar_data->filename) == 0)
         {
-            log("FOUND");
             *out = &node->vfs_node;
             return 0;
         }
@@ -100,9 +98,6 @@ static vfs_mountpoint_t g_mountpoint;
 static void process_entry(ustar_hdr_t *hdr)
 {
     path_normalize(hdr->filename, hdr->filename);
-    // if (strlen(hdr->filename) == 0) // Discard the root entry.
-    //     return;
-    log("%s", hdr->filename);
 
     initrd_entry_t *node = kmem_alloc(sizeof(initrd_entry_t));
     node->ustar_data = hdr;
@@ -123,9 +118,6 @@ void initrd_init()
         panic("Initrd module not found!");
 
     ustar_hdr_t *hdr = (ustar_hdr_t*)request_module.response->modules[0]->address;
-    if (strcmp(hdr->magic, USTAR_MAGIC) != 0)
-        panic("Initrd module is invalid!");
-
     while (hdr->magic[0] != '\0')
     {
         if (strcmp(hdr->magic, USTAR_MAGIC) != 0)
@@ -141,6 +133,6 @@ void initrd_init()
     g_mountpoint.root_node = &LIST_GET_CONTAINER(g_entry_list.head, initrd_entry_t, list_elem)->vfs_node;
     vfs_mount("initrd", &g_mountpoint);
 
-    log("Initrd ramdisk loaded.");
+    log("Initrd loaded.");
 }
 
