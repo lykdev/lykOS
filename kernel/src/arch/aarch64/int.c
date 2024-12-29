@@ -18,6 +18,7 @@ void arch_int_mask()
 
 void arch_int_handler(u64 source, u64 esr, u64 elr, u64 spsr, u64 far)
 {
+    log("%llu %llu %llu %llu %llu", source, esr, elr, spsr, far);
     arch_cpu_halt();
 }
 

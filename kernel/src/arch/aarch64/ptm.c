@@ -46,7 +46,7 @@ static void delete_level(pte_t *lvl, u8 depth)
         for (u64 i = 0; i < 512; i++)
         {
             //                         For huge blocks.
-            if (!(lvl[i] & PRESENT) or ((lvl[i] >> 1) & 1 == 0))
+            if (!(lvl[i] & PRESENT) or (((lvl[i] >> 1) & 1) == 0))
                 continue;
 
             delete_level((pte_t*)(PTE_GET_ADDR(lvl[i]) + HHDM), depth - 1);
