@@ -47,15 +47,10 @@ void sched_yield()
         next->assigned_core = curr->assigned_core;
         curr->assigned_core = NULL;
     }
-
-    bool a = false;
-    if (curr == ((thread_t*)arch_cpu_read_thread_reg())->assigned_core->idle_thread)
-        a = true;
     
     arch_cpu_write_thread_reg(next);
-
     arch_sched_context_switch(curr, next);
 
-    if (!a)
-        sched_queue_add(curr);
+    if (curr != ((thread_t*)arch_cpu_read_thread_reg())->assigned_core->idle_thread) // The value in curr never changed.
+        sched_queue_add(curr); 
 }
