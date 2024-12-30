@@ -27,7 +27,10 @@ static void thread_idle_func()
         thread_t *idle_thread = arch_cpu_read_thread_reg();
         ASSERT(idle_thread != NULL);
         cpu_core_t *cpu_core = idle_thread->assigned_core;
+        ASSERT(cpu_core != NULL);
+
         log("IDLE ON %u", cpu_core->id);
+
         sched_yield();
     }        
 }
@@ -62,11 +65,23 @@ void tasking_init()
 
     //proc_t *idle_proc = proc_new("System Idle Process", true);
     
+    struct limine_mp_info *bsp_mp_info;
     for (size_t i = 0; i < request_mp.response->cpu_count; i++)
     {
         struct limine_mp_info *mp_info = request_mp.response->cpus[i];
-
         mp_info->extra_argument = i;
+
+#if defined (__x86_64__)
+        if (mp_info->lapic_id == request_mp.response->bsp_lapic_id)
+#elif defined (__aarch64__)
+        if (mp_info->mpidr == request_mp.response->bsp_mpidr)
+#endif
+        bsp_mp_info = mp_info;
+
         __atomic_store_n(&mp_info->goto_address, (limine_goto_address)&core_init, __ATOMIC_SEQ_CST);
     }
+
+    // Also initialize the bootstrap processor.
+    ASSERT(bsp_mp_info != NULL);
+    core_init(bsp_mp_info);
 }
