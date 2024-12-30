@@ -42,11 +42,20 @@ void sched_yield()
     if (next == NULL)
         next = ((thread_t*)arch_cpu_read_thread_reg())->assigned_core->idle_thread;
 
-    next->assigned_core = curr->assigned_core;
-    curr->assigned_core = NULL;
+    if (curr != next)
+    {
+        next->assigned_core = curr->assigned_core;
+        curr->assigned_core = NULL;
+    }
+
+    bool a = false;
+    if (curr == ((thread_t*)arch_cpu_read_thread_reg())->assigned_core->idle_thread)
+        a = true;
+    
     arch_cpu_write_thread_reg(next);
 
     arch_sched_context_switch(curr, next);
 
-    sched_queue_add(curr);
+    if (!a)
+        sched_queue_add(curr);
 }

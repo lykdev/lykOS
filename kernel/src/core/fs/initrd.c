@@ -38,7 +38,7 @@ typedef struct
 } __attribute__((packed))
 ustar_hdr_t;
 
-static u64 read_field(const char *str, u64 size)
+static u64 ustar_read_field(const char *str, u64 size)
 {
     u64 n = 0;
     const u8 *c = str;
@@ -89,8 +89,30 @@ static int lookup(vfs_node_t *self, char *name, vfs_node_t **out)
     return 0;
 }
 
+static int read(vfs_node_t *self, u64 offset, u64 size, void *buffer)
+{
+    if (self->type != VFS_NODE_FILE)
+        return -1;
+
+    initrd_entry_t *entry = self->mp_node;
+    uint file_content_size = ustar_read_field(entry->ustar_data->size, 12) - 512;
+
+    if (offset >= file_content_size)
+        return -1;
+
+    if (offset + size >= file_content_size)
+        size = file_content_size - offset;
+
+    u8  *file_content = (u8*)((uptr)entry->ustar_data + 512 + offset);
+    for (uint i = 0; i < size; i++)
+        *(u8*)buffer++ = *file_content++;
+
+    return size;
+}
+
 static vfs_node_ops_t g_node_ops = (vfs_node_ops_t) {
-    .lookup = lookup
+    .lookup = lookup,
+    .read = read
 };
 
 static vfs_mountpoint_t g_mountpoint;
@@ -125,7 +147,7 @@ void initrd_init()
 
         process_entry(hdr);
 
-        uint file_size = read_field(hdr->size, 12);
+        uint file_size = ustar_read_field(hdr->size, 12);
         size_t blocks = (file_size + 512 - 1) / 512; 
         hdr = (ustar_hdr_t *)((uptr)hdr + 512 + blocks * 512);
     }

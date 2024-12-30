@@ -96,9 +96,9 @@ void* kmem_alloc(uint size)
 
 void kmem_init()
 {
-    if (request_smp.response == NULL)
+    if (request_mp.response == NULL)
         panic("Invalid SMP info provided by the bootloader");
-    g_cpu_count = request_smp.response->cpu_count;
+    g_cpu_count = request_mp.response->cpu_count;
 
     for (uint i = 8; i <= 512; i *= 2)
     {
@@ -108,4 +108,6 @@ void kmem_init()
 
         kmem_new_cache(name, i);
     }
+
+    log("SLUB allocator init.");
 }

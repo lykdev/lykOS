@@ -24,8 +24,8 @@ volatile struct limine_hhdm_request request_hhdm = {
 };
 
 __attribute__((used, section(".requests")))
-volatile struct limine_kernel_address_request request_kernel_addr = {
-    .id = LIMINE_KERNEL_ADDRESS_REQUEST,
+volatile struct limine_executable_address_request request_kernel_addr = {
+    .id = LIMINE_EXECUTABLE_ADDRESS_REQUEST,
     .revision = 0
 };
 
@@ -42,7 +42,7 @@ volatile struct limine_module_request request_module = {
 };
 
 __attribute__((used, section(".requests")))
-volatile struct limine_smp_request request_smp = {
-    .id = LIMINE_SMP_REQUEST,
+volatile struct limine_mp_request request_mp = {
+    .id = LIMINE_MP_REQUEST,
     .revision = 0
 };

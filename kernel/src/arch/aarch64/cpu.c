@@ -7,7 +7,6 @@ void* arch_cpu_read_thread_reg()
     return thread;
 }
 
-// Write the thread pointer to TPIDR_EL1
 void arch_cpu_write_thread_reg(void *t)
 {
     asm volatile("msr tpidr_el1, %0" : : "r" (t));

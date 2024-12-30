@@ -3,6 +3,7 @@ KERNEL_ELF := bin/kernel.elf
 # TOOLCHAIN
 
 CC = clang
+LD = ld.lld
 
 # COMPILER FLAGS
 
@@ -57,7 +58,8 @@ endif
 C_FLAGS += 							\
 	-I src							\
 	-std=gnu23						\
-	-DPRINTF_DISABLE_SUPPORT_FLOAT
+	-DPRINTF_DISABLE_SUPPORT_FLOAT  \
+	-DLIMINE_API_REVISION=2
 
 # OBJECTS
 
@@ -84,7 +86,7 @@ build: $(KERNEL_ELF)
 
 $(KERNEL_ELF): $(OBJ_FILES)
 	mkdir -p $(@D)
-	ld.lld $(LD_FLAGS) -o $@ $^
+	$(LD) $(LD_FLAGS) -o $@ $^
 
 obj/%.c.o: src/%.c
 	mkdir -p $(@D)

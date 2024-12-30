@@ -11,7 +11,7 @@ typedef struct proc proc_t;
 
 struct cpu_core
 {
-    u64 id;
+    uint id;
     thread_t *curr_thread;
     thread_t *idle_thread;
     list_node_t list_elem;
@@ -19,7 +19,7 @@ struct cpu_core
 
 struct proc
 {
-    u64 id;
+    uint id;
     char name[64];
     vmm_addr_space_t *addr_space;
     list_t threads;
@@ -31,7 +31,7 @@ struct thread
 #if defined (__x86_64__)
     thread_t *self;
 #endif
-    u64 id;
+    uint id;
     proc_t *parent_proc;
     cpu_core_t *assigned_core;
     void *stack;
