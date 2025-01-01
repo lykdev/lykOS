@@ -54,7 +54,7 @@ struct vfs_node_ops
      * @returns `0` on success, `-errno` on failure.
      * @note Parameter `index` will be automatically incremented.
      */
-    int (*list)(vfs_node_t *self, int *index, char **out);
+    int (*list)(vfs_node_t *self, uint *index, char **out);
 };
 
 int vfs_mount(const char *path, vfs_mountpoint_t *mp);

@@ -61,6 +61,27 @@ typedef struct
 initrd_entry_t;
 static list_t g_entry_list;
 
+static int read(vfs_node_t *self, u64 offset, u64 size, void *buffer)
+{
+    if (self->type != VFS_NODE_FILE)
+        return -1;
+
+    initrd_entry_t *entry = self->mp_node;
+    uint file_content_size = ustar_read_field(entry->ustar_data->size, 12) - 512;
+
+    if (offset >= file_content_size)
+        return -1;
+
+    if (offset + size >= file_content_size)
+        size = file_content_size - offset;
+
+    u8  *file_content = (u8*)((uptr)entry->ustar_data + 512 + offset);
+    for (uint i = 0; i < size; i++)
+        *(u8*)buffer++ = *file_content++;
+
+    return size;
+}
+
 static int lookup(vfs_node_t *self, char *name, vfs_node_t **out)
 {
     if (self->type != VFS_NODE_DIR)
@@ -89,30 +110,44 @@ static int lookup(vfs_node_t *self, char *name, vfs_node_t **out)
     return 0;
 }
 
-static int read(vfs_node_t *self, u64 offset, u64 size, void *buffer)
+int list(vfs_node_t *self, uint *index, char **out)
 {
-    if (self->type != VFS_NODE_FILE)
+    if (self->type != VFS_NODE_DIR)
+    {
+        *out = NULL;
         return -1;
+    }
 
-    initrd_entry_t *entry = self->mp_node;
-    uint file_content_size = ustar_read_field(entry->ustar_data->size, 12) - 512;
+    // Maybe optimise this later... if you care enough.
+    char path[100] = "";
+    strcat(path, ((initrd_entry_t*)self->mp_node)->ustar_data->filename);
+    strcat(path, "/");
 
-    if (offset >= file_content_size)
-        return -1;
+    uint l_index = 0;
+    FOREACH(n, g_entry_list)
+    {
+        initrd_entry_t *node = LIST_GET_CONTAINER(n, initrd_entry_t, list_elem);
+        if (strncmp(path, node->ustar_data->filename, strlen(path)) == 0)
+        {
+            if (l_index == *index)
+            {
+                (*index)++;
+                *out = &node->ustar_data->filename;
+                return 0;
+            }
+            else
+                l_index++;    
+        }
+    }
 
-    if (offset + size >= file_content_size)
-        size = file_content_size - offset;
-
-    u8  *file_content = (u8*)((uptr)entry->ustar_data + 512 + offset);
-    for (uint i = 0; i < size; i++)
-        *(u8*)buffer++ = *file_content++;
-
-    return size;
+    *out = NULL;
+    return 0;
 }
 
 static vfs_node_ops_t g_node_ops = (vfs_node_ops_t) {
+    .read = read,
     .lookup = lookup,
-    .read = read
+    .list = list
 };
 
 static vfs_mountpoint_t g_mountpoint;
