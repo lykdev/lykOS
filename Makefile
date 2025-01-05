@@ -36,8 +36,7 @@ endif
 
 build: clean limine
 	make -C kernel ARCH=$(ARCH)
-	make -C drivers ARCH=$(ARCH)
-	
+
 	tar -cvf initrd.tar --format=ustar initrd/
 
 	mkdir -p iso_root/EFI/BOOT
@@ -74,7 +73,6 @@ clean:
 	rm -rf $(LYKOS_ISO)
 
 	make -C kernel clean
-	make -C drivers clean
 
 distclean: clean
 	rm -rf limine

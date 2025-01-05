@@ -1,3 +1,6 @@
+CURRENT_DIR := $(shell basename $(PWD))
+ELF_FILE := bin/$(CURRENT_DIR).elf
+
 # TOOLCHAIN
 
 CC = clang
@@ -12,15 +15,16 @@ C_FLAGS := 					\
 	-fno-stack-protector	\
 	-fno-stack-check		\
 	-fno-lto				\
-	-fPIE					\
+	-fPIC					\
 	-O2						\
-	-std=gnu23
+	-g						\
 
 LD_FLAGS := 				\
 	-nostdlib				\
 	-static 				\
 	-gc-sections 			\
-	-z max-page-size=0x1000
+	-z max-page-size=0x1000 \
+	-r
 
 # ARCH-SPECIFIC COMPILER FLAGS
 
@@ -50,7 +54,29 @@ else ifeq ($(ARCH), aarch64)
 		-target aarch64-unknown-none
 endif
 
+# CODE-SPECIFIC COMPILER FLAGS
+
+C_FLAGS += 							\
+	-I src							\
+	-std=gnu23
+
+# OBJECTS
+
+C_FILES = $(shell cd src && find * -type f -name "*.c")
+OBJ_FILES = $(addprefix obj/, $(C_FILES:.c=.o))
+
 # BUILDING
 
-.PHONY: clean
+.PHONY: build
+build: $(ELF_FILE)
+
+$(ELF_FILE): $(OBJ_FILES)
+	mkdir -p $(@D)
+	$(LD) $(LD_FLAGS) -o $@ $^
+
+obj/%.o: src/%.c
+	mkdir -p $(@D)
+	$(CC) $(C_FLAGS) -c -o $@ $<
+
 clean:
+	rm -rf obj/ bin/

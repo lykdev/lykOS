@@ -22,14 +22,13 @@ bool g_smp_initialized = false;
 
 static void thread_idle_func()
 {
+    uint i = 0;
     while (true)
     {
         thread_t *idle_thread = arch_cpu_read_thread_reg();
-        ASSERT(idle_thread != NULL);
         cpu_core_t *cpu_core = idle_thread->assigned_core;
-        ASSERT(cpu_core != NULL);
 
-        log("IDLE ON %u", cpu_core->id);
+        log("IDLE ON %u - %u", cpu_core->id, i++);
 
         sched_yield();
     }        

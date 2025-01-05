@@ -14,6 +14,24 @@
 #include <utils/def.h>
 #include <utils/log.h>
 
+static void load_drivers()
+{
+    vfs_node_t *dir;
+    vfs_lookup("/initrd/", &dir);
+
+    uint i = 0;
+    while (true)
+    {
+        char *file_name;
+        dir->ops->list(dir, &i, &file_name);
+
+        if (file_name == NULL)
+            break;
+
+        log("%s", file_name);
+    }
+}
+
 void _entry()
 {
     video_init();
@@ -28,7 +46,7 @@ void _entry()
     vfs_init();
     initrd_init();
 
-    vfs_debug();
+    load_drivers();
 
     tasking_init();
 
