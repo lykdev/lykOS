@@ -14,8 +14,8 @@
 #include <utils/printf.h>
 #include <utils/limine/requests.h>
 
-uint   g_cpu_count;
-list_t g_cache_list = LIST_INIT;
+static uint   g_cpu_count;
+static list_t g_cache_list = LIST_INIT;
 
 static kmem_slab_t* kmem_new_slab(uint obj_size)
 {
@@ -109,5 +109,5 @@ void kmem_init()
         kmem_new_cache(name, i);
     }
 
-    log("SLUB allocator init.");
+    log("KMEM init.");
 }

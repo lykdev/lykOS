@@ -40,8 +40,8 @@ void _entry()
 
     arch_int_init();
     pmm_init();
-    vmm_init();
     kmem_init();
+    vmm_init();
 
     vfs_init();
     initrd_init();

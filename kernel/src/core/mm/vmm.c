@@ -2,6 +2,7 @@
 
 #include <arch/ptm.h>
 #include <core/mm/pmm.h>
+#include <core/mm/kmem.h>
 
 #include <utils/assert.h>
 #include <utils/hhdm.h>
@@ -15,28 +16,7 @@
 
 vmm_addr_space_t vmm_kernel_addr_space;
 
-// UTILS
-
-static vmm_seg_t* alloc_segment()
-{
-    static list_t free_seg_list = LIST_INIT;
-
-    if (list_is_empty(&free_seg_list))
-    {
-        vmm_seg_t *segments = (vmm_seg_t*)(pmm_alloc(0) + HHDM);
-        u64 seg_count = ARCH_PAGE_GRAN / sizeof(vmm_seg_t);
-
-        for (u64 i = 0; i < seg_count; i++)
-        {
-            segments[i].list_elem = LIST_NODE_INIT;
-            list_append(&free_seg_list, &segments[i].list_elem);
-        }
-    }
-    
-    list_node_t *node = list_pop_head(&free_seg_list);
-
-    return LIST_GET_CONTAINER(node, vmm_seg_t, list_elem);
-}
+static kmem_cache_t *g_segment_cache;
 
 static void insert_seg(vmm_addr_space_t *addr_space, uptr base, u64 len, vmm_seg_type_t type)
 {
@@ -69,7 +49,7 @@ static void insert_seg(vmm_addr_space_t *addr_space, uptr base, u64 len, vmm_seg
                     seg->len = base - seg->base;
                 else
                 {
-                    vmm_seg_t *new_seg = alloc_segment();
+                    vmm_seg_t *new_seg = kmem_alloc_from(g_segment_cache);
                     *new_seg = (vmm_seg_t) {
                         .base = base + len,
                         .len  = seg->base + seg->len - base - len,
@@ -85,7 +65,7 @@ static void insert_seg(vmm_addr_space_t *addr_space, uptr base, u64 len, vmm_seg
         }
     }
 
-    vmm_seg_t *created_seg = alloc_segment();
+    vmm_seg_t *created_seg = kmem_alloc_from(g_segment_cache);
     *created_seg = (vmm_seg_t) {
         .base = base,
         .len  = len,
@@ -165,6 +145,7 @@ void vmm_init()
     arch_ptm_init();
 
     vmm_kernel_addr_space = vmm_new_addr_space(ARCH_HIGHER_HALF_START, ARCH_MAX_VIRT_ADDR);
+    g_segment_cache = kmem_new_cache("VMM Segment Cache", sizeof(vmm_seg_t));
 
     vmm_map_direct(&vmm_kernel_addr_space, HHDM, 4 * GIB, 0);
     vmm_map_direct(&vmm_kernel_addr_space, request_kernel_addr.response->virtual_base, 2 * GIB, request_kernel_addr.response->physical_base);
