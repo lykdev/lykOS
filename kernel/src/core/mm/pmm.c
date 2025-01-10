@@ -83,6 +83,8 @@ void* pmm_alloc(u8 order)
 
 void pmm_free(void *addr)
 {
+    ASSERT_C((uptr)addr < HHDM, "PMM functions operate with lower half memory addresses.");
+
     u64 idx = (u64)addr / ARCH_PAGE_GRAN;
     pmm_block_t *block = &blocks[idx];
     u8 i = block->order;
