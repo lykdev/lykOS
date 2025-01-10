@@ -32,6 +32,8 @@ static void load_drivers()
     }
 }
 
+void *a[5000];
+
 void _entry()
 {
     video_init();
@@ -46,9 +48,9 @@ void _entry()
     vfs_init();
     initrd_init();
 
-    load_drivers();
+    //load_drivers();
 
-    tasking_init();
+    //tasking_init();
 
     log("Kernel end.");
     arch_cpu_halt();

@@ -102,6 +102,12 @@ typedef enum
 }
 section_type_t;
 
+bool elf_is_compatible(elf_hdr_t *hdr)
+{
+    
+
+    return true;
+}
 
 bool elf_load(vfs_node_t *file, vmm_addr_space_t *addr_space)
 {

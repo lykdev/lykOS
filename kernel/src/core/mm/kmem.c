@@ -151,8 +151,6 @@ void kmem_free(void *obj)
             list_remove(&slab->parent_cache->slabs_partial, &slab->list_elem);
             pmm_free((void*)((uptr)slab - HHDM));
         }
-        else
-            log("%u %u", slab->freelist_len, slab->obj_cnt);
         slock_release(&slab->parent_cache->slab_list_lock);
 
         slock_release(&slab->lock);
