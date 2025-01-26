@@ -2,7 +2,10 @@
 
 #include <core/tasking/proc.h>
 
+#include <utils/assert.h>
+#include <utils/def.h>
 #include <utils/log.h>
+#include <utils/string.h>
 
 typedef u64 addr_t;
 typedef u64 off_t;
@@ -35,8 +38,11 @@ typedef struct
     half_t  shentsize;   // Size of section header entry.
     half_t  shnum;       // Number of section header entries.
     half_t  shstrndx;    // Section name string table index.
-} __attribute__((packed))
+} 
+__attribute__((packed))
 elf_hdr_t;
+
+#define ELF_MAGIC "\x7F""ELF"
 
 typedef enum
 {
@@ -102,22 +108,46 @@ typedef enum
 }
 section_type_t;
 
-bool elf_is_compatible(elf_hdr_t *hdr)
+bool elf_is_compatible(vfs_node_t *file)
 {
-    
-
-    return true;
-}
-
-bool elf_load(vfs_node_t *file, vmm_addr_space_t *addr_space)
-{
-    if (file->type != VFS_NODE_FILE)
-        return false;
+    ASSERT(file->type == VFS_NODE_FILE);
 
     elf_hdr_t hdr;
     file->ops->read(file, 0, sizeof(elf_hdr_t), &hdr);
 
-    log("%c%c%c%c", hdr.magic[0], hdr.magic[1], hdr.magic[2], hdr.magic[3]);
+    if (strncmp(hdr.magic, ELF_MAGIC, 4) != 0)
+    {
+        log("ELF: Invalid magic number.");
+        return false;
+    }
+
+    if (hdr.class != ELF_CLASS_64)
+    {
+        log("ELF: Only 64-bit files are supported.");
+        return false;
+    }
+
+    if (hdr.data != ELF_DATA_ENC_LE)
+    {
+        log("ELF: Only little endian files are supported.");
+        return false;
+    }
+
+    if (hdr.osabi != ELF_ABI_SYSV)
+    {
+        log("ELF: Only SYS-V ABI is supported for files.");
+        return false;
+    }
 
     return true;
+}
+
+bool elf_load_rel(vfs_node_t *file, vmm_addr_space_t *addr_space)
+{
+
+}
+
+bool elf_load_exec(vfs_node_t *file, vmm_addr_space_t *addr_space)
+{
+    
 }

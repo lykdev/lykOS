@@ -71,6 +71,7 @@ limine:
 clean:
 	rm -rf iso_root
 	rm -rf $(LYKOS_ISO)
+	rm -f qemu/log.txt
 
 	make -C kernel clean
 

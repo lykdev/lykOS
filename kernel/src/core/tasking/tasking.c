@@ -1,6 +1,7 @@
 #include "tasking.h"
 
 #include <arch/cpu.h>
+#include <arch/init.h>
 
 #include <core/mm/pmm.h>
 #include <core/mm/kmem.h>
@@ -40,6 +41,8 @@ static void core_init(struct limine_mp_info *mp_info)
     slock_acquire(&slock); // Assure CPU cores are initialized sequentially.
 
     log("NEW CORE %u", mp_info->extra_argument);
+
+    arch_cpu_core_init();
 
     thread_t *idle_thread = thread_new(proc_find_id(0), &thread_idle_func);
     cpu_core_t *cpu_core = kmem_alloc(sizeof(cpu_core_t));

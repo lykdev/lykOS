@@ -1,2 +1,2 @@
 # lykOS
-Open source operating system written in C and ASM.
+Open source hobbyist operating system targeting x86_64 and aarch64.
