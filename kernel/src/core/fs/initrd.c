@@ -41,8 +41,8 @@ ustar_hdr_t;
 static u64 ustar_read_field(const char *str, u64 size)
 {
     u64 n = 0;
-    const u8 *c = str;
-    while (size-- > 0)
+    char *c = str;
+    while (size-- > 0 && *c != '\0')
     {
         n *= 8;
         n += *c - '0';
@@ -182,9 +182,15 @@ void initrd_init()
 
         process_entry(hdr);
 
-        uint file_size = ustar_read_field(hdr->size, 12);
-        size_t blocks = (file_size + 512 - 1) / 512; 
-        hdr = (ustar_hdr_t *)((uptr)hdr + 512 + blocks * 512);
+        uint file_size = ustar_read_field(&hdr->size, 12);
+        uint blocks;
+
+        if (file_size == 0)
+            blocks = 1;
+        else
+            blocks = (file_size + 512 - 1) / 512; 
+
+        hdr = (ustar_hdr_t *)((uptr)hdr + blocks * 512);     
     }
 
     g_mountpoint.root_node = &LIST_GET_CONTAINER(g_entry_list.head, initrd_entry_t, list_elem)->vfs_node;

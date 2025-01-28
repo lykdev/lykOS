@@ -80,6 +80,8 @@ int vfs_mount(const char *path, vfs_mountpoint_t *mp)
 
 int vfs_lookup(const char *path, vfs_node_t **out)
 {
+    *out = NULL;
+
     vfs_mountpoint_t *mp;
     path = vfs_get_mountpoint(path, &mp);
     ASSERT(mp != NULL);

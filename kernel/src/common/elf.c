@@ -193,7 +193,7 @@ bool elf_load_exec(vfs_node_t *file, vmm_addr_space_t *addr_space)
 
         if (ph->type == PH_LOAD)
         {
-            vmm_map_anon(addr_space, ph->vaddr, ph->memsz);
+            vmm_map_anon(addr_space, CEIL(ph->vaddr, ARCH_PAGE_GRAN), CEIL(ph->memsz, ARCH_PAGE_GRAN));
         }
     }
 }

@@ -6,7 +6,6 @@
 #include <utils/log.h>
 #include <utils/string.h>
 #include <utils/limine/requests.h>
-#include "ptm.h"
 
 #define PRESENT (1ull <<  0)
 #define WRITE   (1ull <<  1)
