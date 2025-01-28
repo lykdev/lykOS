@@ -10,6 +10,9 @@
 #include <core/mm/pmm.h>
 #include <core/mm/vmm.h>
 #include <core/tasking/tasking.h>
+#include <core/tasking/proc.h>
+
+#include <common/elf.h>
 
 #include <utils/def.h>
 #include <utils/log.h>
@@ -28,6 +31,11 @@ void _entry()
 
     vfs_init();
     initrd_init();
+
+    proc_t *proc = proc_new("DOOM", PROC_USER);
+    vfs_node_t *node;
+    vfs_lookup("initrd/doomgeneric.elf", &node);
+    elf_load_exec(node, proc->addr_space);
 
     //tasking_init();
 

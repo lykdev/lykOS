@@ -23,6 +23,8 @@ typedef enum
 
 void arch_ptm_map(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size);
 
+uptr arch_ptm_virt_to_phys(arch_ptm_map_t *map, uptr virt);
+
 void arch_ptm_load_map(arch_ptm_map_t *map);
 
 arch_ptm_map_t arch_ptm_new_map();

@@ -17,10 +17,17 @@ struct cpu_core
     list_node_t list_elem;
 };
 
+typedef enum
+{
+    PROC_KERNEL,
+    PROC_USER
+} proc_privilege_t;
+
 struct proc
 {
     uint id;
     char name[64];
+    proc_privilege_t priv;
     vmm_addr_space_t *addr_space;
     list_t threads;
     list_node_t list_elem;

@@ -4,19 +4,28 @@
 #include <core/mm/vmm.h>
 #include <core/tasking/sched.h>
 
+#include <utils/hhdm.h>
 #include <utils/string.h>
 
 /// @brief Last ID assigned to a process.
 static u64 g_last_id = 0;
 
-proc_t *proc_new(char *name, uint flags)
+proc_t *proc_new(char *name, proc_privilege_t priv)
 {
     proc_t *proc = kmem_alloc(sizeof(proc_t));
 
     proc->id = g_last_id++;
     strcpy(proc->name, name);
-    if (flags & PROC_KERNEL)
+    proc->priv = priv;
+
+    if (priv == PROC_KERNEL)
         proc->addr_space = &vmm_kernel_addr_space;
+    else
+    {
+        proc->addr_space = kmem_alloc(sizeof(vmm_addr_space_t));
+        *proc->addr_space = vmm_new_addr_space(0, HHDM - 1);
+    }
+
     proc->threads = LIST_INIT;
 
     list_append(&g_proc_list, &proc->list_elem);

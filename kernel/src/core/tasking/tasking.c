@@ -65,7 +65,7 @@ void tasking_init()
     if (request_mp.response == NULL)
         panic("Invalid SMP info provided by the bootloader");
 
-    //proc_t *idle_proc = proc_new("System Idle Process", true);
+    proc_t *idle_proc = proc_new("System Idle Process", PROC_KERNEL);
     
     struct limine_mp_info *bsp_mp_info;
     for (size_t i = 0; i < request_mp.response->cpu_count; i++)

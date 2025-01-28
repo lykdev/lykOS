@@ -1,10 +1,13 @@
 #include "elf.h"
 
+#include <core/mm/kmem.h>
+#include <core/mm/vmm.h>
 #include <core/tasking/proc.h>
 
 #include <utils/assert.h>
 #include <utils/def.h>
 #include <utils/log.h>
+#include <utils/math.h>
 #include <utils/string.h>
 
 typedef u64 addr_t;
@@ -74,6 +77,32 @@ typedef enum
 }
 elf_type_t;
 
+// Program headers
+
+typedef struct
+{
+    word_t  type;      // Segment type.
+    word_t  flags;     // Segment flags.
+    off_t   offset;    // Offset in file.
+    addr_t  vaddr;     // Virtual address in memory.
+    addr_t  paddr;     // Physical address.
+    xword_t filesz;    // Size of segment in file.
+    xword_t memsz;     // Size of segment in memory.
+    xword_t align;     // Alignment.
+}
+__attribute__((packed))
+ph_t;
+
+typedef enum
+{
+    PH_NULL    = 0, // Unused entry
+    PH_LOAD    = 1, // Loadable segment
+    PH_DYNAMIC = 2, // Dynamic linking tables
+    PH_INTERP  = 3, // Program interpreter path name
+    PH_NOTE    = 4  // Note sections
+}
+ph_type_t;
+
 // Sections
 
 typedef struct
@@ -89,24 +118,25 @@ typedef struct
     xword_t addralign; // Address alignment boundary
     xword_t entsize;   // Size of entries, if section has table.
 }
-section_t;
+__attribute__((packed))
+sh_t;
 
 typedef enum
 {
-    SECTION_TYPE_NULL      = 0,  // Marks an unused section header.
-    SECTION_TYPE_PROGBITS  = 1,  // Contains information defined by the program.
-    SECTION_TYPE_SYMTAB    = 2,  // Contains a linker symbol table.
-    SECTION_TYPE_STRTAB    = 3,  // Contains a string table.
-    SECTION_TYPE_RELA      = 4,  // Contains “Rela” type relocation entries.
-    SECTION_TYPE_HASH      = 5,  // Contains a symbol hash table.
-    SECTION_TYPE_DYNAMIC   = 6,  // Contains dynamic linking tables.
-    SECTION_TYPE_NOTE      = 7,  // Contains note information.
-    SECTION_TYPE_NOBITS    = 8,  // Contains uninitialized space; does not occupy any space in the file.
-    SECTION_TYPE_REL       = 9,  // Contains “Rel” type relocation entries.
-    SECTION_TYPE_SHLIB     = 10, // Reserved.
-    SECTION_TYPE_DYNSYM    = 11  // Contains a dynamic loader symbol table.
+    SH_NULL      = 0,  // Marks an unused section header.
+    SH_PROGBITS  = 1,  // Contains information defined by the program.
+    SH_SYMTAB    = 2,  // Contains a linker symbol table.
+    SH_STRTAB    = 3,  // Contains a string table.
+    SH_RELA      = 4,  // Contains “Rela” type relocation entries.
+    SH_HASH      = 5,  // Contains a symbol hash table.
+    SH_DYNAMIC   = 6,  // Contains dynamic linking tables.
+    SH_NOTE      = 7,  // Contains note information.
+    SH_NOBITS    = 8,  // Contains uninitialized space; does not occupy any space in the file.
+    SH_REL       = 9,  // Contains “Rel” type relocation entries.
+    SH_SHLIB     = 10, // Reserved.
+    SH_DYNSYM    = 11  // Contains a dynamic loader symbol table.
 }
-section_type_t;
+sh_type_t;
 
 bool elf_is_compatible(vfs_node_t *file)
 {
@@ -149,5 +179,21 @@ bool elf_load_rel(vfs_node_t *file, vmm_addr_space_t *addr_space)
 
 bool elf_load_exec(vfs_node_t *file, vmm_addr_space_t *addr_space)
 {
-    
+    ASSERT(file->type == VFS_NODE_FILE);
+
+    elf_hdr_t hdr;
+    file->ops->read(file, 0, sizeof(elf_hdr_t), &hdr);
+
+    ph_t *ph_table = kmem_alloc(hdr.phentsize * hdr.phnum);
+    file->ops->read(file, hdr.phoff, hdr.phentsize * hdr.phnum, ph_table);
+
+    for (uint i = 0; i < hdr.phnum; i++)
+    {
+        ph_t *ph = &ph_table[i];
+
+        if (ph->type == PH_LOAD)
+        {
+            vmm_map_anon(addr_space, ph->vaddr, ph->memsz);
+        }
+    }
 }

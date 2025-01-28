@@ -1,5 +1,6 @@
 #pragma once
 
+#include <arch/types.h>
 #include <arch/ptm.h>
 
 #include <utils/def.h>
@@ -46,7 +47,11 @@ vmm_seg_t;
 
 extern vmm_addr_space_t vmm_kernel_addr_space;
 
-uptr vmm_map(vmm_addr_space_t *addr_space, uptr virt, uptr phys, size_t len, vmm_seg_type_t type);
+uptr vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, size_t len);
+
+uptr vmm_map_direct(vmm_addr_space_t *addr_space, uptr virt, size_t len, uptr phys);
+
+uptr vmm_virt_to_phys(vmm_addr_space_t *addr_space, uptr virt);
 
 vmm_addr_space_t vmm_new_addr_space(uptr limit_low, uptr limit_high);
 

@@ -4,11 +4,15 @@
 #include <core/mm/kmem.h>
 #include <core/tasking/sched.h>
 
+#include <utils/assert.h>
+
 /// @brief Last ID assigned to a thread.
 static u64 g_last_id = 0;
 
 thread_t *thread_new(proc_t *parent_proc, void *entry)
 {
+    ASSERT(parent_proc != NULL);
+
     thread_t *thread = kmem_alloc(sizeof(thread_t));
     *thread = (thread_t) {
 #if defined (__x86_64__)
@@ -19,7 +23,9 @@ thread_t *thread_new(proc_t *parent_proc, void *entry)
         .assigned_core = NULL,
         .stack = pmm_alloc(0)
     };
-    list_append(&g_proc_list, &thread->list_elem_thread);
+    list_append(&parent_proc->threads, &thread->list_elem_inside_proc);
+
+    list_append(&g_proc_list, &thread->list_elem_thread); // TODO: Change this asap.
     
     return thread;
 }

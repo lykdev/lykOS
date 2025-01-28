@@ -6,6 +6,7 @@
 #include <utils/log.h>
 #include <utils/string.h>
 #include <utils/limine/requests.h>
+#include "ptm.h"
 
 #define PRESENT (1ull <<  0)
 #define WRITE   (1ull <<  1)
@@ -133,4 +134,22 @@ void arch_ptm_init()
 
         higher_half_entries[i] = (pte_t)((uptr)table - HHDM) | PRESENT | WRITE;
     }        
+}
+
+uptr arch_ptm_virt_to_phys(arch_ptm_map_t *map, uptr virt)
+{
+    u64 table_entries[] = {
+        (virt >> 12) & 0x1FF, // PML1 entry
+        (virt >> 21) & 0x1FF, // PML2 entry
+        (virt >> 30) & 0x1FF, // PML3 entry
+        (virt >> 39) & 0x1FF  // PML4 entry
+    };
+
+    pte_t *table = map->pml4;
+    u64 i;
+    for (i = 3; i >= 1; i--)
+    {
+        table = get_next_level(table, table_entries[i], false);
+    }
+    return PTE_GET_ADDR(table[table_entries[i]]);
 }

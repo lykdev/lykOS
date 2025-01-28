@@ -119,6 +119,7 @@ void* kmem_alloc(uint size)
             return kmem_alloc_from(cache);
     }
     // This should simply not happen unless we try allocate an obj too big.
+    log("%llu", size);
     ASSERT_C(false, "Invalid obj size provided for kmem_alloc.");
     return NULL;
 }
@@ -179,7 +180,7 @@ void kmem_init()
         panic("Invalid SMP info provided by the bootloader");
     g_cpu_count = request_mp.response->cpu_count;
 
-    for (uint i = 8; i <= 512; i *= 2)
+    for (uint i = 8; i <= 4096; i *= 2)
     {
         char name[32] = "cache-", buf[8];
         sprintf(buf, "%u", i);
