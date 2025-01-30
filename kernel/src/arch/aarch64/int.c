@@ -24,8 +24,9 @@ void arch_int_handler(u64 source, u64 esr, u64 elr, u64 spsr, u64 far)
 
 void arch_int_init()
 {
+    arch_int_mask();
     arch_int_setup();
     arch_int_unmask();
 
-    log("Loaded exception vector");
+    log("Loaded exception vector table.");
 }

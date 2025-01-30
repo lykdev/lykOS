@@ -35,13 +35,15 @@ struct proc
 
 struct thread
 {
+// DO NOT TOUCH THIS PART
 #if defined (__x86_64__)
     thread_t *self;
 #endif
+    void *stack;
+//
     uint id;
     proc_t *parent_proc;
     cpu_core_t *assigned_core;
-    void *stack;
 
     __attribute__((aligned(8)))
     list_node_t list_elem_thread;
