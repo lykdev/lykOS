@@ -122,6 +122,11 @@ uptr vmm_map_direct(vmm_addr_space_t *addr_space, uptr virt, size_t len, uptr ph
     return 0;
 }
 
+uptr vmm_virt_to_phys(vmm_addr_space_t *addr_space, uptr virt)
+{
+    return arch_ptm_virt_to_phys(&addr_space->ptm_map, virt);
+}
+
 vmm_addr_space_t vmm_new_addr_space(uptr limit_low, uptr limit_high)
 {
     vmm_addr_space_t addr_space;

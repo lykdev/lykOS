@@ -124,17 +124,6 @@ void arch_ptm_clear_map(arch_ptm_map_t *map)
     delete_level(map->pml4, 4);
 }
 
-void arch_ptm_init()
-{
-    for (int i = 0; i < 256; i++)
-    {
-        pte_t *table = (pte_t*)((uptr)pmm_alloc(0) + HHDM);
-        memset(table, 0, ARCH_PAGE_GRAN);
-
-        higher_half_entries[i] = (pte_t)((uptr)table - HHDM) | PRESENT | WRITE;
-    }        
-}
-
 uptr arch_ptm_virt_to_phys(arch_ptm_map_t *map, uptr virt)
 {
     u64 table_entries[] = {
@@ -150,5 +139,16 @@ uptr arch_ptm_virt_to_phys(arch_ptm_map_t *map, uptr virt)
     {
         table = get_next_level(table, table_entries[i], false);
     }
-    return PTE_GET_ADDR(table[table_entries[i]]);
+    return PTE_GET_ADDR(table[table_entries[i]]) + (virt & 0xFFF);
+}
+
+void arch_ptm_init()
+{
+    for (int i = 0; i < 256; i++)
+    {
+        pte_t *table = (pte_t*)((uptr)pmm_alloc(0) + HHDM);
+        memset(table, 0, ARCH_PAGE_GRAN);
+
+        higher_half_entries[i] = (pte_t)((uptr)table - HHDM) | PRESENT | WRITE;
+    }        
 }

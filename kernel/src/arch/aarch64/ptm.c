@@ -24,7 +24,7 @@ static pte_t *higher_half_pml4;
 
 // PTM LOGIC
 
-static pte_t *vmm_get_next_level(pte_t *top_level, u64 idx, bool alloc)
+static pte_t *get_next_level(pte_t *top_level, u64 idx, bool alloc)
 {
     if ((top_level[idx] & PRESENT) != 0)
         return (pte_t*)(PTE_GET_ADDR(top_level[idx]) + HHDM);
@@ -72,7 +72,7 @@ void arch_ptm_map(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size)
     u64 i;
     for (i = 3; i >= 1; i--)
     {
-        table = vmm_get_next_level(table, table_entries[i], true);
+        table = get_next_level(table, table_entries[i], true);
     }
     table[table_entries[i]] = phys | PRESENT | PAGE_4K | ACCESS;
 }
@@ -94,7 +94,7 @@ void arch_ptm_unmap(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size)
     u64 i;
     for (i = 3; i >= 1; i--)
     {
-        table = vmm_get_next_level(table, table_entries[i], false);
+        table = get_next_level(table, table_entries[i], false);
         if (table == NULL)
             return;
     }
@@ -129,6 +129,25 @@ void arch_ptm_clear_map(arch_ptm_map_t *map)
 {
     delete_level(map->pml4[0], 4);
     // We don't want to clear map->pml4[1] which is common to all maps.
+}
+
+uptr arch_ptm_virt_to_phys(arch_ptm_map_t *map, uptr virt)
+{
+    u64 table_entries[] = {
+        (virt >> 12) & 0x1FF, // PML1 entry
+        (virt >> 21) & 0x1FF, // PML2 entry
+        (virt >> 30) & 0x1FF, // PML3 entry
+        (virt >> 39) & 0x1FF  // PML4 entry
+    };
+
+    bool is_higher_half = virt & (1ull << 63);
+    pte_t *table = map->pml4[is_higher_half];
+    u64 i;
+    for (i = 3; i >= 1; i--)
+    {
+        table = get_next_level(table, table_entries[i], false);
+    }
+    return PTE_GET_ADDR(table[table_entries[i]]) + (virt & 0xFFF);
 }
 
 void arch_ptm_init()
