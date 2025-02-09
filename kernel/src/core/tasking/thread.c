@@ -21,11 +21,13 @@ thread_t *thread_new(proc_t *parent_proc, void *entry)
         .id = g_last_id++,
         .parent_proc = parent_proc,
         .assigned_core = NULL,
-        .stack = pmm_alloc(0)
+        .kernel_stack = pmm_alloc(0)
     };
     list_append(&parent_proc->threads, &thread->list_elem_inside_proc);
 
     list_append(&g_proc_list, &thread->list_elem_thread); // TODO: Change this asap.
+
+    
     
     return thread;
 }

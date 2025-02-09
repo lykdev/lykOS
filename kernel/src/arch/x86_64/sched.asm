@@ -19,6 +19,8 @@ arch_sched_context_switch:
     push r14
     push r15
 
+    
+
     mov qword [rdi + THREAD_RSP_OFFSET], rsp
     mov rsp, qword [rsi + THREAD_RSP_OFFSET]
 

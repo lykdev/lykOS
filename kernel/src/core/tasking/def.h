@@ -39,7 +39,8 @@ struct thread
 #if defined (__x86_64__)
     thread_t *self;
 #endif
-    void *stack;
+    void *kernel_stack;
+    void *syscall_stack;
 //
     uint id;
     proc_t *parent_proc;

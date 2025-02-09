@@ -2,6 +2,7 @@
 
 #include <arch/cpu.h>
 #include <arch/int.h>
+#include <arch/syscall.h>
 
 #include <core/fs/vfs.h>
 #include <core/fs/initrd.h>
@@ -32,12 +33,14 @@ void _entry()
     vfs_init();
     initrd_init();
 
-    proc_t *proc = proc_new("DOOM", PROC_USER);
+    arch_syscall_init();
+    
+    proc_t *proc = proc_new("TEST", PROC_USER);
     vfs_node_t *node;
-    vfs_lookup("initrd/doomgeneric.elf", &node);
-    elf_load_exec(node, proc->addr_space);
+    vfs_lookup("initrd/a.out", &node);
+    uptr entry = elf_load_exec(node, proc->addr_space);
 
-    //tasking_init();
+    tasking_init();
 
     log("Kernel end.");
     arch_cpu_halt();

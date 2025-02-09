@@ -6,6 +6,7 @@
 
 #include <utils/assert.h>
 #include <utils/def.h>
+#include <utils/hhdm.h>
 #include <utils/log.h>
 #include <utils/math.h>
 #include <utils/string.h>
@@ -177,7 +178,7 @@ bool elf_load_rel(vfs_node_t *file, vmm_addr_space_t *addr_space)
 
 }
 
-bool elf_load_exec(vfs_node_t *file, vmm_addr_space_t *addr_space)
+uptr elf_load_exec(vfs_node_t *file, vmm_addr_space_t *addr_space)
 {
     ASSERT(file->type == VFS_NODE_FILE);
 
@@ -192,8 +193,15 @@ bool elf_load_exec(vfs_node_t *file, vmm_addr_space_t *addr_space)
         ph_t *ph = &ph_table[i];
 
         if (ph->type == PH_LOAD)
-        {
-            vmm_map_anon(addr_space, CEIL(ph->vaddr, ARCH_PAGE_GRAN), CEIL(ph->memsz, ARCH_PAGE_GRAN));
+        {   
+            uptr end = ph->vaddr + ph->memsz;
+            uptr start = FLOOR(ph->vaddr, ARCH_PAGE_GRAN);
+            u64  len = CEIL(end - start, ARCH_PAGE_GRAN);
+
+            vmm_map_anon(addr_space, start, len);
+            file->ops->read(file, ph->offset, ph->memsz, (void*)(vmm_virt_to_phys(addr_space, ph->vaddr) + HHDM));
         }
     }
+
+    return hdr->entry;
 }
