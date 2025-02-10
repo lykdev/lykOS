@@ -15,8 +15,8 @@ syscall_table:
 section .text
 arch_syscall_entry:
     swapgs
-    mov qword [gs:SYSCALL_RSP_OFFSET], rsp
-    mov rsp, qword [gs:KERNEL_STACK_BASE_OFFSET]
+    mov qword [gs:USER_STACK_OFFSET], rsp
+    mov rsp, qword [gs:KERNEL_STACK_OFFSET]
     
     push rbx
     push rcx
@@ -66,6 +66,6 @@ arch_syscall_entry:
     pop rcx
     pop rbx
 
-    mov rsp, qword [gs:SYSCALL_RSP_OFFSET]
+    mov rsp, qword [gs:USER_STACK_OFFSET]
     swapgs
     o64 sysret

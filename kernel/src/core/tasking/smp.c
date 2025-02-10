@@ -5,9 +5,7 @@
 
 #include <core/mm/pmm.h>
 #include <core/mm/kmem.h>
-#include <core/tasking/def.h>
-#include <core/tasking/proc.h>
-#include <core/tasking/thread.h>
+#include <core/tasking/tasking.h>
 #include <core/tasking/sched.h>
 
 #include <utils/assert.h>
@@ -16,8 +14,6 @@
 #include <utils/limine/requests.h>
 
 list_t g_cpu_core_list = LIST_INIT;
-list_t g_thread_list = LIST_INIT;
-list_t g_proc_list = LIST_INIT;
 
 bool g_smp_initialized = false;
 
@@ -60,12 +56,10 @@ static void core_init(struct limine_mp_info *mp_info)
     thread_idle_func();
 }
 
-void tasking_init()
+void smp_init()
 {
     if (request_mp.response == NULL)
         panic("Invalid SMP info provided by the bootloader");
-
-    proc_t *idle_proc = proc_new("System Idle Process", PROC_KERNEL);
     
     struct limine_mp_info *bsp_mp_info;
     for (size_t i = 0; i < request_mp.response->cpu_count; i++)

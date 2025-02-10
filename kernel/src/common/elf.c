@@ -1,8 +1,6 @@
 #include "elf.h"
 
 #include <core/mm/kmem.h>
-#include <core/mm/vmm.h>
-#include <core/tasking/proc.h>
 
 #include <utils/assert.h>
 #include <utils/def.h>
@@ -10,6 +8,8 @@
 #include <utils/log.h>
 #include <utils/math.h>
 #include <utils/string.h>
+
+#pragma region ELF SPEC
 
 typedef u64 addr_t;
 typedef u64 off_t;
@@ -139,32 +139,49 @@ typedef enum
 }
 sh_type_t;
 
-bool elf_is_compatible(vfs_node_t *file)
+#pragma endregion
+
+typedef struct elf_object
+{
+    vfs_node_t *file;
+    elf_hdr_t   hdr;
+}
+elf_object_t;
+
+elf_object_t *elf_read(vfs_node_t *file)
 {
     ASSERT(file->type == VFS_NODE_FILE);
+    elf_object_t *elf_obj = kmem_alloc(sizeof(elf_object_t));
 
-    elf_hdr_t hdr;
-    file->ops->read(file, 0, sizeof(elf_hdr_t), &hdr);
+    elf_obj->file = file;
+    file->ops->read(file, 0, sizeof(elf_hdr_t), &elf_obj->hdr);
 
-    if (strncmp(hdr.magic, ELF_MAGIC, 4) != 0)
+    return elf_obj;
+}
+
+bool elf_is_compatible(elf_object_t *elf_obj)
+{
+    elf_hdr_t *hdr = &elf_obj->hdr;
+
+    if (strncmp(hdr->magic, ELF_MAGIC, 4) != 0)
     {
         log("ELF: Invalid magic number.");
         return false;
     }
 
-    if (hdr.class != ELF_CLASS_64)
+    if (hdr->class != ELF_CLASS_64)
     {
         log("ELF: Only 64-bit files are supported.");
         return false;
     }
 
-    if (hdr.data != ELF_DATA_ENC_LE)
+    if (hdr->data != ELF_DATA_ENC_LE)
     {
         log("ELF: Only little endian files are supported.");
         return false;
     }
 
-    if (hdr.osabi != ELF_ABI_SYSV)
+    if (hdr->osabi != ELF_ABI_SYSV)
     {
         log("ELF: Only SYS-V ABI is supported for files.");
         return false;
@@ -173,22 +190,15 @@ bool elf_is_compatible(vfs_node_t *file)
     return true;
 }
 
-bool elf_load_rel(vfs_node_t *file, vmm_addr_space_t *addr_space)
+void elf_load_exec(elf_object_t *elf_obj, vmm_addr_space_t *as)
 {
+    vfs_node_t *file = elf_obj->file;
+    elf_hdr_t  *hdr  = &elf_obj->hdr;
 
-}
+    ph_t *ph_table = kmem_alloc(hdr->phentsize * hdr->phnum);
+    file->ops->read(file, hdr->phoff, hdr->phentsize * hdr->phnum, ph_table);
 
-uptr elf_load_exec(vfs_node_t *file, vmm_addr_space_t *addr_space)
-{
-    ASSERT(file->type == VFS_NODE_FILE);
-
-    elf_hdr_t hdr;
-    file->ops->read(file, 0, sizeof(elf_hdr_t), &hdr);
-
-    ph_t *ph_table = kmem_alloc(hdr.phentsize * hdr.phnum);
-    file->ops->read(file, hdr.phoff, hdr.phentsize * hdr.phnum, ph_table);
-
-    for (uint i = 0; i < hdr.phnum; i++)
+    for (uint i = 0; i < hdr->phnum; i++)
     {
         ph_t *ph = &ph_table[i];
 
@@ -198,10 +208,13 @@ uptr elf_load_exec(vfs_node_t *file, vmm_addr_space_t *addr_space)
             uptr start = FLOOR(ph->vaddr, ARCH_PAGE_GRAN);
             u64  len = CEIL(end - start, ARCH_PAGE_GRAN);
 
-            vmm_map_anon(addr_space, start, len);
-            file->ops->read(file, ph->offset, ph->memsz, (void*)(vmm_virt_to_phys(addr_space, ph->vaddr) + HHDM));
+            vmm_map_anon(as, start, len);
+            file->ops->read(file, ph->offset, ph->memsz, (void*)(vmm_virt_to_phys(as, ph->vaddr) + HHDM));
         }
     }
+}
 
-    return hdr->entry;
+uptr elf_get_entry(elf_object_t *elf_obj)
+{
+    return (uptr)elf_obj->hdr.entry;
 }

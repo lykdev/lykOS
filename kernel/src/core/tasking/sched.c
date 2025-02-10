@@ -2,6 +2,8 @@
 
 #include <arch/cpu.h>
 
+#include <core/tasking/tasking.h>
+
 #include <utils/limine/requests.h>
 #include <utils/log.h>
 #include <utils/panic.h>
@@ -26,7 +28,13 @@ static thread_t* sched_next()
     return ret;
 }
 
-static void sched_queue_add(thread_t *thread)
+void sched_drop(thread_t *thread)
+{
+    if (thread != ((thread_t*)arch_cpu_read_thread_reg())->assigned_core->idle_thread)
+        sched_queue_add(thread); 
+}
+
+void sched_queue_add(thread_t *thread)
 {
     slock_acquire(&slock);
 
@@ -39,9 +47,9 @@ void sched_yield()
 {
     thread_t *curr = arch_cpu_read_thread_reg();
     thread_t *next = sched_next();
+
     if (next == NULL)
         next = ((thread_t*)arch_cpu_read_thread_reg())->assigned_core->idle_thread;
-
     if (curr != next)
     {
         next->assigned_core = curr->assigned_core;
@@ -49,8 +57,5 @@ void sched_yield()
     }
     
     arch_cpu_write_thread_reg(next);
-    arch_sched_context_switch(curr, next);
-
-    if (curr != ((thread_t*)arch_cpu_read_thread_reg())->assigned_core->idle_thread) // The value in curr never changed.
-        sched_queue_add(curr); 
+    arch_sched_context_switch(curr, next); // This function calls `sched_drop` for `curr` too.
 }

@@ -1,4 +1,5 @@
 global arch_sched_context_switch
+extern sched_drop
 
 THREAD_RSP_OFFSET equ 8
 
@@ -19,9 +20,12 @@ arch_sched_context_switch:
     push r14
     push r15
 
-    
-
     mov qword [rdi + THREAD_RSP_OFFSET], rsp
+
+    push rsi
+    call sched_drop
+    pop rsi
+
     mov rsp, qword [rsi + THREAD_RSP_OFFSET]
 
     pop r15
@@ -40,5 +44,4 @@ arch_sched_context_switch:
     pop rbx
     pop rax
 
-    mov rax, rdi
     ret

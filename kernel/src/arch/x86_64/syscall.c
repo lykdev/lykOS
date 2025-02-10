@@ -3,6 +3,8 @@
 #include <arch/x86_64/tables/gdt.h>
 #include <arch/x86_64/msr.h>
 
+extern void arch_syscall_entry();
+
 void arch_syscall_init()
 {
     // Enable SYSCALL/SYSRET by setting SCE (System Call Extensions) bit.

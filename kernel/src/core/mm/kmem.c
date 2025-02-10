@@ -3,8 +3,7 @@
 #include <arch/cpu.h>
 
 #include <core/mm/pmm.h>
-#include <core/mm/vmm.h>
-#include <core/tasking/def.h>
+#include <core/tasking/tasking.h>
 
 #include <utils/assert.h>
 #include <utils/hhdm.h>

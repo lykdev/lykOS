@@ -11,12 +11,37 @@
 #include <core/mm/pmm.h>
 #include <core/mm/vmm.h>
 #include <core/tasking/tasking.h>
-#include <core/tasking/proc.h>
+#include <core/tasking/sched.h>
+#include <core/tasking/smp.h>
 
 #include <common/elf.h>
 
 #include <utils/def.h>
 #include <utils/log.h>
+
+void f1()
+{
+    for (int i = 0; i < 10; i++)
+    {
+        log("A-%i", i);
+        sched_yield();
+    }
+        
+    while (true)
+        sched_yield();
+}
+
+void f2()
+{
+    for (int i = 0; i < 5; i++)
+    {
+        log("B-%i", i);
+        sched_yield();
+    }
+        
+    while (true)
+        sched_yield();
+}
 
 void _entry()
 {
@@ -35,12 +60,13 @@ void _entry()
 
     arch_syscall_init();
     
-    proc_t *proc = proc_new("TEST", PROC_USER);
-    vfs_node_t *node;
-    vfs_lookup("initrd/a.out", &node);
-    uptr entry = elf_load_exec(node, proc->addr_space);
+    proc_t *proc = proc_new();
+    thread_t *t1 = thread_new(proc, f1);
+    sched_queue_add(t1);
+    thread_t *t2 = thread_new(proc, f2);
+    sched_queue_add(t2);
 
-    tasking_init();
+    smp_init();
 
     log("Kernel end.");
     arch_cpu_halt();
