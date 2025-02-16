@@ -87,39 +87,61 @@ static void insert_seg(vmm_addr_space_t *addr_space, uptr base, u64 len, vmm_seg
 
 // Actual VMM logic
 
-uptr vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, size_t len)
+uptr vmm_find_space(vmm_addr_space_t *addr_space, u64 len)
+{
+    if (list_is_empty(&addr_space->segments))
+        return addr_space->limit_low;
+    
+    uptr start;
+    FOREACH (n, addr_space->segments)
+    {
+        vmm_seg_t *seg1 = LIST_GET_CONTAINER(n, vmm_seg_t, list_elem);
+        start = seg1->base + seg1->len;
+
+        if (n->next != NULL)
+        {
+            vmm_seg_t *seg2 = LIST_GET_CONTAINER(n->next, vmm_seg_t, list_elem);
+
+            if (start + len < seg2->base)
+                break;   
+        }
+    }
+
+    if (start + len - 1 <= addr_space->limit_high)
+        return start;
+
+    panic("No empty space of size %#llx found inside address space!", len);
+}
+
+uptr vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot)
 {
     ASSERT(virt % ARCH_PAGE_GRAN == 0 and
            len  % ARCH_PAGE_GRAN == 0
     );
-
     slock_acquire(&addr_space->slock);
 
     insert_seg(addr_space, virt, len, VMM_ANON);
-
     for (uptr addr = 0; addr < len; addr += ARCH_PAGE_SIZE_4K)
         arch_ptm_map(&addr_space->ptm_map, virt + addr, (uptr)pmm_alloc(0), ARCH_PAGE_SIZE_4K);
 
     slock_release(&addr_space->slock);
-    return 0;
+    return virt;
 }
 
-uptr vmm_map_direct(vmm_addr_space_t *addr_space, uptr virt, size_t len, uptr phys)
+uptr vmm_map_direct(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot, uptr phys)
 {
+    log("d %#llx %#llx", virt, len);
     ASSERT(virt % ARCH_PAGE_GRAN == 0 and
-           phys % ARCH_PAGE_GRAN == 0 and
            len  % ARCH_PAGE_GRAN == 0
     );
-
     slock_acquire(&addr_space->slock);
 
-    insert_seg(addr_space, virt, len, VMM_ANON);
-
+    insert_seg(addr_space, virt, len, VMM_DIRECT);
     for (uptr addr = 0; addr < len; addr += ARCH_PAGE_SIZE_4K)
         arch_ptm_map(&addr_space->ptm_map, virt + addr, phys + addr, ARCH_PAGE_SIZE_4K);
 
     slock_release(&addr_space->slock);
-    return 0;
+    return virt;
 }
 
 uptr vmm_virt_to_phys(vmm_addr_space_t *addr_space, uptr virt)
@@ -151,11 +173,19 @@ void vmm_init()
     arch_ptm_init();
 
     g_vmm_kernel_addr_space = vmm_new_addr_space(ARCH_HIGHER_HALF_START, ARCH_MAX_VIRT_ADDR);
-    log(".%#llx", g_vmm_kernel_addr_space);
+
     g_segment_cache = kmem_new_cache("VMM Segment Cache", sizeof(vmm_seg_t));
 
-    vmm_map_direct(g_vmm_kernel_addr_space, HHDM, 4 * GIB, 0);
-    vmm_map_direct(g_vmm_kernel_addr_space, request_kernel_addr.response->virtual_base, 2 * GIB, request_kernel_addr.response->physical_base);
+    vmm_map_direct(g_vmm_kernel_addr_space,
+                   HHDM,
+                   4 * GIB,
+                   VMM_FULL,
+                   0);
+    vmm_map_direct(g_vmm_kernel_addr_space,
+                   request_kernel_addr.response->virtual_base,
+                   2 * GIB,
+                   VMM_FULL,
+                   request_kernel_addr.response->physical_base);
 
     vmm_load_addr_space(g_vmm_kernel_addr_space);
 

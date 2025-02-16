@@ -22,15 +22,20 @@ vmm_addr_space_t;
 
 typedef enum
 {
-    VMM_FIXED = 1 << 0,
+    VMM_ANON,
+    VMM_DIRECT
 }
-vmm_flags_t;
+vmm_seg_type_t;
 
 typedef enum
 {
-    VMM_ANON,
+    VMM_NONE  = 0,
+    VMM_READ  = 1 << 0,
+    VMM_WRITE = 1 << 1,
+    VMM_EXEC  = 1 << 2,
+    VMM_FULL  = VMM_READ | VMM_WRITE | VMM_EXEC
 }
-vmm_seg_type_t;
+vmm_prot_t;
 
 typedef struct
 {
@@ -47,9 +52,11 @@ vmm_seg_t;
 
 extern vmm_addr_space_t *g_vmm_kernel_addr_space;
 
-uptr vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, size_t len);
+uptr vmm_find_space(vmm_addr_space_t *addr_space, u64 len);
 
-uptr vmm_map_direct(vmm_addr_space_t *addr_space, uptr virt, size_t len, uptr phys);
+uptr vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot);
+
+uptr vmm_map_direct(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot, uptr phys);
 
 uptr vmm_virt_to_phys(vmm_addr_space_t *addr_space, uptr virt);
 

@@ -42,8 +42,10 @@ thread_t *thread_new(proc_t *parent_proc, uptr entry)
         memset((void*)thread->kernel_stack, 0, sizeof(arch_thread_init_stack_user_t));
         ((arch_thread_init_stack_user_t*)thread->kernel_stack)->userspace_init =  x86_64_thread_userspace_init;
         ((arch_thread_init_stack_user_t*)thread->kernel_stack)->entry = entry;
-        vmm_map_anon(parent_proc->addr_space, 0x500000, 0x1000);
-        ((arch_thread_init_stack_user_t*)thread->kernel_stack)->user_stack = 0x500000 + 0x500;
+
+        u64 user_stack = vmm_find_space(parent_proc->addr_space, 16 * KIB);
+        vmm_map_anon(parent_proc->addr_space, user_stack, 16 * KIB, VMM_FULL);
+        ((arch_thread_init_stack_user_t*)thread->kernel_stack)->user_stack = user_stack + 15 * KIB; // Leave 1KiB padding.
     }
     
     list_append(&parent_proc->threads, &thread->list_elem_inside_proc);

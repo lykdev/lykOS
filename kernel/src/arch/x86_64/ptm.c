@@ -149,6 +149,6 @@ void arch_ptm_init()
         pte_t *table = (pte_t*)((uptr)pmm_alloc(0) + HHDM);
         memset(table, 0, ARCH_PAGE_GRAN);
 
-        higher_half_entries[i] = (pte_t)((uptr)table - HHDM) | PRESENT | WRITE;
+        higher_half_entries[i] = (pte_t)((uptr)table - HHDM) | PRESENT | WRITE | GLOBAL;
     }        
 }

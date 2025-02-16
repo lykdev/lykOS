@@ -198,7 +198,7 @@ bool elf_is_compatible(elf_object_t *elf_obj)
     return true;
 }
 
-void elf_load_exec(elf_object_t *elf_obj, vmm_addr_space_t *as)
+void elf_load_exec(elf_object_t *elf_obj, vmm_addr_space_t *addr_space)
 {
     vfs_node_t *file = elf_obj->file;
     elf_hdr_t  *hdr  = &elf_obj->hdr;
@@ -218,8 +218,8 @@ void elf_load_exec(elf_object_t *elf_obj, vmm_addr_space_t *as)
             uptr start = FLOOR(ph->vaddr, ARCH_PAGE_GRAN);
             u64  len = CEIL(end - start, ARCH_PAGE_GRAN);
 
-            vmm_map_anon(as, start, len);
-            file->ops->read(file, ph->offset, ph->memsz, (void*)(vmm_virt_to_phys(as, ph->vaddr) + HHDM));
+            vmm_map_anon(addr_space, start, len, VMM_FULL);
+            file->ops->read(file, ph->offset, ph->memsz, (void*)(vmm_virt_to_phys(addr_space, ph->vaddr) + HHDM));
         }
     }
 
