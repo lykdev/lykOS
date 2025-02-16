@@ -20,16 +20,8 @@ static proc_t *g_idle_proc;
 
 static void thread_idle_func()
 {
-    uint i = 0;
     while (true)
-    {
-        thread_t *idle_thread = arch_cpu_read_thread_reg();
-        cpu_core_t *cpu_core = idle_thread->assigned_core;
-
-        log("IDLE ON %u - %u", cpu_core->id, i++);
-
         sched_yield();
-    }        
 }
 
 static void core_init(struct limine_mp_info *mp_info)
