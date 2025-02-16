@@ -10,5 +10,4 @@ struct dapi_utils
     bool  (*log)(const char *format, ...);
     void* (*alloc)(size_t size);
     void  (*free)(void *ptr);
-}
-__attribute__((packed));
+};

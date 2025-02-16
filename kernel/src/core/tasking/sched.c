@@ -55,7 +55,8 @@ void sched_yield()
         next->assigned_core = curr->assigned_core;
         curr->assigned_core = NULL;
     }
-    
+
+    vmm_load_addr_space(next->parent_proc->addr_space);
     arch_cpu_write_thread_reg(next);
     arch_sched_context_switch(curr, next); // This function calls `sched_drop` for `curr` too.
 }

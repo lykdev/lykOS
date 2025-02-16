@@ -100,6 +100,8 @@ int vfs_lookup(const char *path, vfs_node_t **out)
             return 0;
         }
     }   
+
+    return 0;
 }
 
 void vfs_init()

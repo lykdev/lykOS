@@ -8,12 +8,15 @@
 #include <utils/assert.h>
 #include <utils/hhdm.h>
 #include <utils/string.h>
+#include <utils/log.h>
 
 /// @brief Last ID assigned to a thread.
 static u64 g_last_id = 0;
 list_t g_thread_list = LIST_INIT;
 
-thread_t *thread_new(proc_t *parent_proc, void *entry)
+extern void x86_64_thread_userspace_init();
+
+thread_t *thread_new(proc_t *parent_proc, uptr entry)
 {
     ASSERT(parent_proc != NULL);
 
@@ -27,10 +30,22 @@ thread_t *thread_new(proc_t *parent_proc, void *entry)
         .assigned_core = NULL
     };
 
-    thread->kernel_stack = (uptr)pmm_alloc(0) + HHDM + ARCH_PAGE_GRAN - sizeof(arch_thread_init_stack_t);
-    memset((void*)thread->kernel_stack, 0, sizeof(arch_thread_init_stack_t));
-    ((arch_thread_init_stack_t*)thread->kernel_stack)->entry = (void(*)())entry;
-
+    if (parent_proc->type == PROC_KERNEL)
+    {
+        thread->kernel_stack = (uptr)pmm_alloc(0) + HHDM + ARCH_PAGE_GRAN - sizeof(arch_thread_init_stack_kernel_t);
+        memset((void*)thread->kernel_stack, 0, sizeof(arch_thread_init_stack_kernel_t));
+        ((arch_thread_init_stack_kernel_t*)thread->kernel_stack)->entry = entry;
+    }
+    else if (parent_proc->type == PROC_USER)
+    {
+        thread->kernel_stack = (uptr)pmm_alloc(0) + HHDM + ARCH_PAGE_GRAN - sizeof(arch_thread_init_stack_user_t);
+        memset((void*)thread->kernel_stack, 0, sizeof(arch_thread_init_stack_user_t));
+        ((arch_thread_init_stack_user_t*)thread->kernel_stack)->userspace_init =  x86_64_thread_userspace_init;
+        ((arch_thread_init_stack_user_t*)thread->kernel_stack)->entry = entry;
+        vmm_map_anon(parent_proc->addr_space, 0x500000, 0x1000);
+        ((arch_thread_init_stack_user_t*)thread->kernel_stack)->user_stack = 0x500000 + 0x500;
+    }
+    
     list_append(&parent_proc->threads, &thread->list_elem_inside_proc);
 
     return thread;

@@ -14,8 +14,9 @@
 #include <utils/limine/requests.h>
 
 list_t g_cpu_core_list = LIST_INIT;
-
 bool g_smp_initialized = false;
+
+static proc_t *g_idle_proc;
 
 static void thread_idle_func()
 {
@@ -40,7 +41,7 @@ static void core_init(struct limine_mp_info *mp_info)
 
     arch_cpu_core_init();
 
-    thread_t *idle_thread = thread_new(proc_find_id(0), &thread_idle_func);
+    thread_t *idle_thread = thread_new(g_idle_proc, (uptr)&thread_idle_func);
     cpu_core_t *cpu_core = kmem_alloc(sizeof(cpu_core_t));
     *cpu_core = (cpu_core_t) {
         .id = mp_info->extra_argument,
@@ -60,6 +61,8 @@ void smp_init()
 {
     if (request_mp.response == NULL)
         panic("Invalid SMP info provided by the bootloader");
+
+    g_idle_proc = proc_new(PROC_KERNEL);
     
     struct limine_mp_info *bsp_mp_info;
     for (size_t i = 0; i < request_mp.response->cpu_count; i++)

@@ -41,7 +41,7 @@ ustar_hdr_t;
 static u64 ustar_read_field(const char *str, u64 size)
 {
     u64 n = 0;
-    char *c = str;
+    const char *c = str;
     while (size-- > 0 && *c != '\0')
     {
         n *= 8;
@@ -132,7 +132,7 @@ int list(vfs_node_t *self, uint *index, char **out)
             if (l_index == *index)
             {
                 (*index)++;
-                *out = &node->ustar_data->filename;
+                *out = (char*)&node->ustar_data->filename;
                 return 0;
             }
             else
@@ -182,7 +182,7 @@ void initrd_init()
 
         process_entry(hdr);
 
-        uint file_size = ustar_read_field(&hdr->size, 12);
+        uint file_size = ustar_read_field(hdr->size, 12);
         uint blocks;
 
         if (file_size == 0)

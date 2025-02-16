@@ -16,32 +16,9 @@
 
 #include <common/elf.h>
 
+#include <utils/assert.h>
 #include <utils/def.h>
 #include <utils/log.h>
-
-void f1()
-{
-    for (int i = 0; i < 10; i++)
-    {
-        log("A-%i", i);
-        sched_yield();
-    }
-        
-    while (true)
-        sched_yield();
-}
-
-void f2()
-{
-    for (int i = 0; i < 5; i++)
-    {
-        log("B-%i", i);
-        sched_yield();
-    }
-        
-    while (true)
-        sched_yield();
-}
 
 void _entry()
 {
@@ -60,11 +37,16 @@ void _entry()
 
     arch_syscall_init();
     
-    proc_t *proc = proc_new();
-    thread_t *t1 = thread_new(proc, f1);
-    sched_queue_add(t1);
-    thread_t *t2 = thread_new(proc, f2);
-    sched_queue_add(t2);
+    vfs_node_t *elf_file;
+    vfs_lookup("/initrd/main.elf", &elf_file);
+
+    elf_object_t *elf_obj = elf_read(elf_file);
+    ASSERT(elf_is_compatible(elf_obj));
+
+    proc_t *proc = proc_new(PROC_USER);
+    elf_load_exec(elf_obj, proc->addr_space);
+    thread_t *t = thread_new(proc, elf_get_entry(elf_obj));
+    sched_queue_add(t);
 
     smp_init();
 

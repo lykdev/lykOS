@@ -25,6 +25,9 @@ LD_FLAGS := 				\
 	-z max-page-size=0x1000 \
 	-T linker-$(ARCH).ld
 
+AS_FLAGS := 				\
+	-g
+
 # ARCH-SPECIFIC COMPILER FLAGS
 
 ifeq ($(ARCH), x86_64)
@@ -40,6 +43,9 @@ ifeq ($(ARCH), x86_64)
 	NASM_FLAGS =			\
 		-Wall				\
 		-f elf64			\
+		-w-reloc-abs-dword  \
+		-w-reloc-rel-dword  \
+		-w-reloc-abs-qword  \
 		-g
 else ifeq ($(ARCH), aarch64)
 	C_FLAGS +=							\

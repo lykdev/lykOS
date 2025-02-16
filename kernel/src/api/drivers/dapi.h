@@ -1,7 +1,12 @@
 #pragma once
 
-typedef struct dapi_dev dapi_dev_t;
-typedef struct dapi_drv dapi_drv_t;
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdint.h>
+
+typedef struct dapi_device dapi_device_t;
+typedef struct dapi_driver dapi_driver_t;
+typedef struct dapi_res    dapi_res_t;
 
 enum dapi_dev_type_t
 {
@@ -11,24 +16,32 @@ enum dapi_dev_type_t
     DAPI_STORAGE
 };
 
-struct dapi_dev
+struct dapi_device
 {
     dapi_dev_type_t type;
     char *name;
-    void *ops;
-}
-__attribute__((packed));
+    dapi_driver *driver;
+};
 
-struct dapi_drv
+struct dapi_driver
 {
     char *name;
     char *author;
-    void *ops;
-}
-__attribute__((packed));
+    void (*setup)();
+    void (*init_device)(dapi_device_t *device);
+    void (*remove_device)(dapi_device_t *device);
+    void (*destroy)();
+};
 
-struct drv_ops
+enum dapi_res_type_t
 {
-    bool (*setup)();
-}
-__attribute__((packed));
+    DAPI_IRQ,
+    DAPI_IOPORT,
+    DAPI_MEMORY
+};
+
+struct dapi_res
+{
+    dapi_res_type_t type;
+    uint64_t start, count;
+};

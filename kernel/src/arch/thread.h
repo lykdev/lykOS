@@ -23,7 +23,35 @@ typedef struct
 #elif defined (__aarch64__)
     #error Unimplemented.
 #endif
-    void (*entry)();
+    uptr entry;
 }
 __attribute__((packed))
-arch_thread_init_stack_t;
+arch_thread_init_stack_kernel_t;
+
+typedef struct
+{
+#if defined (__x86_64__)
+    u64 r15;
+    u64 r14;
+    u64 r13;
+    u64 r12;
+    u64 r11;
+    u64 r10;
+    u64 r9;
+    u64 r8;
+    u64 rdi;
+    u64 rsi;
+    u64 rbp;
+    u64 rdx;
+    u64 rcx;
+    u64 rbx;
+    u64 rax;
+#elif defined (__aarch64__)
+    #error Unimplemented.
+#endif
+    void (*userspace_init)();
+    uptr entry;
+    u64  user_stack;
+}
+__attribute__((packed))
+arch_thread_init_stack_user_t;

@@ -14,7 +14,7 @@
 
 // GLOBAL DATA
 
-vmm_addr_space_t vmm_kernel_addr_space;
+vmm_addr_space_t *g_vmm_kernel_addr_space;
 
 static kmem_cache_t *g_segment_cache;
 
@@ -127,16 +127,17 @@ uptr vmm_virt_to_phys(vmm_addr_space_t *addr_space, uptr virt)
     return arch_ptm_virt_to_phys(&addr_space->ptm_map, virt);
 }
 
-vmm_addr_space_t vmm_new_addr_space(uptr limit_low, uptr limit_high)
+vmm_addr_space_t* vmm_new_addr_space(uptr limit_low, uptr limit_high)
 {
-    vmm_addr_space_t addr_space;
+    vmm_addr_space_t *addr_space = kmem_alloc(sizeof(vmm_addr_space_t));
 
-    addr_space.slock      = SLOCK_INIT;
-    addr_space.segments   = LIST_INIT;
-    addr_space.limit_low  = limit_low;
-    addr_space.limit_high = limit_high;
-    addr_space.ptm_map    = arch_ptm_new_map();
-
+    *addr_space = (vmm_addr_space_t) {
+        .slock      = SLOCK_INIT,
+        .segments   = LIST_INIT,
+        .limit_low  = limit_low,
+        .limit_high = limit_high,
+        .ptm_map    = arch_ptm_new_map()
+    };
     return addr_space;
 }
 
@@ -149,13 +150,14 @@ void vmm_init()
 {
     arch_ptm_init();
 
-    vmm_kernel_addr_space = vmm_new_addr_space(ARCH_HIGHER_HALF_START, ARCH_MAX_VIRT_ADDR);
+    g_vmm_kernel_addr_space = vmm_new_addr_space(ARCH_HIGHER_HALF_START, ARCH_MAX_VIRT_ADDR);
+    log(".%#llx", g_vmm_kernel_addr_space);
     g_segment_cache = kmem_new_cache("VMM Segment Cache", sizeof(vmm_seg_t));
 
-    vmm_map_direct(&vmm_kernel_addr_space, HHDM, 4 * GIB, 0);
-    vmm_map_direct(&vmm_kernel_addr_space, request_kernel_addr.response->virtual_base, 2 * GIB, request_kernel_addr.response->physical_base);
+    vmm_map_direct(g_vmm_kernel_addr_space, HHDM, 4 * GIB, 0);
+    vmm_map_direct(g_vmm_kernel_addr_space, request_kernel_addr.response->virtual_base, 2 * GIB, request_kernel_addr.response->physical_base);
 
-    vmm_load_addr_space(&vmm_kernel_addr_space);
+    vmm_load_addr_space(g_vmm_kernel_addr_space);
 
     log("VMM init.");
 }

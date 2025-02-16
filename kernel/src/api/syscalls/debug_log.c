@@ -1,10 +1,8 @@
 #include <utils/log.h>
 
-u64 syscall_debug_log(const char *str, u64 len)
+u64 syscall_debug_log(const char *str)
 {
-    if (len > 1024)
-        len = 1024;
-    log("DEBUG LOG: %.*s", len, str);
+    log("DEBUG LOG: %s", str);
 
     return 0;
 }

@@ -11,12 +11,16 @@
 static u64 g_last_id = 0;
 list_t g_proc_list = LIST_INIT;
 
-proc_t *proc_new()
+proc_t *proc_new(proc_type_t type)
 {
     proc_t *proc = kmem_alloc(sizeof(proc_t));
 
     proc->id = g_last_id++;
-    proc->addr_space = vmm_new_addr_space(0, HHDM - 1);
+    proc->type = type;
+    if (type == PROC_KERNEL)
+        proc->addr_space = g_vmm_kernel_addr_space;
+    else if (type == PROC_USER)
+        proc->addr_space = vmm_new_addr_space(0, HHDM - 1);
     proc->threads = LIST_INIT;
 
     list_append(&g_proc_list, &proc->list_elem);

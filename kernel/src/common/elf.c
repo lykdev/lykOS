@@ -22,26 +22,26 @@ typedef u8  uchar_t;
 
 typedef struct
 {
-    uchar_t magic[4];    // Magic number.
-    uchar_t class;       // Class.
-    uchar_t data;        // Data encoding.
-    uchar_t version;     // Object file version.
-    uchar_t osabi;       // OS/ABI.
-    uchar_t abiversion;  // ABI version.
-    uchar_t _rsv[7];     // Padding.
-    half_t  type;        // Object file type.
-    half_t  machine;     // Machine type.
-    word_t  version1;    // Object file version.
-    addr_t  entry;       // Entry point address.
-    off_t   phoff;       // Program header offset.
-    off_t   shoff;       // Section header offset.
-    word_t  flags;       // Processor-specific flags.
-    half_t  ehsize;      // ELF header size.
-    half_t  phentsize;   // Size of program header entry.
-    half_t  phnum;       // Number of program header entries.
-    half_t  shentsize;   // Size of section header entry.
-    half_t  shnum;       // Number of section header entries.
-    half_t  shstrndx;    // Section name string table index.
+    uchar_t magic[4];
+    uchar_t class;
+    uchar_t data;
+    uchar_t version;
+    uchar_t osabi;
+    uchar_t abiversion;
+    uchar_t _rsv[7];
+    half_t  type;
+    half_t  machine;
+    word_t  version1;
+    addr_t  entry;
+    off_t   phoff;
+    off_t   shoff;
+    word_t  flags;
+    half_t  ehsize;
+    half_t  phentsize;
+    half_t  phnum;
+    half_t  shentsize;
+    half_t  shnum;
+    half_t  shstrndx;
 } 
 __attribute__((packed))
 elf_hdr_t;
@@ -57,8 +57,8 @@ elf_class_t;
 
 typedef enum
 {
-    ELF_DATA_ENC_LE = 1, // Object file data structures are little-endian.
-    ELF_DATA_ENC_BE = 2  // Object file data structures are big-endian.
+    ELF_DATA_ENC_LE = 1,
+    ELF_DATA_ENC_BE = 2
 }
 elf_data_enc_t;
 
@@ -139,6 +139,14 @@ typedef enum
 }
 sh_type_t;
 
+typedef enum
+{
+    SH_WRITE     = 1,
+    SH_ALLOC     = 2,
+    SH_EXECINSTR = 4
+}
+sh_flag_t;
+
 #pragma endregion
 
 typedef struct elf_object
@@ -163,7 +171,7 @@ bool elf_is_compatible(elf_object_t *elf_obj)
 {
     elf_hdr_t *hdr = &elf_obj->hdr;
 
-    if (strncmp(hdr->magic, ELF_MAGIC, 4) != 0)
+    if (strncmp((const char*)hdr->magic, ELF_MAGIC, 4) != 0)
     {
         log("ELF: Invalid magic number.");
         return false;
@@ -195,6 +203,8 @@ void elf_load_exec(elf_object_t *elf_obj, vmm_addr_space_t *as)
     vfs_node_t *file = elf_obj->file;
     elf_hdr_t  *hdr  = &elf_obj->hdr;
 
+    ASSERT (hdr->type == ELF_TYPE_EXEC);
+
     ph_t *ph_table = kmem_alloc(hdr->phentsize * hdr->phnum);
     file->ops->read(file, hdr->phoff, hdr->phentsize * hdr->phnum, ph_table);
 
@@ -212,7 +222,105 @@ void elf_load_exec(elf_object_t *elf_obj, vmm_addr_space_t *as)
             file->ops->read(file, ph->offset, ph->memsz, (void*)(vmm_virt_to_phys(as, ph->vaddr) + HHDM));
         }
     }
+
+    kmem_free(ph_table);
 }
+
+// void elf_load_reloc(elf_object_t *elf_obj, vmm_addr_space_t *as)
+// {
+//     vfs_node_t *file = elf_obj->file;
+//     elf_hdr_t  *hdr  = &elf_obj->hdr;
+
+//     // Allocate and read section headers.
+//     sh_t *sh_table = kmem_alloc(hdr->shentsize * hdr->shnum);
+//     file->ops->read(file, hdr->shoff, hdr->shentsize * hdr->shnum, sh_table);
+
+//     // Find symbol and string tables.
+//     sh_t *symtab = NULL, *strtab = NULL;
+//     for (uint i = 0; i < hdr->shnum; i++)
+//     {
+//         sh_t *sh = &sh_table[i];
+
+//         if (sh->type == SH_SYMTAB)
+//             symtab = sh;
+//         else if (sh->type == SH_STRTAB && i != hdr->shstrndx) // Ignore section names table
+//             strtab = sh;
+//     }
+
+//     if (!symtab || !strtab)
+//     {
+//         kmem_free(sh_table);
+//         panic("ELF relocatable file missing symbol or string table!");
+//     }
+
+//     // Load symbol table
+//     elf_sym_t *symbols = kmem_alloc(symtab->size);
+//     file->ops->read(file, symtab->offset, symtab->size, symbols);
+
+//     // Load string table
+//     char *strtab_data = kmem_alloc(strtab->size);
+//     file->ops->read(file, strtab->offset, strtab->size, strtab_data);
+
+//     // Load sections into memory
+//     for (uint i = 0; i < hdr->shnum; i++)
+//     {
+//         sh_t *sh = &sh_table[i];
+
+//         if (sh->flags & SH_ALLOC) // Loadable section
+//         {
+//             uptr start = FLOOR(sh->addr, ARCH_PAGE_GRAN);
+//             u64 len = CEIL(sh->size, ARCH_PAGE_GRAN);
+
+//             vmm_map_anon(as, start, len);
+//             file->ops->read(file, sh->offset, sh->size, (void*)(vmm_virt_to_phys(as, sh->addr) + HHDM));
+//         }
+//     }
+
+//     // Process relocations
+//     for (uint i = 0; i < hdr->shnum; i++)
+//     {
+//         sh_t *sh = &sh_table[i];
+
+//         if (sh->type == SH_REL)
+//         {
+//             elf_rel_t *relocs = kmem_alloc(sh->size);
+//             file->ops->read(file, sh->offset, sh->size, relocs);
+
+//             uint count = sh->size / sizeof(elf_rel_t);
+//             for (uint j = 0; j < count; j++)
+//             {
+//                 elf_rel_t *rel = &relocs[j];
+//                 u32 sym_idx = ELF_R_SYM(rel->info);
+//                 u32 rel_type = ELF_R_TYPE(rel->info);
+
+//                 elf_sym_t *sym = &symbols[sym_idx];
+//                 uptr sym_value = sym->value; // Assume pre-resolved
+
+//                 uptr *target = (uptr *)(vmm_virt_to_phys(as, rel->offset) + HHDM);
+
+//                 switch (rel_type)
+//                 {
+//                     case R_X86_64_64:
+//                         *target += sym_value;
+//                         break;
+
+//                     case R_X86_64_PC32:
+//                         *target += sym_value - (uptr)target;
+//                         break;
+
+//                     default:
+//                         panic("Unsupported relocation type!");
+//                 }
+//             }
+
+//             kmem_free(relocs);
+//         }
+//     }
+
+//     kmem_free(symbols);
+//     kmem_free(strtab_data);
+//     kmem_free(sh_table);
+// }
 
 uptr elf_get_entry(elf_object_t *elf_obj)
 {

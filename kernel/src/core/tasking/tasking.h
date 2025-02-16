@@ -5,9 +5,16 @@
 #include <utils/def.h>
 #include <utils/list.h>
 
+typedef enum proc_type proc_type_t;
 typedef struct cpu_core cpu_core_t;
 typedef struct thread thread_t;
 typedef struct proc proc_t;
+
+enum proc_type
+{
+    PROC_KERNEL,
+    PROC_USER
+};
 
 struct cpu_core
 {
@@ -36,15 +43,15 @@ struct thread
 }
 __attribute__((packed));
 
-typedef struct proc
+struct proc
 {
     uint id;
+    proc_type_t type;
     char name[64];
-    vmm_addr_space_t addr_space;
+    vmm_addr_space_t *addr_space;
     list_t threads;
     list_node_t list_elem;
-}
-proc_t;
+};
 
 extern list_t g_cpu_core_list;
 extern list_t g_thread_list;
@@ -52,8 +59,8 @@ extern list_t g_proc_list;
 
 extern bool g_smp_initialized;
 
-thread_t *thread_new(proc_t *parent_proc, void *entry);
+thread_t *thread_new(proc_t *parent_proc, uptr entry);
 
-proc_t *proc_new();
+proc_t *proc_new(proc_type_t type);
 
 proc_t *proc_find_id(u64 id);

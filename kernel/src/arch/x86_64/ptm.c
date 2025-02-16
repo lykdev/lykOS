@@ -33,7 +33,7 @@ static pte_t *get_next_level(pte_t *top_level, u64 idx, bool alloc)
     pte_t *next_level = (pte_t*)((uptr)pmm_alloc(0) + HHDM);
     memset(next_level, 0, 0x1000);
 
-    top_level[idx] = (pte_t)((uptr)next_level - HHDM) | PRESENT | WRITE;
+    top_level[idx] = (pte_t)((uptr)next_level - HHDM) | PRESENT | WRITE | USER;
     return next_level;
 } 
 
@@ -70,7 +70,7 @@ void arch_ptm_map(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size)
     {
         table = get_next_level(table, table_entries[i], true);
     }
-    table[table_entries[i]] = phys | PRESENT | WRITE;
+    table[table_entries[i]] = phys | PRESENT | WRITE | USER;
 }
 
 void arch_ptm_unmap(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size)
