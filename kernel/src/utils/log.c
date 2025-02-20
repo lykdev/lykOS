@@ -11,23 +11,22 @@
 static int line = 0;
 static slock_t slock = SLOCK_INIT;
 
-void _log(const char *file, const char *format, ...)
+void _log(const char *format, ...)
 {
     va_list list;
     va_start(list);
 
-    _n_log(file, format, list);
+    _n_log(format, list);
     
     va_end(list);    
 }
 
-void _n_log(const char *file, const char *format, va_list list)
+void _n_log(const char *format, va_list list)
 {
     slock_acquire(&slock);
 
-    char buf[256];
-    int offset = sprintf(buf, "[%s] ", strrchr(file, '/') + 1);
-    vsnprintf(&buf[offset], 256, format, list);
+    char buf[256] = {0};
+    vsnprintf(buf, 256, format, list);
 
     #if defined (__x86_64__)
         arch_serial_send_str(buf);

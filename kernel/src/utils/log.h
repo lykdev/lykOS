@@ -2,8 +2,8 @@
 
 #include <utils/def.h>
 
-#define log(FORMAT, ...) _log(__FILE__, FORMAT, ##__VA_ARGS__)
+#define log(FORMAT, ...) _log(FORMAT, ##__VA_ARGS__)
 
-void _log(const char *file, const char *format, ...);
+void _log(const char *format, ...);
 
-void _n_log(const char *file, const char *format, va_list list);
+void _n_log(const char *format, va_list list);
