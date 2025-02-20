@@ -1,11 +1,12 @@
 #include "log.h"
 
 #include <arch/serial.h>
-#include <core/graphics/draw.h>
-#include <core/graphics/font_basic.h>
+#include <graphics/draw.h>
+#include <graphics/font_basic.h>
 
 #include <utils/printf.h>
 #include <utils/slock.h>
+#include <utils/string.h>
 
 static int line = 0;
 static slock_t slock = SLOCK_INIT;
@@ -24,8 +25,9 @@ void _n_log(const char *file, const char *format, va_list list)
 {
     slock_acquire(&slock);
 
-    char buf[256] = {0};
-    vsnprintf(buf, 256, format, list);
+    char buf[256];
+    int offset = sprintf(buf, "[%s] ", strrchr(file, '/') + 1);
+    vsnprintf(&buf[offset], 256, format, list);
 
     #if defined (__x86_64__)
         arch_serial_send_str(buf);

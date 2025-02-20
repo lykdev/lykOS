@@ -1,7 +1,7 @@
 #include "initrd.h"
 
-#include <core/fs/vfs.h>
-#include <core/mm/kmem.h>
+#include <fs/vfs.h>
+#include <mm/kmem.h>
 
 #include <utils/def.h>
 #include <utils/list.h>

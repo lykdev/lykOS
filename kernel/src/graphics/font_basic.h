@@ -1,4 +1,4 @@
-#include <core/graphics/font.h>
+#include <graphics/font.h>
 
 #define FONT_BASIC_WIDTH 8
 #define FONT_BASIC_HEIGHT 16

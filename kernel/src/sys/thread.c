@@ -2,8 +2,8 @@
 
 #include <arch/thread.h>
 
-#include <core/mm/pmm.h>
-#include <core/mm/kmem.h>
+#include <mm/pmm.h>
+#include <mm/kmem.h>
 
 #include <utils/assert.h>
 #include <utils/hhdm.h>

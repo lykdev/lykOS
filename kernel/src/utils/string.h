@@ -20,6 +20,8 @@ char* strcat(char* dest, const char* src);
 
 char* strchr(const char *s, char c);
 
+char *strrchr(const char *s, int c);
+
 // Comparison
 
 int memcmp(const void *s1, const void *s2, size_t n);

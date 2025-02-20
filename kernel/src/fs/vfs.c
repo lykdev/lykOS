@@ -1,6 +1,6 @@
 #include "vfs.h"
 
-#include <core/mm/kmem.h>
+#include <mm/kmem.h>
 
 #include <utils/assert.h>
 #include <utils/log.h>

@@ -4,17 +4,18 @@
 #include <arch/int.h>
 #include <arch/syscall.h>
 
-#include <core/fs/vfs.h>
-#include <core/fs/initrd.h>
-#include <core/graphics/video.h>
-#include <core/mm/kmem.h>
-#include <core/mm/pmm.h>
-#include <core/mm/vmm.h>
-#include <core/tasking/tasking.h>
-#include <core/tasking/sched.h>
-#include <core/tasking/smp.h>
+#include <fs/vfs.h>
+#include <fs/initrd.h>
+#include <graphics/video.h>
+#include <mm/kmem.h>
+#include <mm/pmm.h>
+#include <mm/vmm.h>
+#include <sys/tasking.h>
+#include <sys/smp.h>
+#include <tasking/sched.h>
 
-#include <common/elf.h>
+
+#include <sys/elf.h>
 
 #include <utils/assert.h>
 #include <utils/def.h>
@@ -38,7 +39,7 @@ void _entry()
     arch_syscall_init();
     
     vfs_node_t *elf_file;
-    vfs_lookup("/initrd/main.elf", &elf_file);
+    vfs_lookup("/initrd/doomgeneric", &elf_file);
 
     elf_object_t *elf_obj = elf_read(elf_file);
     ASSERT(elf_is_compatible(elf_obj));

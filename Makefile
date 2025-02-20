@@ -5,7 +5,7 @@ LYKOS_ISO = lykos.iso
 # QEMU
 
 QEMU_FLAGS := -m 2G					\
-			  -smp 4				\
+			  -smp 1				\
 			  -no-shutdown 			\
 			  -no-reboot 			\
 			  -cdrom $(LYKOS_ISO) 	\
@@ -34,7 +34,7 @@ endif
 
 # BUILDING
 
-build: clean limine
+build: limine
 	make -C kernel ARCH=$(ARCH)
 
 	tar -cvf initrd.tar --format=ustar initrd/
@@ -74,8 +74,9 @@ clean:
 	rm -f qemu/log.txt
 
 	make -C kernel clean
+	rm -rf initrd.tar
 
 distclean: clean
 	rm -rf limine
 	rm -rf qemu
-	rm -rf initrd.tar
+	

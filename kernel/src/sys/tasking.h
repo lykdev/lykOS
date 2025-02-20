@@ -1,6 +1,7 @@
 #pragma once
 
-#include <core/mm/vmm.h>
+#include <mm/vmm.h>
+#include <sys/resource.h>
 
 #include <utils/def.h>
 #include <utils/list.h>
@@ -50,6 +51,8 @@ struct proc
     char name[64];
     vmm_addr_space_t *addr_space;
     list_t threads;
+    resource_table_t resource_table;
+
     list_node_t list_elem;
 };
 

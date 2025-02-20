@@ -109,6 +109,20 @@ char *strchr(const char *s, char c)
     return NULL;
 }
 
+char *strrchr(const char *s, int c)
+{
+    char *ret = NULL;
+
+    while (*s)
+    {
+        if (*s == c)
+            ret = (char*)s;
+        s++;
+    }
+
+    return ret;
+}
+
 // Other
 
 void *memset(void *s, int c, size_t n)

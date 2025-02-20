@@ -5,6 +5,8 @@ USER_STACK_OFFSET equ 16
 
 extern syscall_exit
 extern syscall_debug_log
+extern syscall_map_fb
+extern syscall_malloc
 
 section .data
 syscall_table:

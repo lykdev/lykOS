@@ -35,9 +35,11 @@ kmem_cache_t *kmem_new_cache(char *name, uint obj_size);
 
 void *kmem_alloc_from(kmem_cache_t *cache);
 
-void* kmem_alloc(uint size);
+void *kmem_alloc(uint size);
 
-void kmem_free(void *obj);
+void kmem_free(void *obj, uint size);
+
+void *kmem_realloc(void *obj, uint old_size, uint new_size);
 
 void kmem_init();
 

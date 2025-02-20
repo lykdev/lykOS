@@ -2,7 +2,7 @@
 
 #include <arch/cpu.h>
 
-#include <core/tasking/tasking.h>
+#include <sys/tasking.h>
 
 #include <utils/limine/requests.h>
 #include <utils/log.h>

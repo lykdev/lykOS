@@ -1,8 +1,8 @@
 #include "vmm.h"
 
 #include <arch/ptm.h>
-#include <core/mm/pmm.h>
-#include <core/mm/kmem.h>
+#include <mm/pmm.h>
+#include <mm/kmem.h>
 
 #include <utils/assert.h>
 #include <utils/hhdm.h>
@@ -110,7 +110,7 @@ uptr vmm_find_space(vmm_addr_space_t *addr_space, u64 len)
     if (start + len - 1 <= addr_space->limit_high)
         return start;
 
-    panic("No empty space of size %#llx found inside address space!", len);
+    return 0;
 }
 
 uptr vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot)
@@ -130,7 +130,6 @@ uptr vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t p
 
 uptr vmm_map_direct(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot, uptr phys)
 {
-    log("d %#llx %#llx", virt, len);
     ASSERT(virt % ARCH_PAGE_GRAN == 0 and
            len  % ARCH_PAGE_GRAN == 0
     );

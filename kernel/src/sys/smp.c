@@ -3,10 +3,10 @@
 #include <arch/cpu.h>
 #include <arch/init.h>
 
-#include <core/mm/pmm.h>
-#include <core/mm/kmem.h>
-#include <core/tasking/tasking.h>
-#include <core/tasking/sched.h>
+#include <mm/pmm.h>
+#include <mm/kmem.h>
+#include <sys/tasking.h>
+#include <tasking/sched.h>
 
 #include <utils/assert.h>
 #include <utils/log.h>

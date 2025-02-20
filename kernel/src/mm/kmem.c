@@ -2,8 +2,8 @@
 
 #include <arch/cpu.h>
 
-#include <core/mm/pmm.h>
-#include <core/tasking/tasking.h>
+#include <mm/pmm.h>
+#include <sys/tasking.h>
 
 #include <utils/assert.h>
 #include <utils/hhdm.h>
@@ -123,8 +123,10 @@ void* kmem_alloc(uint size)
     return NULL;
 }
 
-void kmem_free(void *obj)
+void kmem_free(void *obj, uint size)
 {
+    (void)size;
+
     int curr_cpu_id = 0;
     // Before SMP is initialized all allocations will be assigned to the active slab of CPU core 0.
     if (g_smp_initialized)
@@ -171,6 +173,18 @@ void kmem_free(void *obj)
 
         slock_release(&slab->lock);
     }
+}
+
+void *kmem_realloc(void *obj, uint old_size, uint new_size)
+{
+    if (obj == NULL)
+        return NULL;
+
+    void *new_obj = kmem_alloc(new_size);
+    memcpy(new_obj, obj, old_size);
+    kmem_free(obj, old_size);
+
+    return new_obj;
 }
 
 void kmem_init()

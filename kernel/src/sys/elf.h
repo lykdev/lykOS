@@ -1,7 +1,7 @@
 #pragma once
 
-#include <core/fs/vfs.h>
-#include <core/mm/vmm.h>
+#include <fs/vfs.h>
+#include <mm/vmm.h>
 
 typedef struct elf_object elf_object_t;
 

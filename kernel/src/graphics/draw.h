@@ -1,7 +1,7 @@
 #pragma once
 
-#include <core/graphics/video.h>
-#include <core/graphics/font.h>
+#include <graphics/video.h>
+#include <graphics/font.h>
 
 #include <utils/def.h>
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <core/tasking/tasking.h>
+#include <sys/tasking.h>
 
 void sched_drop(thread_t *thread);
 

@@ -1,6 +1,6 @@
 #include "elf.h"
 
-#include <core/mm/kmem.h>
+#include <mm/kmem.h>
 
 #include <utils/assert.h>
 #include <utils/def.h>
@@ -158,7 +158,7 @@ elf_object_t;
 
 elf_object_t *elf_read(vfs_node_t *file)
 {
-    ASSERT(file->type == VFS_NODE_FILE);
+    ASSERT(file != NULL && file->type == VFS_NODE_FILE);
     elf_object_t *elf_obj = kmem_alloc(sizeof(elf_object_t));
 
     elf_obj->file = file;
@@ -223,7 +223,7 @@ void elf_load_exec(elf_object_t *elf_obj, vmm_addr_space_t *addr_space)
         }
     }
 
-    kmem_free(ph_table);
+    kmem_free(ph_table, sizeof(ph_t));
 }
 
 // void elf_load_reloc(elf_object_t *elf_obj, vmm_addr_space_t *as)
@@ -324,5 +324,7 @@ void elf_load_exec(elf_object_t *elf_obj, vmm_addr_space_t *addr_space)
 
 uptr elf_get_entry(elf_object_t *elf_obj)
 {
+    log("entry: %#llx", elf_obj->hdr.entry);
+
     return (uptr)elf_obj->hdr.entry;
 }

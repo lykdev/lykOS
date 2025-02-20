@@ -1,7 +1,7 @@
 #include "tasking.h"
 
-#include <core/mm/kmem.h>
-#include <core/mm/vmm.h>
+#include <mm/kmem.h>
+#include <mm/vmm.h>
 
 #include <utils/assert.h>
 #include <utils/hhdm.h>
@@ -22,6 +22,13 @@ proc_t *proc_new(proc_type_t type)
     else if (type == PROC_USER)
         proc->addr_space = vmm_new_addr_space(0, HHDM - 1);
     proc->threads = LIST_INIT;
+    proc->resource_table = (resource_table_t) {
+        .resources = NULL,
+        .length = 0,
+        .lock = SLOCK_INIT
+    };
+
+    
 
     list_append(&g_proc_list, &proc->list_elem);
     return proc;

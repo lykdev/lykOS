@@ -28,32 +28,19 @@ struct vfs_node
 
 struct vfs_node_ops
 {
-    /**
-     * @brief Reads the contents of a file.
-     * @returns `0` on success, `-errno` on failure.
-     */
-    int (*read)(vfs_node_t *self, u64 offset, u64 size, void *buffer);
-    
-    /**
-     * @brief Writes to the contents of a file.
-     * @returns `0` on success, `-errno` on failure.
-     */
-    int (*write)(vfs_node_t *self, u64 offset, u64 size, void *buffer);
-    
-    /**
-     * @brief Look up a node by name.
-     * @param out Pointer to the found node, or `NULL` if not found.
-     * @returns `0` on success, `-errno` on failure.
-     */
-    int (*lookup)(vfs_node_t *self, char *name, vfs_node_t **out);
+    char name[128]; // Filename.
+    u32  perm;      // Permission mask.
+    u32  uid;       // User id.
+    u32  gid;       // Group id.
+    u32  size;      // File size.
+    u64  ctime;     // Time created.
+    u64  mtime;     // Time modified.
+    u64  atime;     // Time accessed.
 
-    /**
-     * @brief List the next entry in a directory.
-     * @param index Pointer to the current directory entry index.
-     * @param out Pointer to the found directory entry, or `NULL` if no more entries.
-     * @returns `0` on success, `-errno` on failure.
-     * @note Parameter `index` will be automatically incremented.
-     */
+    int (*get_size)(vfs_node_t *self, char **name);
+    int (*read)(vfs_node_t *self, u64 offset, u64 size, void *buffer);
+    int (*write)(vfs_node_t *self, u64 offset, u64 size, void *buffer);
+    int (*lookup)(vfs_node_t *self, char *name, vfs_node_t **out);
     int (*list)(vfs_node_t *self, uint *index, char **out);
 };
 
