@@ -178,7 +178,7 @@ void kmem_free(void *obj, uint size)
 void *kmem_realloc(void *obj, uint old_size, uint new_size)
 {
     if (obj == NULL)
-        return NULL;
+        return kmem_alloc(new_size);
 
     void *new_obj = kmem_alloc(new_size);
     memcpy(new_obj, obj, old_size);

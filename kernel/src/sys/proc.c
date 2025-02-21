@@ -3,9 +3,13 @@
 #include <mm/kmem.h>
 #include <mm/vmm.h>
 
+#include <sys/streams/streams.h>
+
 #include <utils/assert.h>
 #include <utils/hhdm.h>
 #include <utils/string.h>
+
+#include <utils/log.h>
 
 /// @brief Last ID assigned to a process.
 static u64 g_last_id = 0;
@@ -15,20 +19,18 @@ proc_t *proc_new(proc_type_t type)
 {
     proc_t *proc = kmem_alloc(sizeof(proc_t));
 
-    proc->id = g_last_id++;
-    proc->type = type;
-    if (type == PROC_KERNEL)
-        proc->addr_space = g_vmm_kernel_addr_space;
-    else if (type == PROC_USER)
-        proc->addr_space = vmm_new_addr_space(0, HHDM - 1);
-    proc->threads = LIST_INIT;
-    proc->resource_table = (resource_table_t) {
-        .resources = NULL,
-        .length = 0,
-        .lock = SLOCK_INIT
+    *proc = (proc_t) {
+        .id = g_last_id++,
+        .type = type,
+        .addr_space = (type == PROC_KERNEL) ? 
+                      g_vmm_kernel_addr_space : 
+                      vmm_new_addr_space(0, HHDM - 1),
+        .threads = LIST_INIT,
+        .resource_table = resource_table_new()
     };
 
-    
+    resource_table_expand(&proc->resource_table, 3);
+    resource_create_at(&proc->resource_table, 1, stdout_new(), 0, RESOURCE_WRITE);
 
     list_append(&g_proc_list, &proc->list_elem);
     return proc;

@@ -1,6 +1,6 @@
 #include <utils/log.h>
 
-void syscall_exit()
+u64 syscall_exit()
 {
     log("EXIT");
     while (true)

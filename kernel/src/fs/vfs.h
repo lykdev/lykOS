@@ -21,25 +21,24 @@ vfs_node_type_t;
 
 struct vfs_node
 {   
-    vfs_node_type_t type;
+    char name[128];       // Filename.
+    vfs_node_type_t type; 
+    u32  perm;            // Permission mask.
+    u32  uid;             // User id.
+    u32  gid;             // Group id.
+    u32  size;            // File size.
+    u64  ctime;           // Time created.
+    u64  mtime;           // Time modified.
+    u64  atime;           // Time accessed.
+
     vfs_node_ops_t *ops;
     void *mp_node;
 };
 
 struct vfs_node_ops
 {
-    char name[128]; // Filename.
-    u32  perm;      // Permission mask.
-    u32  uid;       // User id.
-    u32  gid;       // Group id.
-    u32  size;      // File size.
-    u64  ctime;     // Time created.
-    u64  mtime;     // Time modified.
-    u64  atime;     // Time accessed.
-
-    int (*get_size)(vfs_node_t *self, char **name);
-    int (*read)(vfs_node_t *self, u64 offset, u64 size, void *buffer);
-    int (*write)(vfs_node_t *self, u64 offset, u64 size, void *buffer);
+    int (*read)(vfs_node_t *self, u64 offset, u64 count, void *buffer);
+    int (*write)(vfs_node_t *self, u64 offset, u64 count, void *buffer);
     int (*lookup)(vfs_node_t *self, char *name, vfs_node_t **out);
     int (*list)(vfs_node_t *self, uint *index, char **out);
 };

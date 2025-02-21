@@ -8,7 +8,7 @@
 #include <utils/hhdm.h>
 #include <utils/log.h>
 
-uptr syscall_malloc(u64 size)
+u64 syscall_malloc(u64 size)
 {
     log("MALLOC");
     proc_t *proc = ((thread_t*)arch_cpu_read_thread_reg())->parent_proc;
