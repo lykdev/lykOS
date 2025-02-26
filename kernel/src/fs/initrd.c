@@ -175,22 +175,20 @@ void initrd_init()
         panic("Initrd module not found!");
 
     ustar_hdr_t *hdr = (ustar_hdr_t*)request_module.response->modules[0]->address;
-    while (hdr->magic[0] != '\0')
+    while (true)
     {
+        if (hdr->magic[0] == '\0' && ((ustar_hdr_t *)((uptr)hdr + 512))->magic[0] == '\0')
+            break;
+
         if (strcmp(hdr->magic, USTAR_MAGIC) != 0)
             panic("Invalid USTAR entry!");
 
         process_entry(hdr);
 
         uint file_size = ustar_read_field(hdr->size, 12);
-        uint blocks;
+        uint blocks = (file_size + 512 - 1) / 512;
 
-        if (file_size == 0)
-            blocks = 1;
-        else
-            blocks = (file_size + 512 - 1) / 512; 
-
-        hdr = (ustar_hdr_t *)((uptr)hdr + blocks * 512);     
+        hdr = (ustar_hdr_t *)((uptr)hdr + (blocks + 1) * 512);     
     }
 
     g_mountpoint.root_node = &LIST_GET_CONTAINER(g_entry_list.head, initrd_entry_t, list_elem)->vfs_node;
