@@ -108,6 +108,8 @@ void vfs_init()
 {
     strcpy(g_trie_root.comp, "");
     g_trie_root.children_cnt = 0;
+
+    log("VFS initialized");
 }
 
 static void _vfs_debug(trie_node_t *node, uint depth)

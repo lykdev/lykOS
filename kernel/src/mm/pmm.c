@@ -193,5 +193,5 @@ void pmm_init()
         }
     }
 
-    log("PMM init.");
+    log("PMM initialized.");
 }

@@ -202,7 +202,7 @@ void kmem_init()
         kmem_new_cache(name, i);
     }
 
-    log("KMEM init.");
+    log("KMEM initialized.");
 }
 
 void kmem_debug()

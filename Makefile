@@ -18,9 +18,9 @@ OVMF := qemu/ovmf-$(ARCH)
 
 run: build $(OVMF)
 ifeq ($(ARCH), x86_64)
-	qemu-system-x86_64.exe -M q35 -bios $(OVMF) $(QEMU_FLAGS) 
+	qemu-system-x86_64 -M q35 -bios $(OVMF) $(QEMU_FLAGS) 
 else ifeq ($(ARCH), aarch64)
-	qemu-system-aarch64.exe -M virt -cpu cortex-a72 -device ramfb -device qemu-xhci -device usb-kbd -device usb-mouse -bios $(OVMF) $(QEMU_FLAGS) 
+	qemu-system-aarch64 -M virt -cpu cortex-a72 -device ramfb -device qemu-xhci -device usb-kbd -device usb-mouse -bios $(OVMF) $(QEMU_FLAGS) 
 endif
 
 $(OVMF):

@@ -188,5 +188,5 @@ void vmm_init()
 
     vmm_load_addr_space(g_vmm_kernel_addr_space);
 
-    log("VMM init.");
+    log("VMM initialized.");
 }
