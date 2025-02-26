@@ -5,7 +5,7 @@
 
 #include <utils/log.h>
 
-i64 write(int fd, u64 count, void *buf)
+int write(int fd, u64 count, void *buf)
 {
     log("WRITE");
     proc_t *proc = ((thread_t*)arch_cpu_read_thread_reg())->parent_proc;
