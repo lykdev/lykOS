@@ -5,13 +5,15 @@ USER_STACK_OFFSET equ 16
 
 extern syscall_exit
 extern syscall_debug_log
-extern syscall_map_fb
-extern syscall_malloc
+extern syscall_read
+extern syscall_write
 
 section .data
 syscall_table:
-    dq syscall_exit ; 0
+    dq syscall_exit      ; 0
     dq syscall_debug_log ; 1
+    dq syscall_read      ; 2
+    dq syscall_write     ; 3
 .length: dq ($ - syscall_table) / 8
 
 section .text
