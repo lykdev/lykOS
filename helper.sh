@@ -8,5 +8,3 @@ objdump kernel/bin/kernel.elf \
     --disassembler-color=on \
     --start-address=$ADDRESS \
     --stop-address=0x$(printf '%x' $(($ADDRESS + 128)))
-
-Message @WuX
