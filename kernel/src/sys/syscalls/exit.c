@@ -4,10 +4,10 @@
 
 void syscall_exit()
 {
-  log("EXIT");
+    log("EXIT");
 
-  proc_t *proc = syscall_get_proc();
+    proc_t *proc = syscall_get_proc();
 
-  while (true)
-    ;
+    while (true)
+        ;
 }

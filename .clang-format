@@ -30,6 +30,17 @@ RemoveParentheses: Leave
 
 SeparateDefinitionBlocks: Leave
 
+LineEnding: LF
+ExperimentalAutoDetectBinPacking: false
+DerivePointerAlignment: false
+ColumnLimit: 180
+UseTab: Never
+IndentWidth: 4
+ContinuationIndentWidth: 4
+PPIndentWidth: 0
+Language: Cpp # For C in reality.
+MaxEmptyLinesToKeep: 2
+
 # Includes
 SortIncludes: CaseInsensitive
 IncludeBlocks: Regroup

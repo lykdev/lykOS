@@ -12,8 +12,7 @@
 #define ARCH_PAGE_SIZE_1G 0x40000000ull
 #define ARCH_PAGE_GRAN ARCH_PAGE_SIZE_4K
 
-#define ARCH_PAGE_SIZES                                                        \
-  ((u64[]){ARCH_PAGE_SIZE_4K, ARCH_PAGE_SIZE_2M, ARCH_PAGE_SIZE_1G})
+#define ARCH_PAGE_SIZES ((u64[]){ARCH_PAGE_SIZE_4K, ARCH_PAGE_SIZE_2M, ARCH_PAGE_SIZE_1G})
 #define ARCH_PAGE_SIZES_LEN 3
 
 #elif defined(__aarch64__)
@@ -26,8 +25,7 @@
 #define ARCH_PAGE_SIZE_1G 0x40000000ull
 #define ARCH_PAGE_GRAN ARCH_PAGE_SIZE_4K
 
-#define ARCH_PAGE_SIZES                                                        \
-  ((u64[]){ARCH_PAGE_SIZE_4K, ARCH_PAGE_SIZE_2M, ARCH_PAGE_SIZE_1G})
+#define ARCH_PAGE_SIZES ((u64[]){ARCH_PAGE_SIZE_4K, ARCH_PAGE_SIZE_2M, ARCH_PAGE_SIZE_1G})
 #define ARCH_PAGE_SIZES_LEN 3
 
 #endif
