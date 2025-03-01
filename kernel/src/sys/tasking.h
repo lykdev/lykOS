@@ -1,59 +1,49 @@
 #pragma once
 
-#include <mm/vmm.h>
-#include <sys/resource.h>
-
 #include <lib/def.h>
 #include <lib/list.h>
+#include <mm/vmm.h>
+#include <sys/resource.h>
 
 typedef enum proc_type proc_type_t;
 typedef struct cpu_core cpu_core_t;
 typedef struct thread thread_t;
 typedef struct proc proc_t;
 
-enum proc_type
-{
-    PROC_KERNEL,
-    PROC_USER
+enum proc_type { PROC_KERNEL, PROC_USER };
+
+struct cpu_core {
+  uint id;
+  thread_t *curr_thread;
+  thread_t *idle_thread;
+  list_node_t list_elem;
 };
 
-struct cpu_core
-{
-    uint id;
-    thread_t *curr_thread;
-    thread_t *idle_thread;
-    list_node_t list_elem;
-};
-
-struct thread
-{
+struct thread {
 // DO NOT TOUCH THIS PART
-#if defined (__x86_64__)
-    thread_t *self;
+#if defined(__x86_64__)
+  thread_t *self;
 #endif
-    uptr kernel_stack;
-    uptr syscall_stack;
-//
-    uint id;
-    proc_t *parent_proc;
-    cpu_core_t *assigned_core;
+  uptr kernel_stack;
+  uptr syscall_stack;
+  //
+  uint id;
+  proc_t *parent_proc;
+  cpu_core_t *assigned_core;
 
-    __attribute__((aligned(8)))
-    list_node_t list_elem_thread;
-    list_node_t list_elem_inside_proc;
-}
-__attribute__((packed));
+  __attribute__((aligned(8))) list_node_t list_elem_thread;
+  list_node_t list_elem_inside_proc;
+} __attribute__((packed));
 
-struct proc
-{
-    uint id;
-    proc_type_t type;
-    char name[64];
-    vmm_addr_space_t *addr_space;
-    list_t threads;
-    resource_table_t resource_table;
+struct proc {
+  uint id;
+  proc_type_t type;
+  char name[64];
+  vmm_addr_space_t *addr_space;
+  list_t threads;
+  resource_table_t resource_table;
 
-    list_node_t list_elem;
+  list_node_t list_elem;
 };
 
 extern list_t g_cpu_core_list;
