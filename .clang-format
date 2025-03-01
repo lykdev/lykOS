@@ -1,4 +1,14 @@
+InsertBraces: false
+InsertNewlineAtEOF: true
+
+KeepEmptyLines:
+  AtEndOfFile: false
+  AtStartOfBlock: false
+  AtStartOfFile: false
+
 PointerAlignment: Right
+QualifierAlignment: Custom
+QualifierOrder: [constexpr, static, inline, volatile, const, type]
 
 # Includes
 SortIncludes: CaseInsensitive
