@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "LykOS",
+            "includePath": [
+                "${workspaceFolder}/kernel/src/"
+            ],
+            "defines": [
+                "__aarch64__",
+                "__x86_64__",
+
+                "true=1",
+                "false=0",
+                "bool=char"
+            ],
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c23",
+            "cppStandard": "c++23",
+            "intelliSenseMode": "linux-clang-x64"
+        }
+    ],
+    "version": 4
+}
