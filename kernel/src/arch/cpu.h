@@ -1,6 +1,6 @@
 #pragma once
 
-#include <utils/def.h>
+#include <lib/def.h>
 
 void* arch_cpu_read_thread_reg();
 

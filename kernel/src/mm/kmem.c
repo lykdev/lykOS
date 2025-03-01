@@ -5,13 +5,13 @@
 #include <mm/pmm.h>
 #include <sys/tasking.h>
 
-#include <utils/assert.h>
-#include <utils/hhdm.h>
-#include <utils/string.h>
-#include <utils/log.h>
-#include <utils/panic.h>
-#include <utils/printf.h>
-#include <utils/limine/requests.h>
+#include <common/assert.h>
+#include <common/hhdm.h>
+#include <lib/string.h>
+#include <common/log.h>
+#include <common/panic.h>
+#include <lib/printf.h>
+#include <common/limine/requests.h>
 
 #define SLAB_SIZE (64 * KIB)
 

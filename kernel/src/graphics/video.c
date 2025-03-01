@@ -1,6 +1,6 @@
 #include "video.h"
 
-#include <utils/limine/requests.h>
+#include <common/limine/requests.h>
 
 framebuffer_t video_fb;
 

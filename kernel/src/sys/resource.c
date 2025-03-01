@@ -2,8 +2,8 @@
 
 #include <mm/kmem.h>
 
-#include <utils/assert.h>
-#include <utils/log.h>
+#include <common/assert.h>
+#include <common/log.h>
 
 resource_table_t resource_table_new()
 {

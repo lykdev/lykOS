@@ -1,6 +1,6 @@
 #include "list.h"
 
-#include <utils/assert.h>
+#include <common/assert.h>
 
 bool list_is_empty(list_t *list)
 {

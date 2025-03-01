@@ -5,11 +5,11 @@
 
 #include <sys/streams/streams.h>
 
-#include <utils/assert.h>
-#include <utils/hhdm.h>
-#include <utils/string.h>
+#include <common/assert.h>
+#include <common/hhdm.h>
+#include <lib/string.h>
 
-#include <utils/log.h>
+#include <common/log.h>
 
 /// @brief Last ID assigned to a process.
 static u64 g_last_id = 0;

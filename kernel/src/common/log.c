@@ -4,9 +4,9 @@
 #include <graphics/draw.h>
 #include <graphics/font_basic.h>
 
-#include <utils/printf.h>
-#include <utils/slock.h>
-#include <utils/string.h>
+#include <lib/printf.h>
+#include <lib/string.h>
+#include <common/slock.h>
 
 static int line = 0;
 static slock_t slock = SLOCK_INIT;

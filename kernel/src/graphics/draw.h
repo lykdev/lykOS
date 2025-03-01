@@ -3,7 +3,7 @@
 #include <graphics/video.h>
 #include <graphics/font.h>
 
-#include <utils/def.h>
+#include <lib/def.h>
 
 typedef u32 color_t;
 

@@ -2,11 +2,11 @@
 
 #include <mm/kmem.h>
 
-#include <utils/assert.h>
-#include <utils/log.h>
-#include <utils/path.h>
-#include <utils/panic.h>
-#include <utils/string.h>
+#include <common/assert.h>
+#include <common/log.h>
+#include <lib/path.h>
+#include <common/panic.h>
+#include <lib/string.h>
 
 typedef struct trie_node_t trie_node_t;
 

@@ -2,8 +2,8 @@
 
 #include <arch/cpu.h>
 
-#include <utils/def.h>
-#include <utils/log.h>
+#include <lib/def.h>
+#include <common/log.h>
 
 void panic(const char *format, ...)
 {

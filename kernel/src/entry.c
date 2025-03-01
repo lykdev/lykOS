@@ -1,4 +1,4 @@
-#include <utils/limine/requests.h>
+#include <common/limine/requests.h>
 
 #include <arch/cpu.h>
 #include <arch/int.h>
@@ -17,9 +17,9 @@
 
 #include <sys/elf.h>
 
-#include <utils/assert.h>
-#include <utils/def.h>
-#include <utils/log.h>
+#include <common/assert.h>
+#include <common/log.h>
+#include <lib/def.h>
 
 void _entry()
 {

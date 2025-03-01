@@ -2,8 +2,8 @@
 
 #include <arch/int.h>
 
-#include <utils/def.h>
-#include <utils/log.h>
+#include <lib/def.h>
+#include <common/log.h>
 
 typedef struct
 {

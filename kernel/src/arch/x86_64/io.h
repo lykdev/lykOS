@@ -1,6 +1,6 @@
 #pragma once
 
-#include <utils/def.h>
+#include <lib/def.h>
 
 static inline void x86_64_io_outb(u16 port, u8 val)
 {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <utils/panic.h>
+#include <common/panic.h>
 
 /**
  * @brief Make an assertion & panic on failure

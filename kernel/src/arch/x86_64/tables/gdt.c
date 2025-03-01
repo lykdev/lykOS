@@ -1,6 +1,6 @@
 #include "gdt.h"
 
-#include <utils/log.h>
+#include <common/log.h>
 
 // Must be set to 1 for any valid segment.
 #define ACCESS_PRESENT (1 << 7)

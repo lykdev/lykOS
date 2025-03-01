@@ -3,8 +3,8 @@
 #include <mm/vmm.h>
 #include <sys/resource.h>
 
-#include <utils/def.h>
-#include <utils/list.h>
+#include <lib/def.h>
+#include <lib/list.h>
 
 typedef enum proc_type proc_type_t;
 typedef struct cpu_core cpu_core_t;

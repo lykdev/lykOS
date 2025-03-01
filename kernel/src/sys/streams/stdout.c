@@ -1,6 +1,6 @@
 #include <sys/streams/streams.h>
 
-#include <utils/log.h>
+#include <common/log.h>
 
 static int read(vfs_node_t *self, u64 offset, u64 count, void *buffer)
 {

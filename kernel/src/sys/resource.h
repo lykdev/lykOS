@@ -2,7 +2,7 @@
 
 #include <fs/vfs.h>
 
-#include <utils/slock.h>
+#include <common/slock.h>
 
 typedef enum
 {

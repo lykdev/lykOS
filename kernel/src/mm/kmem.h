@@ -1,8 +1,8 @@
 #pragma once
 
-#include <utils/def.h>
-#include <utils/list.h>
-#include <utils/slock.h>
+#include <lib/def.h>
+#include <lib/list.h>
+#include <common/slock.h>
 
 typedef struct kmem_slab kmem_slab_t;
 typedef struct kmem_cache kmem_cache_t;

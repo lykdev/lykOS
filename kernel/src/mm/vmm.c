@@ -4,11 +4,11 @@
 #include <mm/pmm.h>
 #include <mm/kmem.h>
 
-#include <utils/assert.h>
-#include <utils/hhdm.h>
-#include <utils/list.h>
-#include <utils/log.h>
-#include <utils/limine/requests.h>
+#include <common/assert.h>
+#include <common/hhdm.h>
+#include <lib/list.h>
+#include <common/log.h>
+#include <common/limine/requests.h>
 
 #define SEG_INTERSECTS(BASE1, LENGTH1, BASE2, LENGTH2) ((BASE1) < ((BASE2) + (LENGTH2)) && (BASE2) < ((BASE1) + (LENGTH1)))
 

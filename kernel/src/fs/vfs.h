@@ -1,7 +1,7 @@
 #pragma once
 
-#include <utils/def.h>
-#include <utils/slock.h>
+#include <lib/def.h>
+#include <common/slock.h>
 
 typedef struct vfs_node vfs_node_t;
 typedef struct vfs_mountpoint vfs_mountpoint_t;

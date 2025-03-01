@@ -5,10 +5,10 @@
 #include <mm/pmm.h>
 #include <mm/kmem.h>
 
-#include <utils/assert.h>
-#include <utils/hhdm.h>
-#include <utils/string.h>
-#include <utils/log.h>
+#include <common/assert.h>
+#include <common/hhdm.h>
+#include <common/log.h>
+#include <lib/string.h>
 
 /// @brief Last ID assigned to a thread.
 static u64 g_last_id = 0;

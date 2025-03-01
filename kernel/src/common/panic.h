@@ -1,5 +1,5 @@
 #pragma once
 
-#include <utils/def.h>
+#include <lib/def.h>
 
 void panic(const char *format, ...);

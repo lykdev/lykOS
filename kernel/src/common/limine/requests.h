@@ -1,6 +1,6 @@
 #pragma once
 
-#include <utils/limine/limine.h>
+#include <common/limine/limine.h>
 
 extern volatile struct limine_framebuffer_request request_framebuffer;
 

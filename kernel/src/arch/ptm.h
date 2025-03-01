@@ -1,7 +1,7 @@
 #pragma once
 
 #include <arch/types.h>
-#include <utils/def.h>
+#include <lib/def.h>
 
 typedef u64 pte_t;
 

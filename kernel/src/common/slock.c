@@ -1,7 +1,7 @@
 #include "slock.h"
 
 #include <arch/cpu.h>
-#include <utils/panic.h>
+#include <common/panic.h>
 
 void slock_acquire(volatile slock_t *lock)
 {

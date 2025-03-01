@@ -1,6 +1,6 @@
 #include "syscall.h"
 
-#include <utils/log.h>
+#include <common/log.h>
 
 void syscall_exit()
 {

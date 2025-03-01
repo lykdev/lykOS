@@ -1,6 +1,6 @@
 #pragma once
 
-#include <utils/def.h>
+#include <lib/def.h>
 
 /**
  *  @brief  Hashes a string using the djb2 algorithm.

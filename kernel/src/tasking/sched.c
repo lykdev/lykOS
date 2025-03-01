@@ -4,10 +4,10 @@
 
 #include <sys/tasking.h>
 
-#include <utils/limine/requests.h>
-#include <utils/log.h>
-#include <utils/panic.h>
-#include <utils/slock.h>
+#include <common/limine/requests.h>
+#include <common/log.h>
+#include <common/panic.h>
+#include <common/slock.h>
 
 extern __attribute__((naked)) void arch_sched_context_switch(thread_t *curr, thread_t *next);
 

@@ -1,4 +1,4 @@
-#include <utils/log.h>
+#include <common/log.h>
 
 u64 syscall_debug_log(const char *str)
 {

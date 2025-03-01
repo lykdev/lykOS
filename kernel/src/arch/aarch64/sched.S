@@ -1,4 +1,5 @@
 .global arch_sched_context_switch
+.extern sched_drop
 
 arch_sched_context_switch:
     stp x0,  x1,  [sp, #-16]!  
@@ -21,6 +22,10 @@ arch_sched_context_switch:
     // Save current stack pointer in x0
     mov x2, sp  
     str x2, [x0]  
+
+    stp x0, x1, [sp, #-16]!
+    bl sched_drop
+    ldp x0, x1, [sp], #16
 
     // Load new stack pointer from x1
     ldr x2, [x1]  

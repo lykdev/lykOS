@@ -3,9 +3,9 @@
 #include <arch/types.h>
 #include <arch/ptm.h>
 
-#include <utils/def.h>
-#include <utils/list.h>
-#include <utils/slock.h>
+#include <lib/def.h>
+#include <lib/list.h>
+#include <common/slock.h>
 
 // Types
 

@@ -2,12 +2,12 @@
 
 #include <mm/kmem.h>
 
-#include <utils/assert.h>
-#include <utils/def.h>
-#include <utils/hhdm.h>
-#include <utils/log.h>
-#include <utils/math.h>
-#include <utils/string.h>
+#include <common/assert.h>
+#include <lib/def.h>
+#include <common/hhdm.h>
+#include <common/log.h>
+#include <lib/math.h>
+#include <lib/string.h>
 
 #pragma region ELF SPEC
 

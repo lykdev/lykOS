@@ -2,7 +2,7 @@
 
 #include <fs/vfs.h>
 
-#include <utils/log.h>
+#include <common/log.h>
 
 int syscall_read(int fd, u64 count, void *buf)
 {

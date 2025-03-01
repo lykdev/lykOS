@@ -3,14 +3,14 @@
 #include <fs/vfs.h>
 #include <mm/kmem.h>
 
-#include <utils/def.h>
-#include <utils/list.h>
-#include <utils/log.h>
-#include <utils/path.h>
-#include <utils/panic.h>
-#include <utils/string.h>
+#include <lib/def.h>
+#include <lib/list.h>
+#include <common/log.h>
+#include <lib/path.h>
+#include <common/panic.h>
+#include <lib/string.h>
 
-#include <utils/limine/requests.h>
+#include <common/limine/requests.h>
 
 // USTAR
 

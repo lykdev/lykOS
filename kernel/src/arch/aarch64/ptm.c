@@ -1,6 +1,6 @@
 #include <arch/ptm.h>
 
-#include <core/mm/pmm.h>
+#include <mm/pmm.h>
 #include <utils/assert.h>
 #include <utils/hhdm.h>
 #include <utils/log.h>

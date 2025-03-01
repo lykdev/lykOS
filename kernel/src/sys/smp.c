@@ -8,10 +8,10 @@
 #include <sys/tasking.h>
 #include <tasking/sched.h>
 
-#include <utils/assert.h>
-#include <utils/log.h>
-#include <utils/panic.h>
-#include <utils/limine/requests.h>
+#include <common/assert.h>
+#include <common/log.h>
+#include <common/panic.h>
+#include <common/limine/requests.h>
 
 list_t g_cpu_core_list = LIST_INIT;
 bool g_smp_initialized = false;
