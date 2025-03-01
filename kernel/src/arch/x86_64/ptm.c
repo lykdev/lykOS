@@ -22,7 +22,8 @@ static pte_t higher_half_entries[256];
 
 // PTM LOGIC
 
-static pte_t *get_next_level(pte_t *top_level, u64 idx, bool alloc) {
+static pte_t *get_next_level(pte_t *top_level, u64 idx, bool alloc)
+{
   if (top_level[idx] & PRESENT)
     return (pte_t *)(PTE_GET_ADDR(top_level[idx]) + HHDM);
 
@@ -36,9 +37,12 @@ static pte_t *get_next_level(pte_t *top_level, u64 idx, bool alloc) {
   return next_level;
 }
 
-static void delete_level(pte_t *lvl, u8 depth) {
-  if (depth != 1) {
-    for (u64 i = 0; i < 512; i++) {
+static void delete_level(pte_t *lvl, u8 depth)
+{
+  if (depth != 1)
+  {
+    for (u64 i = 0; i < 512; i++)
+    {
       if (!(lvl[i] & PRESENT) or lvl[i] & HUGE)
         continue;
 
@@ -48,7 +52,8 @@ static void delete_level(pte_t *lvl, u8 depth) {
   pmm_free((void *)((uptr)lvl - HHDM));
 }
 
-void arch_ptm_map(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size) {
+void arch_ptm_map(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size)
+{
   ASSERT(virt % size == 0);
   ASSERT(phys % size == 0);
 
@@ -61,13 +66,15 @@ void arch_ptm_map(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size) {
 
   pte_t *table = map->pml4;
   u64 i;
-  for (i = 3; i >= 1; i--) {
+  for (i = 3; i >= 1; i--)
+  {
     table = get_next_level(table, table_entries[i], true);
   }
   table[table_entries[i]] = phys | PRESENT | WRITE | USER;
 }
 
-void arch_ptm_unmap(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size) {
+void arch_ptm_unmap(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size)
+{
   ASSERT(virt % size == 0);
   ASSERT(phys % size == 0);
 
@@ -80,7 +87,8 @@ void arch_ptm_unmap(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size) {
 
   pte_t *table = map->pml4;
   u64 i;
-  for (i = 3; i >= 1; i--) {
+  for (i = 3; i >= 1; i--)
+  {
     table = get_next_level(table, table_entries[i], false);
     if (table == NULL)
       return;
@@ -88,11 +96,13 @@ void arch_ptm_unmap(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size) {
   table[table_entries[i]] = 0;
 }
 
-void arch_ptm_load_map(arch_ptm_map_t *map) {
+void arch_ptm_load_map(arch_ptm_map_t *map)
+{
   __asm__ volatile("movq %0, %%cr3" : : "r"((uptr)map->pml4 - HHDM) : "memory");
 }
 
-arch_ptm_map_t arch_ptm_new_map() {
+arch_ptm_map_t arch_ptm_new_map()
+{
   arch_ptm_map_t map;
 
   map.pml4 = (pte_t *)((uptr)pmm_alloc(0) + HHDM);
@@ -106,7 +116,8 @@ arch_ptm_map_t arch_ptm_new_map() {
 
 void arch_ptm_clear_map(arch_ptm_map_t *map) { delete_level(map->pml4, 4); }
 
-uptr arch_ptm_virt_to_phys(arch_ptm_map_t *map, uptr virt) {
+uptr arch_ptm_virt_to_phys(arch_ptm_map_t *map, uptr virt)
+{
   u64 table_entries[] = {
       (virt >> 12) & 0x1FF, // PML1 entry
       (virt >> 21) & 0x1FF, // PML2 entry
@@ -116,14 +127,17 @@ uptr arch_ptm_virt_to_phys(arch_ptm_map_t *map, uptr virt) {
 
   pte_t *table = map->pml4;
   u64 i;
-  for (i = 3; i >= 1; i--) {
+  for (i = 3; i >= 1; i--)
+  {
     table = get_next_level(table, table_entries[i], false);
   }
   return PTE_GET_ADDR(table[table_entries[i]]) + (virt & 0xFFF);
 }
 
-void arch_ptm_init() {
-  for (int i = 0; i < 256; i++) {
+void arch_ptm_init()
+{
+  for (int i = 0; i < 256; i++)
+  {
     pte_t *table = (pte_t *)((uptr)pmm_alloc(0) + HHDM);
     memset(table, 0, ARCH_PAGE_GRAN);
 

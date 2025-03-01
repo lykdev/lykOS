@@ -20,29 +20,36 @@ vmm_addr_space_t *g_vmm_kernel_addr_space;
 static kmem_cache_t *g_segment_cache;
 
 static void insert_seg(vmm_addr_space_t *addr_space, uptr base, u64 len,
-                       vmm_seg_type_t type) {
+                       vmm_seg_type_t type)
+{
   // TODO: free the actual segments.
 
-  FOREACH(n, addr_space->segments) {
+  FOREACH(n, addr_space->segments)
+  {
     vmm_seg_t *seg = LIST_GET_CONTAINER(n, vmm_seg_t, list_elem);
 
-    if (SEG_INTERSECTS(base, len + 1, seg->base, seg->len + 1)) {
-      if (seg->type == type) {
+    if (SEG_INTERSECTS(base, len + 1, seg->base, seg->len + 1))
+    {
+      if (seg->type == type)
+      {
         uptr end = base + len < seg->base + seg->len ? seg->base + seg->len
                                                      : base + len;
         base = base < seg->base ? base : seg->base;
         len = end - base;
 
         list_remove(&addr_space->segments, n);
-      } else {
+      } else
+      {
         if (base <= seg->base && base + len >= seg->base + seg->len)
           list_remove(&addr_space->segments, n);
-        else if (base <= seg->base && base + len < seg->base + seg->len) {
+        else if (base <= seg->base && base + len < seg->base + seg->len)
+        {
           seg->len = seg->base + seg->len - base - len;
           seg->base = base + len;
         } else if (base > seg->base && base + len >= seg->base + seg->len)
           seg->len = base - seg->base;
-        else {
+        else
+        {
           vmm_seg_t *new_seg = kmem_alloc_from(g_segment_cache);
           *new_seg = (vmm_seg_t){.base = base + len,
                                  .len = seg->base + seg->len - base - len,
@@ -65,7 +72,8 @@ static void insert_seg(vmm_addr_space_t *addr_space, uptr base, u64 len,
                              .addr_space = addr_space};
 
   list_node_t *pos = NULL;
-  FOREACH(n, addr_space->segments) {
+  FOREACH(n, addr_space->segments)
+  {
     vmm_seg_t *seg = LIST_GET_CONTAINER(n, vmm_seg_t, list_elem);
 
     if (seg->base < base)
@@ -76,16 +84,19 @@ static void insert_seg(vmm_addr_space_t *addr_space, uptr base, u64 len,
 
 // Actual VMM logic
 
-uptr vmm_find_space(vmm_addr_space_t *addr_space, u64 len) {
+uptr vmm_find_space(vmm_addr_space_t *addr_space, u64 len)
+{
   if (list_is_empty(&addr_space->segments))
     return addr_space->limit_low;
 
   uptr start;
-  FOREACH(n, addr_space->segments) {
+  FOREACH(n, addr_space->segments)
+  {
     vmm_seg_t *seg1 = LIST_GET_CONTAINER(n, vmm_seg_t, list_elem);
     start = seg1->base + seg1->len;
 
-    if (n->next != NULL) {
+    if (n->next != NULL)
+    {
       vmm_seg_t *seg2 = LIST_GET_CONTAINER(n->next, vmm_seg_t, list_elem);
 
       if (start + len < seg2->base)
@@ -100,7 +111,8 @@ uptr vmm_find_space(vmm_addr_space_t *addr_space, u64 len) {
 }
 
 uptr vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, u64 len,
-                  vmm_prot_t prot) {
+                  vmm_prot_t prot)
+{
   ASSERT(virt % ARCH_PAGE_GRAN == 0 and len % ARCH_PAGE_GRAN == 0);
   slock_acquire(&addr_space->slock);
 
@@ -114,7 +126,8 @@ uptr vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, u64 len,
 }
 
 uptr vmm_map_direct(vmm_addr_space_t *addr_space, uptr virt, u64 len,
-                    vmm_prot_t prot, uptr phys) {
+                    vmm_prot_t prot, uptr phys)
+{
   ASSERT(virt % ARCH_PAGE_GRAN == 0 and len % ARCH_PAGE_GRAN == 0);
   slock_acquire(&addr_space->slock);
 
@@ -127,11 +140,13 @@ uptr vmm_map_direct(vmm_addr_space_t *addr_space, uptr virt, u64 len,
   return virt;
 }
 
-uptr vmm_virt_to_phys(vmm_addr_space_t *addr_space, uptr virt) {
+uptr vmm_virt_to_phys(vmm_addr_space_t *addr_space, uptr virt)
+{
   return arch_ptm_virt_to_phys(&addr_space->ptm_map, virt);
 }
 
-vmm_addr_space_t *vmm_new_addr_space(uptr limit_low, uptr limit_high) {
+vmm_addr_space_t *vmm_new_addr_space(uptr limit_low, uptr limit_high)
+{
   vmm_addr_space_t *addr_space = kmem_alloc(sizeof(vmm_addr_space_t));
 
   *addr_space = (vmm_addr_space_t){.slock = SLOCK_INIT,
@@ -142,11 +157,13 @@ vmm_addr_space_t *vmm_new_addr_space(uptr limit_low, uptr limit_high) {
   return addr_space;
 }
 
-void vmm_load_addr_space(vmm_addr_space_t *addr_space) {
+void vmm_load_addr_space(vmm_addr_space_t *addr_space)
+{
   arch_ptm_load_map(&addr_space->ptm_map);
 }
 
-void vmm_init() {
+void vmm_init()
+{
   arch_ptm_init();
 
   g_vmm_kernel_addr_space =

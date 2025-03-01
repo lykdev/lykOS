@@ -2,7 +2,8 @@
 
 #include <common/assert.h>
 
-bool list_is_empty(list_t *list) {
+bool list_is_empty(list_t *list)
+{
   // Sanity check: make sure that the two statements are either both true or
   // both false.
   ASSERT(!((list->head == NULL) ^ (list->length == 0)));
@@ -10,7 +11,8 @@ bool list_is_empty(list_t *list) {
   return list->head == NULL;
 }
 
-void list_insert_after(list_t *list, list_node_t *pos, list_node_t *new) {
+void list_insert_after(list_t *list, list_node_t *pos, list_node_t *new)
+{
   if (pos == NULL) // This case works only if the list is empty.
   {
     ASSERT(list_is_empty(list));
@@ -19,7 +21,8 @@ void list_insert_after(list_t *list, list_node_t *pos, list_node_t *new) {
     list->tail = new;
     new->prev = NULL;
     new->next = NULL;
-  } else {
+  } else
+  {
     // Middle/new node.
     new->prev = pos;
     new->next = pos->next;
@@ -39,7 +42,8 @@ void list_insert_after(list_t *list, list_node_t *pos, list_node_t *new) {
   list->length++;
 }
 
-void list_insert_before(list_t *list, list_node_t *pos, list_node_t *new) {
+void list_insert_before(list_t *list, list_node_t *pos, list_node_t *new)
+{
   if (pos == NULL) // This case works only if the list is empty.
   {
     ASSERT(list_is_empty(list));
@@ -48,7 +52,8 @@ void list_insert_before(list_t *list, list_node_t *pos, list_node_t *new) {
     list->tail = new;
     new->prev = NULL;
     new->next = NULL;
-  } else {
+  } else
+  {
     // Middle/new node.
     new->prev = pos->prev;
     new->next = pos;
@@ -68,15 +73,18 @@ void list_insert_before(list_t *list, list_node_t *pos, list_node_t *new) {
   list->length++;
 }
 
-void list_append(list_t *list, list_node_t *node) {
+void list_append(list_t *list, list_node_t *node)
+{
   list_insert_after(list, list->tail, node);
 }
 
-void list_prepend(list_t *list, list_node_t *node) {
+void list_prepend(list_t *list, list_node_t *node)
+{
   list_insert_before(list, list->head, node);
 }
 
-void list_remove(list_t *list, list_node_t *node) {
+void list_remove(list_t *list, list_node_t *node)
+{
   ASSERT(node != NULL);
 
   if (node->prev != NULL)
@@ -92,7 +100,8 @@ void list_remove(list_t *list, list_node_t *node) {
   list->length--;
 }
 
-list_node_t *list_pop_head(list_t *list) {
+list_node_t *list_pop_head(list_t *list)
+{
   list_node_t *node = list->head;
   if (node != NULL)
     list_remove(list, list->head);
@@ -100,7 +109,8 @@ list_node_t *list_pop_head(list_t *list) {
   return node;
 }
 
-list_node_t *list_pop_tail(list_t *list) {
+list_node_t *list_pop_tail(list_t *list)
+{
   list_node_t *node = list->tail;
   if (node != NULL)
     list_remove(list, list->tail);

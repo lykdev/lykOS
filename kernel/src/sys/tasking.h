@@ -10,16 +10,22 @@ typedef struct cpu_core cpu_core_t;
 typedef struct thread thread_t;
 typedef struct proc proc_t;
 
-enum proc_type { PROC_KERNEL, PROC_USER };
+enum proc_type
+{
+  PROC_KERNEL,
+  PROC_USER
+};
 
-struct cpu_core {
+struct cpu_core
+{
   uint id;
   thread_t *curr_thread;
   thread_t *idle_thread;
   list_node_t list_elem;
 };
 
-struct thread {
+struct thread
+{
 // DO NOT TOUCH THIS PART
 #if defined(__x86_64__)
   thread_t *self;
@@ -35,7 +41,8 @@ struct thread {
   list_node_t list_elem_inside_proc;
 } __attribute__((packed));
 
-struct proc {
+struct proc
+{
   uint id;
   proc_type_t type;
   char name[64];

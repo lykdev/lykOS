@@ -1,6 +1,7 @@
 #include "hash.h"
 
-uint hash_str(const char *str) {
+uint hash_str(const char *str)
+{
   uint hash = 5381;
   int c;
 

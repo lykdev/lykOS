@@ -2,7 +2,8 @@
 
 #include <lib/def.h>
 
-typedef struct {
+typedef struct
+{
 #if defined(__x86_64__)
   u64 r15;
   u64 r14;
@@ -55,7 +56,8 @@ typedef struct {
   uptr entry;
 } __attribute__((packed)) arch_thread_init_stack_kernel_t;
 
-typedef struct {
+typedef struct
+{
 #if defined(__x86_64__)
   u64 r15;
   u64 r14;

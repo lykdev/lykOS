@@ -1,6 +1,7 @@
 #include "path.h"
 
-char *path_consume_comp(const char *str, char *out_comp) {
+char *path_consume_comp(const char *str, char *out_comp)
+{
   if (*str == '/')
     str++;
 
@@ -13,17 +14,21 @@ char *path_consume_comp(const char *str, char *out_comp) {
   return (char *)str;
 }
 
-void path_normalize(const char *path, char *normalized) {
+void path_normalize(const char *path, char *normalized)
+{
   const char *p = path;
   char *n = normalized;
 
-  while (*p) {
-    if (*p == '/') {
+  while (*p)
+  {
+    if (*p == '/')
+    {
       // Skip redundant '/'.
       *n++ = '/';
       while (*p == '/')
         p++;
-    } else if (*p == '.' && (*(p + 1) == '/' || *(p + 1) == '\0')) {
+    } else if (*p == '.' && (*(p + 1) == '/' || *(p + 1) == '\0'))
+    {
       // Skip './'.
       p++;
       if (*p == '/')

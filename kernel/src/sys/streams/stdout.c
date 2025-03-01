@@ -1,11 +1,13 @@
 #include <common/log.h>
 #include <sys/streams/streams.h>
 
-static int read(vfs_node_t *self, u64 offset, u64 count, void *buffer) {
+static int read(vfs_node_t *self, u64 offset, u64 count, void *buffer)
+{
   return -1;
 }
 
-static int write(vfs_node_t *self, u64 offset, u64 count, void *buffer) {
+static int write(vfs_node_t *self, u64 offset, u64 count, void *buffer)
+{
   log("%s", buffer);
   return 0;
 }

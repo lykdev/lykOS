@@ -17,7 +17,8 @@
 static uint g_cpu_count;
 static list_t g_cache_list = LIST_INIT;
 
-static kmem_slab_t *kmem_new_slab(kmem_cache_t *parent_cache) {
+static kmem_slab_t *kmem_new_slab(kmem_cache_t *parent_cache)
+{
   kmem_slab_t *slab = (kmem_slab_t *)((uptr)pmm_alloc(pmm_pagecount_to_order(
                                           SLAB_SIZE / ARCH_PAGE_GRAN)) +
                                       HHDM);
@@ -33,7 +34,8 @@ static kmem_slab_t *kmem_new_slab(kmem_cache_t *parent_cache) {
                         .assigned_cpu_id = -1};
 
   uptr base = (uptr)slab + sizeof(kmem_slab_t);
-  for (uint i = 0; i < slab->obj_cnt; i++) {
+  for (uint i = 0; i < slab->obj_cnt; i++)
+  {
     void **obj = (void **)(base + i * parent_cache->obj_size);
     *obj = slab->freelist;
     slab->freelist = obj;
@@ -42,7 +44,8 @@ static kmem_slab_t *kmem_new_slab(kmem_cache_t *parent_cache) {
   return slab;
 }
 
-kmem_cache_t *kmem_new_cache(char *name, uint obj_size) {
+kmem_cache_t *kmem_new_cache(char *name, uint obj_size)
+{
   kmem_cache_t *cache = (kmem_cache_t *)((uptr)pmm_alloc(0) + HHDM);
   strcpy(cache->name, name);
   cache->obj_size = obj_size;
@@ -58,7 +61,8 @@ kmem_cache_t *kmem_new_cache(char *name, uint obj_size) {
   return cache;
 }
 
-void *kmem_alloc_from(kmem_cache_t *cache) {
+void *kmem_alloc_from(kmem_cache_t *cache)
+{
   uint curr_cpu_id = 0;
   // Before SMP is initialized all allocations will be assigned to the active
   // slab of CPU core 0.
@@ -73,15 +77,18 @@ void *kmem_alloc_from(kmem_cache_t *cache) {
   active_slab->freelist = *(void **)active_slab->freelist;
   active_slab->freelist_len--;
 
-  if (active_slab->freelist == NULL) {
+  if (active_slab->freelist == NULL)
+  {
     slock_acquire(&active_slab->lock);
-    if (active_slab->freelist_sec != NULL) {
+    if (active_slab->freelist_sec != NULL)
+    {
       active_slab->freelist = active_slab->freelist_sec;
       active_slab->freelist_len = active_slab->freelist_sec_len;
 
       active_slab->freelist_sec = NULL;
       active_slab->freelist_sec_len = 0;
-    } else {
+    } else
+    {
       slock_acquire(&cache->slab_list_lock);
 
       active_slab->assigned_cpu_id = -1;
@@ -102,8 +109,10 @@ void *kmem_alloc_from(kmem_cache_t *cache) {
   return ret;
 }
 
-void *kmem_alloc(uint size) {
-  FOREACH(n, g_cache_list) {
+void *kmem_alloc(uint size)
+{
+  FOREACH(n, g_cache_list)
+  {
     kmem_cache_t *cache = LIST_GET_CONTAINER(n, kmem_cache_t, list_elem);
 
     if (cache->obj_size >= size)
@@ -115,7 +124,8 @@ void *kmem_alloc(uint size) {
   return NULL;
 }
 
-void kmem_free(void *obj, uint size) {
+void kmem_free(void *obj, uint size)
+{
   (void)size;
 
   int curr_cpu_id = 0;
@@ -168,7 +178,8 @@ void kmem_free(void *obj, uint size) {
   }
 }
 
-void *kmem_realloc(void *obj, uint old_size, uint new_size) {
+void *kmem_realloc(void *obj, uint old_size, uint new_size)
+{
   if (obj == NULL)
     return kmem_alloc(new_size);
 
@@ -179,12 +190,14 @@ void *kmem_realloc(void *obj, uint old_size, uint new_size) {
   return new_obj;
 }
 
-void kmem_init() {
+void kmem_init()
+{
   if (request_mp.response == NULL)
     panic("Invalid SMP info provided by the bootloader");
   g_cpu_count = request_mp.response->cpu_count;
 
-  for (uint i = 8; i <= 4096; i *= 2) {
+  for (uint i = 8; i <= 4096; i *= 2)
+  {
     char name[32] = "cache-", buf[8];
     sprintf(buf, "%u", i);
     strcat(name, buf);
@@ -195,8 +208,10 @@ void kmem_init() {
   log("KMEM initialized.");
 }
 
-void kmem_debug() {
-  FOREACH(n, g_cache_list) {
+void kmem_debug()
+{
+  FOREACH(n, g_cache_list)
+  {
     kmem_cache_t *cache = LIST_GET_CONTAINER(n, kmem_cache_t, list_elem);
 
     log("%s - %u %u", cache->name, cache->slabs_partial.length,

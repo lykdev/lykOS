@@ -2,7 +2,8 @@
 
 // Copying
 
-void *memcpy(void *dest, const void *src, size_t n) {
+void *memcpy(void *dest, const void *src, size_t n)
+{
   uint8_t *pdest = (uint8_t *)dest;
   const uint8_t *psrc = (const uint8_t *)src;
 
@@ -12,7 +13,8 @@ void *memcpy(void *dest, const void *src, size_t n) {
   return dest;
 }
 
-void *memmove(void *dest, const void *src, size_t n) {
+void *memmove(void *dest, const void *src, size_t n)
+{
   uint8_t *pdest = (uint8_t *)dest;
   const uint8_t *psrc = (const uint8_t *)src;
 
@@ -26,7 +28,8 @@ void *memmove(void *dest, const void *src, size_t n) {
   return dest;
 }
 
-char *strcpy(char *dest, const char *src) {
+char *strcpy(char *dest, const char *src)
+{
   char *ret = dest;
 
   while ((*dest++ = *src++))
@@ -35,7 +38,8 @@ char *strcpy(char *dest, const char *src) {
   return ret;
 }
 
-char *strncpy(char *dest, const char *src, size_t n) {
+char *strncpy(char *dest, const char *src, size_t n)
+{
   char *ret = dest;
 
   while (n && (*dest++ = *src++) != '\0')
@@ -48,7 +52,8 @@ char *strncpy(char *dest, const char *src, size_t n) {
 
 // Concatenation
 
-char *strcat(char *dest, const char *src) {
+char *strcat(char *dest, const char *src)
+{
   char *ret = dest;
 
   while (*dest)
@@ -61,7 +66,8 @@ char *strcat(char *dest, const char *src) {
 
 // Comparison
 
-int memcmp(const void *s1, const void *s2, size_t n) {
+int memcmp(const void *s1, const void *s2, size_t n)
+{
   const uint8_t *p1 = (const uint8_t *)s1;
   const uint8_t *p2 = (const uint8_t *)s2;
 
@@ -72,13 +78,15 @@ int memcmp(const void *s1, const void *s2, size_t n) {
   return 0;
 }
 
-int strcmp(const char *s1, const char *s2) {
+int strcmp(const char *s1, const char *s2)
+{
   while (*s1 && (*s1 == *s2))
     s1++, s2++;
   return *(unsigned char *)s1 - *(unsigned char *)s2;
 }
 
-int strncmp(const char *s1, const char *s2, size_t n) {
+int strncmp(const char *s1, const char *s2, size_t n)
+{
   while (n && *s1 && (*s1 == *s2))
     s1++, s2++, n--;
 
@@ -90,8 +98,10 @@ int strncmp(const char *s1, const char *s2, size_t n) {
 
 // Searching
 
-char *strchr(const char *s, char c) {
-  while (*s) {
+char *strchr(const char *s, char c)
+{
+  while (*s)
+  {
     if (*s == c)
       return (char *)s;
     s++;
@@ -100,10 +110,12 @@ char *strchr(const char *s, char c) {
   return NULL;
 }
 
-char *strrchr(const char *s, int c) {
+char *strrchr(const char *s, int c)
+{
   char *ret = NULL;
 
-  while (*s) {
+  while (*s)
+  {
     if (*s == c)
       ret = (char *)s;
     s++;
@@ -114,7 +126,8 @@ char *strrchr(const char *s, int c) {
 
 // Other
 
-void *memset(void *s, int c, size_t n) {
+void *memset(void *s, int c, size_t n)
+{
   uint8_t *p = (uint8_t *)s;
 
   for (size_t i = 0; i < n; i++)
@@ -123,7 +136,8 @@ void *memset(void *s, int c, size_t n) {
   return s;
 }
 
-size_t strlen(const char *s) {
+size_t strlen(const char *s)
+{
   size_t len = 0;
 
   while (*s++)

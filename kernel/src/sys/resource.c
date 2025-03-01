@@ -4,11 +4,13 @@
 #include <common/log.h>
 #include <mm/kmem.h>
 
-resource_table_t resource_table_new() {
+resource_table_t resource_table_new()
+{
   return (resource_table_t){.resources = NULL, .length = 0, .lock = SLOCK_INIT};
 }
 
-void resource_table_expand(resource_table_t *table, uint amount) {
+void resource_table_expand(resource_table_t *table, uint amount)
+{
   slock_acquire(&table->lock);
 
   table->resources = kmem_realloc(table, table->length, table->length + amount);
@@ -18,7 +20,8 @@ void resource_table_expand(resource_table_t *table, uint amount) {
 }
 
 resource_t *resource_create_at(resource_table_t *table, int id,
-                               vfs_node_t *node, size_t offset, u8 flags) {
+                               vfs_node_t *node, size_t offset, u8 flags)
+{
   ASSERT(id < table->length);
 
   slock_acquire(&table->lock);
@@ -34,7 +37,8 @@ resource_t *resource_create_at(resource_table_t *table, int id,
   slock_release(&table->lock);
 }
 
-resource_t *resource_get(resource_table_t *table, int id) {
+resource_t *resource_get(resource_table_t *table, int id)
+{
   slock_acquire(&table->lock);
 
   if (id < 0 || id >= table->length)

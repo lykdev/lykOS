@@ -1,3 +1,17 @@
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterStruct: true
+  AfterUnion: true
+  AfterEnum: true
+  AfterExternBlock: true
+  SplitEmptyRecord: false
+  SplitEmptyFunction: false
+  SplitEmptyNamespace: false
+  AfterControlStatement: true
+  AfterFunction: true
+
+AllowShortBlocksOnASingleLine: Always
+
 InsertBraces: false
 InsertNewlineAtEOF: true
 
@@ -9,6 +23,12 @@ KeepEmptyLines:
 PointerAlignment: Right
 QualifierAlignment: Custom
 QualifierOrder: [constexpr, static, inline, volatile, const, type]
+
+ReflowComments: true
+
+RemoveParentheses: Leave
+
+SeparateDefinitionBlocks: Leave
 
 # Includes
 SortIncludes: CaseInsensitive

@@ -7,7 +7,8 @@
 typedef struct kmem_slab kmem_slab_t;
 typedef struct kmem_cache kmem_cache_t;
 
-struct kmem_slab {
+struct kmem_slab
+{
   kmem_cache_t *parent_cache;
   uint obj_cnt;
   void *freelist;
@@ -19,7 +20,8 @@ struct kmem_slab {
   list_node_t list_elem;
 };
 
-struct kmem_cache {
+struct kmem_cache
+{
   char name[32];
   uint obj_size;
   list_t slabs_partial;

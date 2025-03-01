@@ -5,7 +5,8 @@
 #include <common/log.h>
 #include <lib/def.h>
 
-void panic(const char *format, ...) {
+void panic(const char *format, ...)
+{
   va_list list;
   va_start(list);
 

@@ -3,18 +3,21 @@
 #include <common/slock.h>
 #include <fs/vfs.h>
 
-typedef enum {
+typedef enum
+{
   RESOURCE_READ = 1 << 0,
   RESOURCE_WRITE = 1 << 1
 } resource_mode_t;
 
-typedef struct {
+typedef struct
+{
   vfs_node_t *node;
   u64 offset;
   u8 flags;
 } resource_t;
 
-typedef struct {
+typedef struct
+{
   resource_t **resources;
   int length;
   slock_t lock;

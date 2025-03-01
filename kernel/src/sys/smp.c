@@ -17,12 +17,14 @@ bool g_smp_initialized = false;
 
 static proc_t *g_idle_proc;
 
-static void thread_idle_func() {
+static void thread_idle_func()
+{
   while (true)
     sched_yield();
 }
 
-static void core_init(struct limine_mp_info *mp_info) {
+static void core_init(struct limine_mp_info *mp_info)
+{
   static slock_t slock = SLOCK_INIT;
   slock_acquire(&slock); // Assure CPU cores are initialized sequentially.
 
@@ -44,14 +46,16 @@ static void core_init(struct limine_mp_info *mp_info) {
   thread_idle_func();
 }
 
-void smp_init() {
+void smp_init()
+{
   if (request_mp.response == NULL)
     panic("Invalid SMP info provided by the bootloader");
 
   g_idle_proc = proc_new(PROC_KERNEL);
 
   struct limine_mp_info *bsp_mp_info;
-  for (size_t i = 0; i < request_mp.response->cpu_count; i++) {
+  for (size_t i = 0; i < request_mp.response->cpu_count; i++)
+  {
     struct limine_mp_info *mp_info = request_mp.response->cpus[i];
     mp_info->extra_argument = i;
 

@@ -15,7 +15,8 @@ list_t g_thread_list = LIST_INIT;
 
 extern void x86_64_thread_userspace_init();
 
-thread_t *thread_new(proc_t *parent_proc, uptr entry) {
+thread_t *thread_new(proc_t *parent_proc, uptr entry)
+{
   ASSERT(parent_proc != NULL);
 
   thread_t *thread = kmem_alloc(sizeof(thread_t));
@@ -27,13 +28,15 @@ thread_t *thread_new(proc_t *parent_proc, uptr entry) {
       .parent_proc = parent_proc,
       .assigned_core = NULL};
 
-  if (parent_proc->type == PROC_KERNEL) {
+  if (parent_proc->type == PROC_KERNEL)
+  {
     thread->kernel_stack = (uptr)pmm_alloc(0) + HHDM + ARCH_PAGE_GRAN -
                            sizeof(arch_thread_init_stack_kernel_t);
     memset((void *)thread->kernel_stack, 0,
            sizeof(arch_thread_init_stack_kernel_t));
     ((arch_thread_init_stack_kernel_t *)thread->kernel_stack)->entry = entry;
-  } else if (parent_proc->type == PROC_USER) {
+  } else if (parent_proc->type == PROC_USER)
+  {
     thread->kernel_stack = (uptr)pmm_alloc(0) + HHDM + ARCH_PAGE_GRAN -
                            sizeof(arch_thread_init_stack_user_t);
     memset((void *)thread->kernel_stack, 0,

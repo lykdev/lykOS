@@ -2,7 +2,8 @@
 
 #include <lib/def.h>
 
-typedef struct {
+typedef struct
+{
   uptr addr;
   u64 height;
   u64 width;

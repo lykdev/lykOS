@@ -4,7 +4,8 @@
 
 framebuffer_t video_fb;
 
-void video_init() {
+void video_init()
+{
   struct limine_framebuffer *b = request_framebuffer.response->framebuffers[0];
 
   video_fb.addr = (uptr)b->address;

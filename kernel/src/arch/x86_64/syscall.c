@@ -4,7 +4,8 @@
 
 extern void arch_syscall_entry();
 
-void arch_syscall_init() {
+void arch_syscall_init()
+{
   // Enable SYSCALL/SYSRET by setting SCE (System Call Extensions) bit.
   x86_64_msr_write(X86_64_MSR_EFER, x86_64_msr_read(X86_64_MSR_EFER) | 1);
 

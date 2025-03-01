@@ -3,7 +3,8 @@
 #include <common/log.h>
 #include <fs/vfs.h>
 
-int syscall_read(int fd, u64 count, void *buf) {
+int syscall_read(int fd, u64 count, void *buf)
+{
   log("READ");
   proc_t *proc = syscall_get_proc();
 

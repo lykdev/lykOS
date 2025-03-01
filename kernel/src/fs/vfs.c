@@ -9,7 +9,8 @@
 
 typedef struct trie_node_t trie_node_t;
 
-struct trie_node_t {
+struct trie_node_t
+{
   /// @brief The path component separated by delimiting characters.
   char comp[32];
   /// @brief Pointer to the mountpoint, NULL if no mount here.
@@ -19,17 +20,20 @@ struct trie_node_t {
 };
 static trie_node_t g_trie_root;
 
-static trie_node_t *find_child(trie_node_t *parent, const char *comp) {
+static trie_node_t *find_child(trie_node_t *parent, const char *comp)
+{
   for (uint i = 0; i < parent->children_cnt; i++)
     if (strcmp(parent->children[i]->comp, comp) == 0)
       return parent->children[i];
   return NULL;
 }
 
-static char *vfs_get_mountpoint(const char *path, vfs_mountpoint_t **out) {
+static char *vfs_get_mountpoint(const char *path, vfs_mountpoint_t **out)
+{
   trie_node_t *current = &g_trie_root;
 
-  while (*path != '\0') {
+  while (*path != '\0')
+  {
     char comp[32];
     char *path_next = path_consume_comp(path, comp);
 
@@ -49,16 +53,19 @@ static char *vfs_get_mountpoint(const char *path, vfs_mountpoint_t **out) {
   return (char *)path;
 }
 
-int vfs_mount(const char *path, vfs_mountpoint_t *mp) {
+int vfs_mount(const char *path, vfs_mountpoint_t *mp)
+{
   trie_node_t *current = &g_trie_root;
 
-  while (*path != '\0') {
+  while (*path != '\0')
+  {
     char comp[32];
     path = path_consume_comp(path, comp);
 
     // Search for the token among the current node's children.
     trie_node_t *child = find_child(current, comp);
-    if (child == NULL) {
+    if (child == NULL)
+    {
       child = kmem_alloc(sizeof(trie_node_t));
       strcpy(child->comp, comp);
       child->children_cnt = 0;
@@ -70,7 +77,8 @@ int vfs_mount(const char *path, vfs_mountpoint_t *mp) {
   return 0;
 }
 
-int vfs_lookup(const char *path, vfs_node_t **out) {
+int vfs_lookup(const char *path, vfs_node_t **out)
+{
   *out = NULL;
 
   vfs_mountpoint_t *mp;
@@ -78,13 +86,15 @@ int vfs_lookup(const char *path, vfs_node_t **out) {
   ASSERT(mp != NULL);
 
   vfs_node_t *curr = mp->root_node;
-  while (curr != NULL) {
+  while (curr != NULL)
+  {
     char comp[64] = "";
     path = path_consume_comp(path, comp);
 
     if (comp[0] != '\0')
       curr->ops->lookup(curr, comp, &curr);
-    else {
+    else
+    {
       *out = curr;
       return 0;
     }
@@ -93,14 +103,16 @@ int vfs_lookup(const char *path, vfs_node_t **out) {
   return 0;
 }
 
-void vfs_init() {
+void vfs_init()
+{
   strcpy(g_trie_root.comp, "");
   g_trie_root.children_cnt = 0;
 
   log("VFS initialized");
 }
 
-static void _vfs_debug(trie_node_t *node, uint depth) {
+static void _vfs_debug(trie_node_t *node, uint depth)
+{
   char pad[16] = {0};
   for (uint i = 0; i < depth; i++)
     strcat(pad, " ");

@@ -10,7 +10,8 @@
 #include <lib/list.h>
 #include <lib/string.h>
 
-typedef struct {
+typedef struct
+{
   uptr addr;
   u8 order;
   bool free;
@@ -24,7 +25,8 @@ static list_t levels[PMM_MAX_ORDER + 1];
 
 // UTILS
 
-u8 pmm_pagecount_to_order(u64 pages) {
+u8 pmm_pagecount_to_order(u64 pages)
+{
   if (pages == 1)
     return 0;
   return (u8)(64 - __builtin_clzll(pages - 1));
@@ -32,7 +34,8 @@ u8 pmm_pagecount_to_order(u64 pages) {
 
 u64 pmm_order_to_pagecount(u8 order) { return (u64)1 << order; }
 
-void pmm_debug_info() {
+void pmm_debug_info()
+{
   log("Free blocks per order:");
   for (int i = 0; i <= PMM_MAX_ORDER; i++)
     log("Order %d: %llu", i, levels[i].length);
@@ -46,9 +49,11 @@ void pmm_debug_info() {
 
 // ALLOC & FREE
 
-void *pmm_alloc(u8 order) {
+void *pmm_alloc(u8 order)
+{
   int i = order;
-  while (list_is_empty(&levels[i])) {
+  while (list_is_empty(&levels[i]))
+  {
     i++;
 
     if (i > PMM_MAX_ORDER)
@@ -59,7 +64,8 @@ void *pmm_alloc(u8 order) {
       LIST_GET_CONTAINER(levels[i].head, pmm_block_t, list_elem);
   list_remove(&levels[i], levels[i].head);
 
-  for (; i > order; i--) {
+  for (; i > order; i--)
+  {
     // Right block.
     u64 r_idx = (block->addr / ARCH_PAGE_GRAN) ^ pmm_order_to_pagecount(i - 1);
     pmm_block_t *right = &blocks[r_idx];
@@ -73,7 +79,8 @@ void *pmm_alloc(u8 order) {
   return (void *)block->addr;
 }
 
-void pmm_free(void *addr) {
+void pmm_free(void *addr)
+{
   ASSERT_C((uptr)addr < HHDM,
            "PMM functions operate with lower half memory addresses.");
 
@@ -83,13 +90,15 @@ void pmm_free(void *addr) {
 
   ASSERT(block->free == false);
 
-  while (i < PMM_MAX_ORDER) {
+  while (i < PMM_MAX_ORDER)
+  {
     u64 b_idx = idx ^ pmm_order_to_pagecount(i);
     if (b_idx >= block_count)
       break;
 
     pmm_block_t *buddy = &blocks[b_idx];
-    if (buddy->free == true && buddy->order == i) {
+    if (buddy->free == true && buddy->order == i)
+    {
       list_remove(&levels[buddy->order], &buddy->list_elem);
 
       // The new merged block is on the left.
@@ -107,14 +116,16 @@ void pmm_free(void *addr) {
 
 // INIT
 
-void pmm_init() {
+void pmm_init()
+{
   for (int i = 0; i <= PMM_MAX_ORDER; i++)
     levels[i] = LIST_INIT;
 
   // Find the last usable memory entry to determine how many blocks our pmm
   // should manage.
   struct limine_memmap_entry *last_usable_entry;
-  for (u64 i = 0; i < request_memmap.response->entry_count; i++) {
+  for (u64 i = 0; i < request_memmap.response->entry_count; i++)
+  {
     struct limine_memmap_entry *e = request_memmap.response->entries[i];
 
     // log(2, "%d %#llx %#llx - %lluMiB +  %lluKiB", e->type, e->base,
@@ -129,10 +140,12 @@ void pmm_init() {
   // Find a usable memory entry at the start of which the blocks array will be
   // placed.
   blocks = NULL; // Useful for the assert.
-  for (u64 i = 0; i < request_memmap.response->entry_count; i++) {
+  for (u64 i = 0; i < request_memmap.response->entry_count; i++)
+  {
     struct limine_memmap_entry *e = request_memmap.response->entries[i];
     if (e->type == LIMINE_MEMMAP_USABLE)
-      if (e->length >= block_count * sizeof(pmm_block_t)) {
+      if (e->length >= block_count * sizeof(pmm_block_t))
+      {
         blocks = (pmm_block_t *)(e->base + HHDM);
         break;
       }
@@ -147,7 +160,8 @@ void pmm_init() {
 
   // Iterate through each entry and set the blocks corresponding to a usable
   // memory entry as free using greedy.
-  for (u64 i = 0; i < request_memmap.response->entry_count; i++) {
+  for (u64 i = 0; i < request_memmap.response->entry_count; i++)
+  {
     struct limine_memmap_entry *e = request_memmap.response->entries[i];
     if (e->type != LIMINE_MEMMAP_USABLE)
       continue;
@@ -159,10 +173,12 @@ void pmm_init() {
     if (addr == (uptr)blocks - HHDM)
       addr += (block_count * sizeof(pmm_block_t) + (ARCH_PAGE_GRAN - 1)) /
               ARCH_PAGE_GRAN * ARCH_PAGE_GRAN;
-    while (addr != e->base + e->length) {
+    while (addr != e->base + e->length)
+    {
       u64 span = pmm_order_to_pagecount(order) * ARCH_PAGE_GRAN;
 
-      if (addr + span > e->base + e->length || addr % span != 0) {
+      if (addr + span > e->base + e->length || addr % span != 0)
+      {
         order--;
         continue;
       }

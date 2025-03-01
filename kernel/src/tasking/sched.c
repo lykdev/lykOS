@@ -13,7 +13,8 @@ extern __attribute__((naked)) void arch_sched_context_switch(thread_t *curr,
 
 static slock_t slock = SLOCK_INIT;
 
-static thread_t *sched_next() {
+static thread_t *sched_next()
+{
   thread_t *ret = NULL;
 
   slock_acquire(&slock);
@@ -27,13 +28,15 @@ static thread_t *sched_next() {
   return ret;
 }
 
-void sched_drop(thread_t *thread) {
+void sched_drop(thread_t *thread)
+{
   if (thread !=
       ((thread_t *)arch_cpu_read_thread_reg())->assigned_core->idle_thread)
     sched_queue_add(thread);
 }
 
-void sched_queue_add(thread_t *thread) {
+void sched_queue_add(thread_t *thread)
+{
   slock_acquire(&slock);
 
   list_append(&g_thread_list, &thread->list_elem_thread);
@@ -41,13 +44,15 @@ void sched_queue_add(thread_t *thread) {
   slock_release(&slock);
 }
 
-void sched_yield() {
+void sched_yield()
+{
   thread_t *curr = arch_cpu_read_thread_reg();
   thread_t *next = sched_next();
 
   if (next == NULL)
     next = ((thread_t *)arch_cpu_read_thread_reg())->assigned_core->idle_thread;
-  if (curr != next) {
+  if (curr != next)
+  {
     next->assigned_core = curr->assigned_core;
     curr->assigned_core = NULL;
   }

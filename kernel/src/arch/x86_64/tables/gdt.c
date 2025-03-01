@@ -18,7 +18,8 @@
 #define FLAG_LONG (1 << 5)
 #define FLAG_SYSTEM_AVL (1 << 4)
 
-typedef struct {
+typedef struct
+{
   u16 limit;
   u16 base_low;
   u8 base_mid;
@@ -27,7 +28,8 @@ typedef struct {
   u8 base_high;
 } __attribute__((packed)) gdt_entry_t;
 
-typedef struct {
+typedef struct
+{
   gdt_entry_t entry;
   u32 base_ext;
   u8 _rsv0;
@@ -35,7 +37,8 @@ typedef struct {
   u16 _rsv2;
 } __attribute__((packed)) gdt_system_entry_t;
 
-typedef struct {
+typedef struct
+{
   u16 limit;
   u64 base;
 } __attribute__((packed)) gdt_descriptor_t;
@@ -78,7 +81,8 @@ static gdt_entry_t g_gdt[] = {
     {},
     {}};
 
-void x86_64_gdt_load() {
+void x86_64_gdt_load()
+{
   gdt_descriptor_t gdtr =
       (gdt_descriptor_t){.limit = sizeof(g_gdt) - 1, .base = (u64)&g_gdt};
 
@@ -87,7 +91,8 @@ void x86_64_gdt_load() {
            X86_64_GDT_SELECTOR_DATA64_RING0);
 }
 
-void x86_64_gdt_load_tss(x86_64_tss_t *tss) {
+void x86_64_gdt_load_tss(x86_64_tss_t *tss)
+{
   u16 tss_segment = sizeof(g_gdt) - 16;
 
   gdt_system_entry_t *entry = (gdt_system_entry_t *)((uptr)g_gdt + tss_segment);

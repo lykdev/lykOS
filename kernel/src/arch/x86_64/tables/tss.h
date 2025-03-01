@@ -2,7 +2,8 @@
 
 #include <lib/def.h>
 
-typedef struct {
+typedef struct
+{
   u32 rsv0;
   u32 rsp0_lower;
   u32 rsp0_upper;

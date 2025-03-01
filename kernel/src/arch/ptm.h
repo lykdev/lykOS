@@ -6,7 +6,8 @@
 
 typedef u64 pte_t;
 
-typedef struct {
+typedef struct
+{
 #if defined(__x86_64__)
   pte_t *pml4;
 #elif defined(__aarch64__)
@@ -14,7 +15,8 @@ typedef struct {
 #endif
 } arch_ptm_map_t;
 
-typedef enum {
+typedef enum
+{
   ARCH_PTM_WRITE = 1 << 0,
   ARCH_PTM_USER = 1 << 1,
   ARCH_PTM_EXECUTE = 1 << 2

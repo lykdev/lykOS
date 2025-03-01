@@ -11,7 +11,8 @@
 static int line = 0;
 static slock_t slock = SLOCK_INIT;
 
-void _log(const char *format, ...) {
+void _log(const char *format, ...)
+{
   va_list list;
   va_start(list);
 
@@ -20,7 +21,8 @@ void _log(const char *format, ...) {
   va_end(list);
 }
 
-void _n_log(const char *format, va_list list) {
+void _n_log(const char *format, va_list list)
+{
   slock_acquire(&slock);
 
   char buf[256] = {0};
@@ -31,7 +33,8 @@ void _n_log(const char *format, va_list list) {
   arch_serial_send_str("\n");
 #endif
 
-  if (line > 45) {
+  if (line > 45)
+  {
     slock_release(&slock);
     return;
   }

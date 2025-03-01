@@ -5,7 +5,8 @@
 #include <common/log.h>
 #include <lib/def.h>
 
-typedef struct {
+typedef struct
+{
   u16 isr_low;
   u16 kernel_cs;
   u8 ist;
@@ -15,7 +16,8 @@ typedef struct {
   u32 _rsv;
 } __attribute__((packed)) idt_entry_t;
 
-typedef struct {
+typedef struct
+{
   u16 limit;
   u64 base;
 } __attribute__((packed)) idtr_t;
@@ -23,8 +25,10 @@ typedef struct {
 __attribute__((aligned(0x10))) static idt_entry_t idt[256];
 extern uptr arch_int_stub_table[256];
 
-void arch_int_init() {
-  for (int i = 0; i < 256; i++) {
+void arch_int_init()
+{
+  for (int i = 0; i < 256; i++)
+  {
     u64 isr = (u64)arch_int_stub_table[i];
 
     idt[i] = (idt_entry_t){.isr_low = isr & 0xFFFF,
@@ -39,7 +43,8 @@ void arch_int_init() {
   log("IDT generated.");
 }
 
-void x86_64_idt_load() {
+void x86_64_idt_load()
+{
   idtr_t idtr = (idtr_t){.limit = sizeof(idt) - 1, .base = (u64)&idt};
   asm volatile("lidt %0" : : "m"(idtr));
 }

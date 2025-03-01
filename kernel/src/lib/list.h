@@ -2,11 +2,13 @@
 
 #include <lib/def.h>
 
-typedef struct list_node {
+typedef struct list_node
+{
   struct list_node *prev, *next;
 } list_node_t;
 
-typedef struct {
+typedef struct
+{
   size_t length;
   list_node_t *head, *tail;
 } list_t;

@@ -4,7 +4,8 @@
 #include <common/log.h>
 #include <lib/def.h>
 
-typedef struct {
+typedef struct
+{
   u64 rax;
   u64 rbx;
   u64 rcx;
@@ -28,8 +29,10 @@ void arch_int_unmask() { asm volatile("sti"); }
 
 void arch_int_mask() { asm volatile("cli"); }
 
-void arch_int_handler(cpu_state_t *cpu_state) {
-  if (cpu_state->int_no < 32) {
+void arch_int_handler(cpu_state_t *cpu_state)
+{
+  if (cpu_state->int_no < 32)
+  {
     log("CPU EXCEPTION: %llu %#llx", cpu_state->int_no, cpu_state->err_code);
 
     arch_cpu_halt();

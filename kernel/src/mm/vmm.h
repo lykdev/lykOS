@@ -9,7 +9,8 @@
 
 // Types
 
-typedef struct {
+typedef struct
+{
   slock_t slock;
   list_t segments;
   uptr limit_low;
@@ -18,9 +19,14 @@ typedef struct {
   arch_ptm_map_t ptm_map;
 } vmm_addr_space_t;
 
-typedef enum { VMM_ANON, VMM_DIRECT } vmm_seg_type_t;
+typedef enum
+{
+  VMM_ANON,
+  VMM_DIRECT
+} vmm_seg_type_t;
 
-typedef enum {
+typedef enum
+{
   VMM_NONE = 0,
   VMM_READ = 1 << 0,
   VMM_WRITE = 1 << 1,
@@ -28,7 +34,8 @@ typedef enum {
   VMM_FULL = VMM_READ | VMM_WRITE | VMM_EXEC
 } vmm_prot_t;
 
-typedef struct {
+typedef struct
+{
   vmm_addr_space_t *addr_space;
   vmm_seg_type_t type;
   uptr base;

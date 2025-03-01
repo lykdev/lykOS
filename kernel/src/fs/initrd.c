@@ -14,7 +14,8 @@
 
 #define USTAR_MAGIC "ustar"
 
-typedef struct {
+typedef struct
+{
   char filename[100];
   char filemode[8];
   char uid[8];
@@ -34,10 +35,12 @@ typedef struct {
   char _rsv[12];
 } __attribute__((packed)) ustar_hdr_t;
 
-static u64 ustar_read_field(const char *str, u64 size) {
+static u64 ustar_read_field(const char *str, u64 size)
+{
   u64 n = 0;
   const char *c = str;
-  while (size-- > 0 && *c != '\0') {
+  while (size-- > 0 && *c != '\0')
+  {
     n *= 8;
     n += *c - '0';
     c++;
@@ -45,7 +48,8 @@ static u64 ustar_read_field(const char *str, u64 size) {
   return n;
 }
 
-typedef struct {
+typedef struct
+{
   ustar_hdr_t *ustar_data;
   vfs_node_t vfs_node;
 
@@ -53,7 +57,8 @@ typedef struct {
 } initrd_entry_t;
 static list_t g_entry_list;
 
-static int read(vfs_node_t *self, u64 offset, u64 size, void *buffer) {
+static int read(vfs_node_t *self, u64 offset, u64 size, void *buffer)
+{
   if (self->type != VFS_NODE_FILE)
     return -1;
 
@@ -73,8 +78,10 @@ static int read(vfs_node_t *self, u64 offset, u64 size, void *buffer) {
   return size;
 }
 
-static int lookup(vfs_node_t *self, char *name, vfs_node_t **out) {
-  if (self->type != VFS_NODE_DIR) {
+static int lookup(vfs_node_t *self, char *name, vfs_node_t **out)
+{
+  if (self->type != VFS_NODE_DIR)
+  {
     *out = NULL;
     return -1;
   }
@@ -85,9 +92,11 @@ static int lookup(vfs_node_t *self, char *name, vfs_node_t **out) {
   strcat(path, "/");
   strcat(path, name);
 
-  FOREACH(n, g_entry_list) {
+  FOREACH(n, g_entry_list)
+  {
     initrd_entry_t *node = LIST_GET_CONTAINER(n, initrd_entry_t, list_elem);
-    if (strcmp(path, node->ustar_data->filename) == 0) {
+    if (strcmp(path, node->ustar_data->filename) == 0)
+    {
       *out = &node->vfs_node;
       return 0;
     }
@@ -97,8 +106,10 @@ static int lookup(vfs_node_t *self, char *name, vfs_node_t **out) {
   return 0;
 }
 
-int list(vfs_node_t *self, uint *index, char **out) {
-  if (self->type != VFS_NODE_DIR) {
+int list(vfs_node_t *self, uint *index, char **out)
+{
+  if (self->type != VFS_NODE_DIR)
+  {
     *out = NULL;
     return -1;
   }
@@ -109,10 +120,13 @@ int list(vfs_node_t *self, uint *index, char **out) {
   strcat(path, "/");
 
   uint l_index = 0;
-  FOREACH(n, g_entry_list) {
+  FOREACH(n, g_entry_list)
+  {
     initrd_entry_t *node = LIST_GET_CONTAINER(n, initrd_entry_t, list_elem);
-    if (strncmp(path, node->ustar_data->filename, strlen(path)) == 0) {
-      if (l_index == *index) {
+    if (strncmp(path, node->ustar_data->filename, strlen(path)) == 0)
+    {
+      if (l_index == *index)
+      {
         (*index)++;
         *out = (char *)&node->ustar_data->filename;
         return 0;
@@ -130,7 +144,8 @@ static vfs_node_ops_t g_node_ops =
 
 static vfs_mountpoint_t g_mountpoint;
 
-static void process_entry(ustar_hdr_t *hdr) {
+static void process_entry(ustar_hdr_t *hdr)
+{
   path_normalize(hdr->filename, hdr->filename);
 
   initrd_entry_t *node = kmem_alloc(sizeof(initrd_entry_t));
@@ -144,14 +159,16 @@ static void process_entry(ustar_hdr_t *hdr) {
   list_append(&g_entry_list, &node->list_elem);
 }
 
-void initrd_init() {
+void initrd_init()
+{
   if (request_module.response == NULL ||
       request_module.response->module_count == 0)
     panic("Initrd module not found!");
 
   ustar_hdr_t *hdr =
       (ustar_hdr_t *)request_module.response->modules[0]->address;
-  while (true) {
+  while (true)
+  {
     if (hdr->magic[0] == '\0' &&
         ((ustar_hdr_t *)((uptr)hdr + 512))->magic[0] == '\0')
       break;

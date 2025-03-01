@@ -17,7 +17,8 @@
 #include <sys/tasking.h>
 #include <tasking/sched.h>
 
-void _entry() {
+void _entry()
+{
   video_init();
   log("Kernel start.");
   log("Kernel compiled on %s at %s.", __DATE__, __TIME__);
