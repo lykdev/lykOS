@@ -31,6 +31,7 @@ resource_t *resource_create_at(resource_table_t *table, int id, vfs_node_t *node
     table->resources[id] = res;
 
     slock_release(&table->lock);
+    return res;
 }
 
 resource_t *resource_get(resource_table_t *table, int id)

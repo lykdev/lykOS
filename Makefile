@@ -72,11 +72,13 @@ clean:
 	rm -rf iso_root
 	rm -rf $(LYKOS_ISO)
 	rm -f qemu/log.txt
+	rm -rf initrd.tar
 
 	make -C kernel clean
-	rm -rf initrd.tar
 
 distclean: clean
 	rm -rf limine
 	rm -rf qemu
+
+	make -C kernel distclean
 	

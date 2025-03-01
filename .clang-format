@@ -10,7 +10,7 @@ BraceWrapping:
   AfterControlStatement: true
   AfterFunction: true
 
-AllowShortBlocksOnASingleLine: Always
+AllowShortBlocksOnASingleLine: Never
 
 InsertBraces: false
 InsertNewlineAtEOF: true

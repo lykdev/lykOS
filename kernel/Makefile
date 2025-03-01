@@ -88,7 +88,11 @@ endif
 # BUILDING
 
 .PHONY: build
-build: $(KERNEL_ELF)
+build: limine $(KERNEL_ELF)
+
+.PHONY: limine
+limine:
+	wget -O src/common/limine/limine.h https://raw.githubusercontent.com/limine-bootloader/limine/refs/heads/v8.x-binary/limine.h
 
 $(KERNEL_ELF): $(OBJ_FILES)
 	mkdir -p $(@D)
@@ -108,3 +112,6 @@ obj/%.asm.o: src/%.asm
 
 clean:
 	rm -rf obj bin
+
+distclean: clean
+	rm src/common/limine/limine.h

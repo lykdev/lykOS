@@ -1,4 +1,6 @@
 /bin
 /obj
 
+/common/limine/limine.h
+
 .vscode
