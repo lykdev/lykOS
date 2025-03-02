@@ -34,20 +34,20 @@ static int root_node_list(vfs_node_t *, uint *index, char **out)
 
 // clang-format off
 
-vfs_node_ops_t g_root_node_ops = (vfs_node_ops_t) {
+static vfs_node_ops_t g_root_node_ops = (vfs_node_ops_t) {
     .read = root_node_read,
     .write = root_node_write,
     .lookup = root_node_lookup,
     .list = root_node_list
 };
 
-vfs_node_t g_root_node = (vfs_node_t) {
+static vfs_node_t g_root_node = (vfs_node_t) {
     .type = VFS_NODE_DIR,
     .name = "dev",
     .ops = &g_root_node_ops
 };
 
-vfs_mountpoint_t g_mp = (vfs_mountpoint_t) {
+static vfs_mountpoint_t g_mp = (vfs_mountpoint_t) {
     .root_node = &g_root_node
 };
 
