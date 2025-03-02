@@ -19,11 +19,15 @@ isr_stub:
     push r13
     push r14
     push r15
+    mov  rax, cr2
+    push rax
 
     xor rbp, rbp
     mov rdi, rsp                                            ; RDI to be used as a pointer to the int frame
     call arch_int_handler                                   ; Call interrupt handler
 
+    pop rax
+    mov cr2, rax
     pop r15                                                 ; Restore CPU state
     pop r14
     pop r13

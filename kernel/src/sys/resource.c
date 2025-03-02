@@ -47,7 +47,7 @@ resource_t *resource_create_at(resource_table_t *table, int id, vfs_node_t *node
 int resource_create(resource_table_t *table, vfs_node_t *node, size_t offset, u8 flags)
 {
     slock_acquire(&table->lock);
-    uint i;
+    int i;
     for (i = 0; i < table->length; i++)
         if (table->resources[i] == NULL)
         {
@@ -55,7 +55,7 @@ int resource_create(resource_table_t *table, vfs_node_t *node, size_t offset, u8
             break;
         }
 
-    slock_release(uint&table->lock);
+    slock_release(&table->lock);
     return i;
 }
 

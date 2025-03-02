@@ -7,6 +7,8 @@
 
 void panic(const char *format, ...)
 {
+    log("---PANIC---");
+
     va_list list;
     va_start(list);
 

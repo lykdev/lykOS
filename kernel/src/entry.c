@@ -1,6 +1,7 @@
 #include <arch/cpu.h>
 #include <arch/int.h>
 #include <arch/syscall.h>
+#include <arch/init.h>
 
 #include <common/assert.h>
 #include <common/limine/requests.h>
@@ -24,6 +25,7 @@ void _entry()
     log("Kernel compiled on %s at %s.", __DATE__, __TIME__);
 
     arch_int_init();
+    arch_cpu_core_init();
 
     pmm_init();
     kmem_init();
@@ -34,16 +36,16 @@ void _entry()
 
     arch_syscall_init();
 
-    vfs_node_t *elf_file;
-    vfs_lookup("/initrd/doomgeneric", &elf_file);
+    // vfs_node_t *elf_file;
+    // vfs_lookup("/initrd/doomgeneric", &elf_file);
 
-    elf_object_t *elf_obj = elf_read(elf_file);
-    ASSERT(elf_is_compatible(elf_obj));
+    // elf_object_t *elf_obj = elf_read(elf_file);
+    // ASSERT(elf_is_compatible(elf_obj));
 
-    proc_t *proc = proc_new(PROC_USER);
-    elf_load_exec(elf_obj, proc->addr_space);
-    thread_t *t = thread_new(proc, elf_get_entry(elf_obj));
-    sched_queue_add(t);
+    // proc_t *proc = proc_new(PROC_USER);
+    // elf_load_exec(elf_obj, proc->addr_space);
+    // thread_t *t = thread_new(proc, elf_get_entry(elf_obj));
+    // sched_queue_add(t);
 
     smp_init();
 

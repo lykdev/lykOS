@@ -14,5 +14,5 @@ int syscall_open(const char *path, int flags, int mode)
         log("FAILED");
     }
 
-    return resource_create(proc->resource_table, node, 0, RESOURCE_READ | RESOURCE_WRITE);
+    return resource_create(&proc->resource_table, node, 0, RESOURCE_READ | RESOURCE_WRITE);
 }

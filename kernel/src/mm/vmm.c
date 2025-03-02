@@ -7,71 +7,32 @@
 #include <common/limine/requests.h>
 #include <common/log.h>
 #include <lib/list.h>
+#include <lib/math.h>
 #include <mm/kmem.h>
 #include <mm/pmm.h>
 
 #define SEG_INTERSECTS(BASE1, LENGTH1, BASE2, LENGTH2) ((BASE1) < ((BASE2) + (LENGTH2)) && (BASE2) < ((BASE1) + (LENGTH1)))
 
-// GLOBAL DATA
-
 vmm_addr_space_t *g_vmm_kernel_addr_space;
 
 static kmem_cache_t *g_segment_cache;
 
-static void insert_seg(vmm_addr_space_t *addr_space, uptr base, u64 len, vmm_seg_type_t type)
+static void vmm_insert_seg(vmm_addr_space_t *addr_space, vmm_seg_t *seg)
 {
-    // TODO: free the actual segments.
-
-    FOREACH(n, addr_space->segments)
-    {
-        vmm_seg_t *seg = LIST_GET_CONTAINER(n, vmm_seg_t, list_elem);
-
-        if (SEG_INTERSECTS(base, len + 1, seg->base, seg->len + 1))
-        {
-            if (seg->type == type)
-            {
-                uptr end = base + len < seg->base + seg->len ? seg->base + seg->len : base + len;
-                base = base < seg->base ? base : seg->base;
-                len = end - base;
-
-                list_remove(&addr_space->segments, n);
-            } else
-            {
-                if (base <= seg->base && base + len >= seg->base + seg->len)
-                    list_remove(&addr_space->segments, n);
-                else if (base <= seg->base && base + len < seg->base + seg->len)
-                {
-                    seg->len = seg->base + seg->len - base - len;
-                    seg->base = base + len;
-                } else if (base > seg->base && base + len >= seg->base + seg->len)
-                    seg->len = base - seg->base;
-                else
-                {
-                    vmm_seg_t *new_seg = kmem_alloc_from(g_segment_cache);
-                    *new_seg = (vmm_seg_t){.base = base + len, .len = seg->base + seg->len - base - len, .type = seg->type, .list_elem = LIST_NODE_INIT, .addr_space = addr_space};
-                    list_insert_after(&addr_space->segments, n, &new_seg->list_elem);
-
-                    seg->len = base - seg->base;
-                }
-            }
-        }
-    }
-
-    vmm_seg_t *created_seg = kmem_alloc_from(g_segment_cache);
-    *created_seg = (vmm_seg_t){.base = base, .len = len, .type = type, .list_elem = LIST_NODE_INIT, .addr_space = addr_space};
+    slock_acquire(&addr_space->slock);
 
     list_node_t *pos = NULL;
     FOREACH(n, addr_space->segments)
     {
-        vmm_seg_t *seg = LIST_GET_CONTAINER(n, vmm_seg_t, list_elem);
+        vmm_seg_t *i = LIST_GET_CONTAINER(n, vmm_seg_t, list_elem);
 
-        if (seg->base < base)
+        if (i->base < seg->base)
             pos = n;
     }
-    list_insert_after(&addr_space->segments, pos, &created_seg->list_elem);
-}
+    list_insert_after(&addr_space->segments, pos, &seg->list_elem);
 
-// Actual VMM logic
+    slock_release(&addr_space->slock);
+}
 
 uptr vmm_find_space(vmm_addr_space_t *addr_space, u64 len)
 {
@@ -99,43 +60,121 @@ uptr vmm_find_space(vmm_addr_space_t *addr_space, u64 len)
     return 0;
 }
 
-uptr vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot)
+vmm_seg_t *vmm_addr_to_seg(vmm_addr_space_t *addr_space, uptr addr)
 {
-    ASSERT(virt % ARCH_PAGE_GRAN == 0 and len % ARCH_PAGE_GRAN == 0);
-    slock_acquire(&addr_space->slock);
+    FOREACH(n, addr_space->segments)
+    {
+        vmm_seg_t *seg = LIST_GET_CONTAINER(n, vmm_seg_t, list_elem);
 
-    insert_seg(addr_space, virt, len, VMM_ANON);
-    for (uptr addr = 0; addr < len; addr += ARCH_PAGE_SIZE_4K)
-        arch_ptm_map(&addr_space->ptm_map, virt + addr, (uptr)pmm_alloc(0), ARCH_PAGE_SIZE_4K);
+        if (seg->base <= addr && addr < seg->base + seg->len)
+            return seg;
+    }
 
-    slock_release(&addr_space->slock);
-    return virt;
+    return NULL;
 }
 
-uptr vmm_map_direct(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot, uptr phys)
+bool vmm_pagefault_handler(vmm_addr_space_t *addr_space, uptr addr)
 {
-    ASSERT(virt % ARCH_PAGE_GRAN == 0 and len % ARCH_PAGE_GRAN == 0);
-    slock_acquire(&addr_space->slock);
+    vmm_seg_t *seg = vmm_addr_to_seg(addr_space, addr);
 
-    insert_seg(addr_space, virt, len, VMM_DIRECT);
-    for (uptr addr = 0; addr < len; addr += ARCH_PAGE_SIZE_4K)
-        arch_ptm_map(&addr_space->ptm_map, virt + addr, phys + addr, ARCH_PAGE_SIZE_4K);
-
-    slock_release(&addr_space->slock);
-    return virt;
+    switch (seg->type)
+    {
+    case VMM_SEG_ANON:
+    {
+        uptr virt = FLOOR(addr, ARCH_PAGE_GRAN);
+        uptr phys = (uptr)pmm_alloc(0);
+        arch_ptm_map(
+            &seg->addr_space->ptm_map,
+            virt,
+            phys,
+            ARCH_PAGE_GRAN
+        );
+        return true;
+    }
+    case VMM_SEG_FIXED:
+    {
+        uptr virt = FLOOR(addr, ARCH_PAGE_GRAN);
+        uptr phys = seg->off + (virt - seg->base);
+        arch_ptm_map(
+            &seg->addr_space->ptm_map,
+            virt,
+            phys,
+            ARCH_PAGE_GRAN
+        );
+        return true;
+    }
+    default:
+        return false;
+    }
 }
 
-uptr vmm_virt_to_phys(vmm_addr_space_t *addr_space, uptr virt) { return arch_ptm_virt_to_phys(&addr_space->ptm_map, virt); }
+void vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot)
+{
+    (void)(prot);
+    ASSERT(virt % ARCH_PAGE_GRAN == 0 and len % ARCH_PAGE_GRAN == 0);
+    
+    vmm_seg_t *created_seg = kmem_alloc_from(g_segment_cache);
+    *created_seg = (vmm_seg_t) {
+        .addr_space = addr_space,
+        .type = VMM_SEG_ANON,
+        .base = virt,
+        .len  = len,
+        .off  = 0,
+        .list_elem = LIST_NODE_INIT
+    };
+    vmm_insert_seg(addr_space, created_seg);    
+}
+
+void vmm_map_fixed(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot, uptr phys, bool premap)
+{
+    (void)(prot);
+    ASSERT(virt % ARCH_PAGE_GRAN == 0 and len % ARCH_PAGE_GRAN == 0);
+
+    vmm_seg_t *created_seg = kmem_alloc_from(g_segment_cache);
+    *created_seg = (vmm_seg_t) {
+        .addr_space = addr_space,
+        .type = VMM_SEG_FIXED,
+        .base = virt,
+        .len  = len,
+        .off  = phys,
+        .list_elem = LIST_NODE_INIT
+    };
+    vmm_insert_seg(addr_space, created_seg);
+
+    if (premap)
+    {
+        slock_acquire(&addr_space->slock);
+
+        for (uptr addr = 0; addr < len; addr += ARCH_PAGE_SIZE_4K)
+            arch_ptm_map(&addr_space->ptm_map, virt + addr, phys + addr, ARCH_PAGE_SIZE_4K);
+
+        slock_release(&addr_space->slock);
+    }
+}
+
+uptr vmm_virt_to_phys(vmm_addr_space_t *addr_space, uptr virt)
+{
+    return arch_ptm_virt_to_phys(&addr_space->ptm_map, virt);
+}
 
 vmm_addr_space_t *vmm_new_addr_space(uptr limit_low, uptr limit_high)
 {
     vmm_addr_space_t *addr_space = kmem_alloc(sizeof(vmm_addr_space_t));
 
-    *addr_space = (vmm_addr_space_t){.slock = SLOCK_INIT, .segments = LIST_INIT, .limit_low = limit_low, .limit_high = limit_high, .ptm_map = arch_ptm_new_map()};
+    *addr_space = (vmm_addr_space_t) {
+        .slock = SLOCK_INIT,
+        .segments = LIST_INIT,
+        .limit_low = limit_low,
+        .limit_high = limit_high, 
+        .ptm_map = arch_ptm_new_map()
+    };
     return addr_space;
 }
 
-void vmm_load_addr_space(vmm_addr_space_t *addr_space) { arch_ptm_load_map(&addr_space->ptm_map); }
+void vmm_load_addr_space(vmm_addr_space_t *addr_space)
+{
+    arch_ptm_load_map(&addr_space->ptm_map);
+}
 
 void vmm_init()
 {
@@ -145,8 +184,23 @@ void vmm_init()
 
     g_segment_cache = kmem_new_cache("VMM Segment Cache", sizeof(vmm_seg_t));
 
-    vmm_map_direct(g_vmm_kernel_addr_space, HHDM, 4 * GIB, VMM_FULL, 0);
-    vmm_map_direct(g_vmm_kernel_addr_space, request_kernel_addr.response->virtual_base, 2 * GIB, VMM_FULL, request_kernel_addr.response->physical_base);
+    // Mappings done according to the Limine specification.
+    vmm_map_fixed(
+        g_vmm_kernel_addr_space,
+        HHDM,
+        4 * GIB,
+        VMM_FULL,
+        0,
+        true
+    );
+    vmm_map_fixed(
+        g_vmm_kernel_addr_space,
+        request_kernel_addr.response->virtual_base,
+        2 * GIB,
+        VMM_FULL,
+        request_kernel_addr.response->physical_base,
+        true // Premap this segment. PF handlers are found here so we cannot rely on them to do the mapping later.
+    );
 
     vmm_load_addr_space(g_vmm_kernel_addr_space);
 

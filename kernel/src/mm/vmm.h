@@ -21,28 +21,33 @@ typedef struct
 
 typedef enum
 {
-    VMM_ANON,
-    VMM_DIRECT
-} vmm_seg_type_t;
+    VMM_SEG_ANON,
+    VMM_SEG_FIXED,
+    VMM_SEG_DEV
+}
+vmm_seg_type_t;
 
 typedef enum
 {
-    VMM_NONE = 0,
-    VMM_READ = 1 << 0,
+    VMM_NONE  = 0,
+    VMM_READ  = 1 << 0,
     VMM_WRITE = 1 << 1,
-    VMM_EXEC = 1 << 2,
-    VMM_FULL = VMM_READ | VMM_WRITE | VMM_EXEC
-} vmm_prot_t;
+    VMM_EXEC  = 1 << 2,
+    VMM_FULL  = VMM_READ | VMM_WRITE | VMM_EXEC
+}
+vmm_prot_t;
 
 typedef struct
 {
     vmm_addr_space_t *addr_space;
     vmm_seg_type_t type;
     uptr base;
-    u64 len;
+    u64  len;
+    uptr off;
 
     list_node_t list_elem;
-} vmm_seg_t;
+}
+vmm_seg_t;
 
 // Public
 
@@ -50,9 +55,11 @@ extern vmm_addr_space_t *g_vmm_kernel_addr_space;
 
 uptr vmm_find_space(vmm_addr_space_t *addr_space, u64 len);
 
-uptr vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot);
+bool vmm_pagefault_handler(vmm_addr_space_t *addr_space, uptr addr);
 
-uptr vmm_map_direct(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot, uptr phys);
+void vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot);
+
+void vmm_map_fixed(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot, uptr phys, bool premap);
 
 uptr vmm_virt_to_phys(vmm_addr_space_t *addr_space, uptr virt);
 

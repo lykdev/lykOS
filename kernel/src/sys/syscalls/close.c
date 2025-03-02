@@ -8,7 +8,7 @@ int syscall_close(int fd)
     log("CLOSE");
     proc_t *proc = syscall_get_proc();
     
-    proc->resource_table[fd] = NULL;
+    proc->resource_table.resources[fd] = NULL;
 
     return 0;
 }

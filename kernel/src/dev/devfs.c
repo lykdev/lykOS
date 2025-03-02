@@ -3,7 +3,7 @@
 #include <common/log.h>
 #include <fs/vfs.h>
 #include <lib/def.h>
-#include <sys/dev/device.h>
+#include <dev/device.h>
 
 static int root_node_read(vfs_node_t *, u64, u64, void *) { return -1; }
 

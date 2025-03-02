@@ -5,6 +5,8 @@ USER_STACK_OFFSET equ 16
 
 extern syscall_exit
 extern syscall_debug_log
+extern syscall_open
+extern syscall_close
 extern syscall_read
 extern syscall_write
 

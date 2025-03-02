@@ -1,6 +1,7 @@
 #include "idt.h"
 
 #include <arch/int.h>
+#include <arch/x86_64/tables/gdt.h>
 
 #include <common/log.h>
 #include <lib/def.h>
@@ -31,13 +32,15 @@ void arch_int_init()
     {
         u64 isr = (u64)arch_int_stub_table[i];
 
-        idt[i] = (idt_entry_t){.isr_low = isr & 0xFFFF,
-                               .kernel_cs = 0x28, // TODO: Change this
-                               .ist = 0,
-                               .flags = 0x8E,
-                               .isr_mid = (isr >> 16) & 0xFFFF,
-                               .isr_high = (isr >> 32) & 0xFFFFFFFF,
-                               ._rsv = 0};
+        idt[i] = (idt_entry_t) {
+            .isr_low = isr & 0xFFFF, 
+            .kernel_cs = X86_64_GDT_SELECTOR_CODE64_RING0,
+            .ist = 0,
+            .flags = 0x8E,
+            .isr_mid = (isr >> 16) & 0xFFFF,
+            .isr_high = (isr >> 32) & 0xFFFFFFFF,
+            ._rsv = 0
+        };
     }
 
     log("IDT generated.");
@@ -45,6 +48,10 @@ void arch_int_init()
 
 void x86_64_idt_load()
 {
-    idtr_t idtr = (idtr_t){.limit = sizeof(idt) - 1, .base = (u64)&idt};
+    idtr_t idtr = (idtr_t) {
+        .limit = sizeof(idt) - 1,
+        .base = (u64)&idt
+    };
     asm volatile("lidt %0" : : "m"(idtr));
+    log("IDT loaded");
 }
