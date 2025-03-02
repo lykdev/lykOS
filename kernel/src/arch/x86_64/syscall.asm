@@ -12,8 +12,10 @@ section .data
 syscall_table:
     dq syscall_exit      ; 0
     dq syscall_debug_log ; 1
-    dq syscall_read      ; 2
-    dq syscall_write     ; 3
+    dq syscall_open      ; 2
+    dq syscall_close     ; 3
+    dq syscall_read      ; 4
+    dq syscall_write     ; 5
 .length: dq ($ - syscall_table) / 8
 
 section .text
