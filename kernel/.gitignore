@@ -1,6 +1,6 @@
 /bin
 /obj
 
-/common/limine/limine.h
+src/common/limine/limine.h
 
 .vscode

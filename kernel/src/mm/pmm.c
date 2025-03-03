@@ -103,7 +103,8 @@ void pmm_free(void *addr)
             block = idx < b_idx ? block : buddy;
             idx = idx < b_idx ? idx : b_idx;
             i++;
-        } else
+        }
+        else
             break;
     }
 
