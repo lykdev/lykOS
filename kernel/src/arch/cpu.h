@@ -9,3 +9,7 @@ void arch_cpu_write_thread_reg(void *t);
 void arch_cpu_halt();
 
 void arch_cpu_relax();
+
+void arch_cpu_int_unmask();
+
+void arch_cpu_int_mask();

@@ -23,4 +23,7 @@ void slock_acquire(volatile slock_t *lock)
     }
 }
 
-void slock_release(volatile slock_t *lock) { __atomic_clear(lock, __ATOMIC_RELEASE); }
+void slock_release(volatile slock_t *lock)
+{
+    __atomic_clear(lock, __ATOMIC_RELEASE);
+}

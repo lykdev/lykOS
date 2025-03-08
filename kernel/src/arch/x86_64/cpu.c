@@ -11,7 +11,10 @@ void *arch_cpu_read_thread_reg()
     return thread;
 }
 
-void arch_cpu_write_thread_reg(void *t) { x86_64_msr_write(X86_64_MSR_GS_BASE, (u64)t); }
+void arch_cpu_write_thread_reg(void *t)
+{
+    x86_64_msr_write(X86_64_MSR_GS_BASE, (u64)t);
+}
 
 void arch_cpu_halt()
 {
@@ -19,4 +22,17 @@ void arch_cpu_halt()
         asm volatile("hlt");
 }
 
-void arch_cpu_relax() { asm volatile("pause"); }
+void arch_cpu_relax()
+{
+    asm volatile("pause");
+}
+
+void arch_cpu_int_unmask()
+{
+    asm volatile("sti");
+}
+
+void arch_cpu_int_mask()
+{
+    asm volatile("cli");
+}

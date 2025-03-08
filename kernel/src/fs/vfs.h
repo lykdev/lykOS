@@ -1,6 +1,6 @@
 #pragma once
 
-#include <common/slock.h>
+#include <common/sync/slock.h>
 #include <lib/def.h>
 
 typedef struct vfs_node vfs_node_t;

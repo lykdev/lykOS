@@ -65,16 +65,6 @@ typedef enum
 }
 x86_64_exception_code_t;
 
-void arch_int_unmask()
-{
-    asm volatile("sti");
-}
-
-void arch_int_mask()
-{
-    asm volatile("cli");
-}
-
 void arch_int_handler(cpu_state_t *cpu_state)
 {
     if (cpu_state->int_no < 32)

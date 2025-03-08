@@ -3,7 +3,7 @@
 #include <arch/ptm.h>
 #include <arch/types.h>
 
-#include <common/slock.h>
+#include <common/sync/slock.h>
 #include <lib/def.h>
 #include <lib/list.h>
 

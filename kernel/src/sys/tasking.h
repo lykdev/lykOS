@@ -37,7 +37,8 @@ struct thread
     proc_t *parent_proc;
     cpu_core_t *assigned_core;
 
-    __attribute__((aligned(8))) list_node_t list_elem_thread;
+    __attribute__((aligned(8)))
+    list_node_t list_elem_thread;
     list_node_t list_elem_inside_proc;
 } __attribute__((packed));
 
