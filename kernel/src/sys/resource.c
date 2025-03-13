@@ -32,7 +32,7 @@ resource_t *resource_create_at(resource_table_t *table, int id, vfs_node_t *node
         slock_acquire(&table->lock);
 
     resource_t *res = kmem_alloc(sizeof(resource_t));
-    *res = (resource_t){
+    *res = (resource_t) {
         .node = node,
         .offset = offset,
         .flags = flags,

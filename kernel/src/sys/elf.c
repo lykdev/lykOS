@@ -41,28 +41,30 @@ typedef struct
     half_t shentsize;
     half_t shnum;
     half_t shstrndx;
-} __attribute__((packed)) elf_hdr_t;
+}
+__attribute__((packed)) elf_hdr_t;
 
-#define ELF_MAGIC                                                                                                                                                                  \
-    "\x7F"                                                                                                                                                                         \
-    "ELF"
-
+#define ELF_MAGIC "\x7F""ELF"                                                                                                                                                          \
+    
 typedef enum
 {
     ELF_CLASS_32 = 1,
     ELF_CLASS_64 = 2
-} elf_class_t;
+}
+elf_class_t;
 
 typedef enum
 {
     ELF_DATA_ENC_LE = 1,
     ELF_DATA_ENC_BE = 2
-} elf_data_enc_t;
+}
+elf_data_enc_t;
 
 typedef enum
 {
     ELF_ABI_SYSV = 0, // System V ABI.
-} elf_abi_t;
+}
+elf_abi_t;
 
 typedef enum
 {
@@ -71,7 +73,8 @@ typedef enum
     ELF_TYPE_EXEC = 2, // Executable file.
     ELF_TYPE_DYN = 3,  // Shared object file.
     ELF_TYPE_CORE = 4  // Core file.
-} elf_type_t;
+}
+elf_type_t;
 
 // Program headers
 
@@ -85,7 +88,8 @@ typedef struct
     xword_t filesz; // Size of segment in file.
     xword_t memsz;  // Size of segment in memory.
     xword_t align;  // Alignment.
-} __attribute__((packed)) ph_t;
+}
+__attribute__((packed)) ph_t;
 
 typedef enum
 {
@@ -94,7 +98,8 @@ typedef enum
     PH_DYNAMIC = 2, // Dynamic linking tables
     PH_INTERP = 3,  // Program interpreter path name
     PH_NOTE = 4     // Note sections
-} ph_type_t;
+}
+ph_type_t;
 
 // Sections
 
@@ -110,7 +115,8 @@ typedef struct
     word_t info;       // Miscellaneous information.
     xword_t addralign; // Address alignment boundary
     xword_t entsize;   // Size of entries, if section has table.
-} __attribute__((packed)) sh_t;
+}
+__attribute__((packed)) sh_t;
 
 typedef enum
 {
@@ -126,7 +132,8 @@ typedef enum
     SH_REL = 9,      // Contains “Rel” type relocation entries.
     SH_SHLIB = 10,   // Reserved.
     SH_DYNSYM = 11   // Contains a dynamic loader symbol table.
-} sh_type_t;
+}
+sh_type_t;
 
 typedef enum
 {

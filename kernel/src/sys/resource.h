@@ -7,21 +7,24 @@ typedef enum
 {
     RESOURCE_READ = 1 << 0,
     RESOURCE_WRITE = 1 << 1
-} resource_mode_t;
+}
+resource_mode_t;
 
 typedef struct
 {
     vfs_node_t *node;
     u64 offset;
     u8 flags;
-} resource_t;
+}
+resource_t;
 
 typedef struct
 {
     resource_t **resources;
     int length;
     slock_t lock;
-} resource_table_t;
+}
+resource_table_t;
 
 resource_table_t resource_table_new();
 
