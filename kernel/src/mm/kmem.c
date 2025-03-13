@@ -10,7 +10,7 @@
 #include <lib/printf.h>
 #include <lib/string.h>
 #include <mm/pmm.h>
-#include <sys/tasking.h>
+#include <sys/smp.h>
 
 #define SLAB_SIZE (64 * KIB)
 

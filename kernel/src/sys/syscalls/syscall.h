@@ -2,8 +2,8 @@
 
 #include <arch/cpu.h>
 
-#include <sys/tasking.h>
-#include <sys/resource.h>
+#include <sys/proc.h>
+#include <sys/thread.h>
 
 static inline thread_t *syscall_get_thread()
 {

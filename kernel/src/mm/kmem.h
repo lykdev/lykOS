@@ -1,6 +1,6 @@
 #pragma once
 
-#include <common/slock.h>
+#include <common/sync/slock.h>
 #include <lib/def.h>
 #include <lib/list.h>
 

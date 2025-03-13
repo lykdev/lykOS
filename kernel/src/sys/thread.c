@@ -1,4 +1,4 @@
-#include "tasking.h"
+#include "thread.h"
 
 #include <arch/thread.h>
 
@@ -27,8 +27,8 @@ thread_t *thread_new(proc_t *parent_proc, uptr entry)
         .id = g_last_id++,
         .parent_proc = parent_proc,
         .assigned_core = NULL,
-        .list_elem_thread = LIST_INIT,
-        .list_elem_inside_proc = LIST_INIT,
+        .list_elem_thread = LIST_NODE_INIT,
+        .list_elem_inside_proc = LIST_NODE_INIT,
     };
 
     if (parent_proc->type == PROC_KERNEL)

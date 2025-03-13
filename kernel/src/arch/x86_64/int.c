@@ -4,7 +4,8 @@
 #include <common/log.h>
 #include <lib/def.h>
 #include <mm/vmm.h>
-#include <sys/tasking.h>
+#include <sys/proc.h>
+#include <sys/thread.h>
 
 typedef struct
 {

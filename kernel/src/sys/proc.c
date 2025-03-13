@@ -1,4 +1,4 @@
-#include "tasking.h"
+#include "proc.h"
 
 #include <common/assert.h>
 #include <common/hhdm.h>
@@ -16,11 +16,13 @@ proc_t *proc_new(proc_type_t type)
 {
     proc_t *proc = kmem_alloc(sizeof(proc_t));
 
-    *proc = (proc_t){.id = g_last_id++,
-                     .type = type,
-                     .addr_space = (type == PROC_KERNEL) ? g_vmm_kernel_addr_space : vmm_new_addr_space(0, HHDM - 1),
-                     .threads = LIST_INIT,
-                     .resource_table = resource_table_new()};
+    *proc = (proc_t) {
+        .id = g_last_id++,
+        .type = type,
+        .addr_space = (type == PROC_KERNEL) ? g_vmm_kernel_addr_space : vmm_new_addr_space(0, HHDM - 1),
+        .threads = LIST_INIT,
+        .resource_table = resource_table_new()
+    };
 
     resource_table_expand(&proc->resource_table, 3);
     resource_create_at(&proc->resource_table, 1, stdout_new(), 0, RESOURCE_WRITE, false);

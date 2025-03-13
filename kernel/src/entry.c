@@ -15,7 +15,6 @@
 #include <mm/vmm.h>
 #include <sys/elf.h>
 #include <sys/smp.h>
-#include <sys/tasking.h>
 #include <tasking/sched.h>
 
 void _entry()

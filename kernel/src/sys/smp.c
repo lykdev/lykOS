@@ -1,5 +1,3 @@
-#include "tasking.h"
-
 #include <arch/cpu.h>
 #include <arch/init.h>
 
@@ -9,10 +7,10 @@
 #include <common/panic.h>
 #include <mm/kmem.h>
 #include <mm/pmm.h>
-#include <sys/tasking.h>
 #include <tasking/sched.h>
+#include <sys/smp.h>
 
-list_t g_cpu_core_list = LIST_INIT;
+list_t g_smp_cpu_core_list = LIST_INIT;
 bool g_smp_initialized = false;
 
 static proc_t *g_idle_proc;
@@ -33,9 +31,9 @@ static void core_init(struct limine_mp_info *mp_info)
     arch_cpu_core_init();
 
     thread_t *idle_thread = thread_new(g_idle_proc, (uptr)&thread_idle_func);
-    cpu_core_t *cpu_core = kmem_alloc(sizeof(cpu_core_t));
-    *cpu_core = (cpu_core_t){.id = mp_info->extra_argument, .idle_thread = idle_thread};
-    list_append(&g_cpu_core_list, &cpu_core->list_elem);
+    smp_cpu_core_t *cpu_core = kmem_alloc(sizeof(smp_cpu_core_t));
+    *cpu_core = (smp_cpu_core_t){.id = mp_info->extra_argument, .idle_thread = idle_thread};
+    list_append(&g_smp_cpu_core_list, &cpu_core->list_elem);
 
     idle_thread->assigned_core = cpu_core;
     arch_cpu_write_thread_reg(idle_thread);
