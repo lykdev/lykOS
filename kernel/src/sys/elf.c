@@ -3,325 +3,345 @@
 #include <common/assert.h>
 #include <common/hhdm.h>
 #include <common/log.h>
+#include <mm/kmem.h>
+#include <mm/pmm.h>
+#include <mm/vmm.h>
 #include <lib/def.h>
 #include <lib/math.h>
 #include <lib/string.h>
-#include <mm/kmem.h>
 
-#pragma region ELF SPEC
-
-typedef u64 addr_t;
-typedef u64 off_t;
-typedef u16 half_t;
-typedef u32 word_t;
-typedef i32 sword_t;
-typedef u64 xword_t;
-typedef i64 sxword_t;
-typedef u8 uchar_t;
+typedef u64 Elf64_Addr;
+typedef u64 Elf64_Off;
+typedef u16 Elf64_Half;
+typedef u32 Elf64_Word;
+typedef i32 Elf64_Sword;
+typedef u64 Elf64_Xword;
+typedef i64 Elf64_Sxword;
+typedef u8  Elf64_Byte;
 
 typedef struct
 {
-    uchar_t magic[4];
-    uchar_t class;
-    uchar_t data;
-    uchar_t version;
-    uchar_t osabi;
-    uchar_t abiversion;
-    uchar_t _rsv[7];
-    half_t type;
-    half_t machine;
-    word_t version1;
-    addr_t entry;
-    off_t phoff;
-    off_t shoff;
-    word_t flags;
-    half_t ehsize;
-    half_t phentsize;
-    half_t phnum;
-    half_t shentsize;
-    half_t shnum;
-    half_t shstrndx;
+    unsigned char e_ident[16];
+    Elf64_Half    e_type;
+    Elf64_Half    e_machine;
+    Elf64_Word    e_version;
+    Elf64_Addr    e_entry;
+    Elf64_Off     e_phoff;
+    Elf64_Off     e_shoff;
+    Elf64_Word    e_flags;
+    Elf64_Half    e_ehsize;
+    Elf64_Half    e_phentsize;
+    Elf64_Half    e_phnum;
+    Elf64_Half    e_shentsize;
+    Elf64_Half    e_shnum;
+    Elf64_Half    e_shstrndx;
 }
-__attribute__((packed)) elf_hdr_t;
+__attribute__((packed))
+Elf64_Ehdr;
 
-#define ELF_MAGIC "\x7F""ELF"                                                                                                                                                          \
-    
-typedef enum
-{
-    ELF_CLASS_32 = 1,
-    ELF_CLASS_64 = 2
-}
-elf_class_t;
+#define EI_MAG0        0
+#define EI_MAG1        1
+#define EI_MAG2        2
+#define EI_MAG3        3
+#define EI_CLASS       4
+#define EI_DATA        5
+#define EI_VERSION     6
+#define EI_OSABI       7
+#define EI_ABIVERSION  8
+#define EI_PAD         9
+#define EI_NIDENT     16
 
-typedef enum
-{
-    ELF_DATA_ENC_LE = 1,
-    ELF_DATA_ENC_BE = 2
-}
-elf_data_enc_t;
+#define ELFCLASS32 1
+#define ELFCLASS64 2
 
-typedef enum
-{
-    ELF_ABI_SYSV = 0, // System V ABI.
-}
-elf_abi_t;
+#define ELFDATA2LSB 1
+#define ELFDATA2MSB 2
 
-typedef enum
-{
-    ELF_TYPE_NONE = 0, // No file type.
-    ELF_TYPE_REL = 1,  // Relocatable object file.
-    ELF_TYPE_EXEC = 2, // Executable file.
-    ELF_TYPE_DYN = 3,  // Shared object file.
-    ELF_TYPE_CORE = 4  // Core file.
-}
-elf_type_t;
+#define EV_CURRENT 1
 
-// Program headers
+#define ELFOSABI_SYSV       0
+#define ELFOSABI_STANDALONE 255
 
-typedef struct
-{
-    word_t type;    // Segment type.
-    word_t flags;   // Segment flags.
-    off_t offset;   // Offset in file.
-    addr_t vaddr;   // Virtual address in memory.
-    addr_t paddr;   // Physical address.
-    xword_t filesz; // Size of segment in file.
-    xword_t memsz;  // Size of segment in memory.
-    xword_t align;  // Alignment.
-}
-__attribute__((packed)) ph_t;
+#define ET_NONE 0
+#define ET_REL  1
+#define ET_EXEC 2
+#define ET_DYN  3
 
-typedef enum
-{
-    PH_NULL = 0,    // Unused entry
-    PH_LOAD = 1,    // Loadable segment
-    PH_DYNAMIC = 2, // Dynamic linking tables
-    PH_INTERP = 3,  // Program interpreter path name
-    PH_NOTE = 4     // Note sections
-}
-ph_type_t;
+#define EM_x86_64  0x3E
+#define EM_AARCH64 0xB7
 
 // Sections
 
 typedef struct
 {
-    word_t name;       // Section name.
-    word_t type;       // Section type.
-    xword_t flags;     // Section attributes.
-    addr_t addr;       // Virtual address in memory.
-    off_t offset;      // Offset in file.
-    xword_t size;      // Size of section.
-    word_t link;       // Link to other section.
-    word_t info;       // Miscellaneous information.
-    xword_t addralign; // Address alignment boundary
-    xword_t entsize;   // Size of entries, if section has table.
+    Elf64_Word  sh_name;
+    Elf64_Word  sh_type;
+    Elf64_Xword sh_flags;
+    Elf64_Addr  sh_addr;
+    Elf64_Off   sh_offset;
+    Elf64_Xword sh_size;
+    Elf64_Word  sh_link;
+    Elf64_Word  sh_info;
+    Elf64_Xword sh_addralign;
+    Elf64_Xword sh_entsize;
 }
-__attribute__((packed)) sh_t;
+__attribute__((packed))
+Elf64_Shdr;
 
-typedef enum
+#define SHT_NULL     0
+#define SHT_PROGBITS 1
+#define SHT_SYMTAB   2
+#define SHT_STRTAB   3
+#define SHT_RELA     4
+#define SHT_HASH     5
+#define SHT_DYNAMIC  6
+#define SHT_NOTE     7
+#define SHT_NOBITS   8
+#define SHT_REL      9
+#define SHT_SHLIB    10
+#define SHT_DYNSYM   11
+
+#define SHF_WRITE     0x1
+#define SHF_ALLOC     0x2
+#define SHF_EXECINSTR 0x4
+
+// Symbol Table
+
+typedef struct
 {
-    SH_NULL = 0,     // Marks an unused section header.
-    SH_PROGBITS = 1, // Contains information defined by the program.
-    SH_SYMTAB = 2,   // Contains a linker symbol table.
-    SH_STRTAB = 3,   // Contains a string table.
-    SH_RELA = 4,     // Contains “Rela” type relocation entries.
-    SH_HASH = 5,     // Contains a symbol hash table.
-    SH_DYNAMIC = 6,  // Contains dynamic linking tables.
-    SH_NOTE = 7,     // Contains note information.
-    SH_NOBITS = 8,   // Contains uninitialized space; does not occupy any space in the file.
-    SH_REL = 9,      // Contains “Rel” type relocation entries.
-    SH_SHLIB = 10,   // Reserved.
-    SH_DYNSYM = 11   // Contains a dynamic loader symbol table.
+    Elf64_Word st_name;
+    unsigned char st_info;
+    unsigned char st_other;
+    Elf64_Half st_shndx;
+    Elf64_Addr st_value;
+    Elf64_Xword st_size;
 }
-sh_type_t;
+__attribute__((packed))
+Elf64_Sym;
 
-typedef enum
+#define STB_LOCAL  0
+#define STB_GLOBAL 1
+#define STB_WEAK   2
+
+#define STT_NOTYPE  0
+#define STT_OBJECT  1
+#define STT_FUNC    2
+#define STT_SECTION 3
+
+// Relocations
+
+typedef struct
 {
-    SH_WRITE = 1,
-    SH_ALLOC = 2,
-    SH_EXECINSTR = 4
-} sh_flag_t;
-
-#pragma endregion
-
-typedef struct elf_object
-{
-    vfs_node_t *file;
-    elf_hdr_t hdr;
-} elf_object_t;
-
-elf_object_t *elf_read(vfs_node_t *file)
-{
-    ASSERT(file != NULL && file->type == VFS_NODE_FILE);
-    elf_object_t *elf_obj = kmem_alloc(sizeof(elf_object_t));
-
-    elf_obj->file = file;
-    file->ops->read(file, 0, sizeof(elf_hdr_t), &elf_obj->hdr);
-
-    return elf_obj;
+    Elf64_Addr r_offset;
+    Elf64_Xword r_info;
 }
+__attribute__((packed))
+Elf64_Rel;
 
-bool elf_is_compatible(elf_object_t *elf_obj)
+typedef struct
 {
-    elf_hdr_t *hdr = &elf_obj->hdr;
+    Elf64_Addr r_offset;
+    Elf64_Xword r_info;
+    Elf64_Sxword r_addend;
+}
+__attribute__((packed))
+Elf64_Rela;
 
-    if (strncmp((const char *)hdr->magic, ELF_MAGIC, 4) != 0)
+#define ELF64_R_SYM(I)     ((I) >> 32)
+#define ELF64_R_TYPE(I)    ((I) & 0xFFFFFFFFl)
+#define ELF64_R_INFO(S, T) (((S) << 32) + ((T) & 0xFFFFFFFFl))
+
+#define R_X86_64_64   1
+#define R_X86_64_PC32 2
+
+// Code
+
+static bool elf_check_compatibility(Elf64_Ehdr *hdr)
+{
+    // Check if it's and ELF file first.
+    if (memcmp(hdr->e_ident, "\x7F""ELF", 4))
     {
-        log("ELF: Invalid magic number.");
+        log("Invalid ELF magic number.");
         return false;
     }
 
-    if (hdr->class != ELF_CLASS_64)
+    bool ret = true;
+    if (hdr->e_ident[EI_CLASS] != ELFCLASS64)
     {
-        log("ELF: Only 64-bit files are supported.");
-        return false;
+        log("Unsupported class.");
+        ret = false;
+    }
+    if(hdr->e_ident[EI_DATA] != ELFDATA2LSB)
+    {
+		log("Unsupported endianness.");
+		ret = false;
+	}
+#if defined(__x86_64__)
+    if (hdr->e_machine != EM_x86_64)
+#elif defined(__aarch64__)
+    if (hdr->e_machine != EM_AARCH64)
+#endif
+    {
+        log("Unsupported target architecture.");
+        ret = false;
+    }
+    if (hdr->e_ident[EI_VERSION] != EV_CURRENT)
+    {
+        log("Unsupported object file format version.");
+        ret = false;
     }
 
-    if (hdr->data != ELF_DATA_ENC_LE)
-    {
-        log("ELF: Only little endian files are supported.");
-        return false;
-    }
-
-    if (hdr->osabi != ELF_ABI_SYSV)
-    {
-        log("ELF: Only SYS-V ABI is supported for files.");
-        return false;
-    }
-
-    return true;
+    return ret;
 }
 
-void elf_load_exec(elf_object_t *elf_obj, vmm_addr_space_t *addr_space)
+bool elf_load_relocatable(vfs_node_t *file)
 {
-    vfs_node_t *file = elf_obj->file;
-    elf_hdr_t *hdr = &elf_obj->hdr;
-
-    ASSERT(hdr->type == ELF_TYPE_EXEC);
-
-    ph_t *ph_table = kmem_alloc(hdr->phentsize * hdr->phnum);
-    file->ops->read(file, hdr->phoff, hdr->phentsize * hdr->phnum, ph_table);
-
-    for (uint i = 0; i < hdr->phnum; i++)
+    if (file->type != VFS_NODE_FILE)
     {
-        ph_t *ph = &ph_table[i];
+        log("Provided vfs node isn't a file!");
+        return false;
+    }
 
-        if (ph->type == PH_LOAD)
+    Elf64_Ehdr ehdr;
+    file->ops->read(file, 0, sizeof(Elf64_Ehdr), &ehdr);
+
+    if (!elf_check_compatibility(&ehdr))
+    {
+        log("Incompatible ELF file!");
+        return false;
+    }
+    if (ehdr.e_type != ET_REL)
+    {
+        log("Provided ELF file isn't a relocatable object file!");
+        return false;
+    }
+
+    Elf64_Shdr *shdr = (Elf64_Shdr*)((uptr)pmm_alloc(0) + HHDM);
+    uint a = file->ops->read(file, ehdr.e_shoff, ehdr.e_shnum * sizeof(Elf64_Shdr), shdr);
+
+    // Load SHT_NOBITS sections.
+    for(int i = 0; i < ehdr.e_shnum; i++)
+    {
+        Elf64_Shdr *section = &shdr[i];
+
+        if (section->sh_type == SHT_NOBITS
+        &&  section->sh_size != 0
+        &&  section->sh_flags & SHF_ALLOC)
         {
-            uptr end = ph->vaddr + ph->memsz;
-            uptr start = FLOOR(ph->vaddr, ARCH_PAGE_GRAN);
-            u64 len = CEIL(end - start, ARCH_PAGE_GRAN);
+            void *mem = kmem_alloc(section->sh_size);
+            memset(mem, 0, section->sh_size);
 
-            vmm_map_anon(addr_space, start, len, VMM_FULL);
-            file->ops->read(file, ph->offset, ph->memsz, (void *)(vmm_virt_to_phys(addr_space, ph->vaddr) + HHDM));
+            // Assign the memory offset to the section offset.
+            section->sh_offset = (uptr)mem - ehdr.e_shoff;
+            log("Allocated memory for a section %ld: %lx.", i, section->sh_size);
+        }
+        if (section->sh_type == SHT_PROGBITS
+        &&  section->sh_size != 0)
+        {
+            void *mem = kmem_alloc(section->sh_size);
+            file->ops->read(file, section->sh_offset, section->sh_size, mem);
+            log("Loaded SHT_PROGBITS section to memory at %p", mem);
         }
     }
 
-    kmem_free(ph_table, sizeof(ph_t));
-}
+    // Load relocation sections.
+    for (int i = 0; i < ehdr.e_shnum; i++)
+    {
+        Elf64_Shdr *section = &shdr[i];
 
-// void elf_load_reloc(elf_object_t *elf_obj, vmm_addr_space_t *as)
-// {
-//     vfs_node_t *file = elf_obj->file;
-//     elf_hdr_t  *hdr  = &elf_obj->hdr;
+        if (section->sh_type == SHT_RELA)
+        {
+            Elf64_Shdr *target_section = &shdr[section->sh_info];
+            Elf64_Rela rela_entries[section->sh_size / sizeof(Elf64_Rela)];
+            file->ops->read(file, section->sh_offset, section->sh_size, rela_entries);
 
-//     // Allocate and read section headers.
-//     sh_t *sh_table = kmem_alloc(hdr->shentsize * hdr->shnum);
-//     file->ops->read(file, hdr->shoff, hdr->shentsize * hdr->shnum, sh_table);
+            for (uint j = 0; j < section->sh_size / sizeof(Elf64_Rela); j++)
+            {
+                Elf64_Rela *rela = &rela_entries[j];
+                Elf64_Sym *sym_table = (Elf64_Sym*)(shdr[ehdr.e_shstrndx].sh_offset);
+                Elf64_Sym *sym = &sym_table[ELF64_R_SYM(rela->r_info)];
+                
+                void *addr = (void*)(target_section->sh_offset + rela->r_offset);
+                u64 sym_value = sym->st_value;
 
-//     // Find symbol and string tables.
-//     sh_t *symtab = NULL, *strtab = NULL;
-//     for (uint i = 0; i < hdr->shnum; i++)
-//     {
-//         sh_t *sh = &sh_table[i];
+                switch (ELF64_R_TYPE(rela->r_info))
+                {
+                    case R_X86_64_64:
+                        *(u64*)addr = sym_value + rela->r_addend;
+                        break;
+                    case R_X86_64_PC32:
+                        *(u32*)addr = (u32)((sym_value + rela->r_addend) - (u64)addr);
+                        break;
+                    default:
+                        log("Unsupported relocation type: %d", ELF64_R_TYPE(rela->r_info));
+                        return false;
+                }
+            }
+        }
+    }
 
-//         if (sh->type == SH_SYMTAB)
-//             symtab = sh;
-//         else if (sh->type == SH_STRTAB && i != hdr->shstrndx) // Ignore
-//         section names table
-//             strtab = sh;
-//     }
+    // Find and call driver_load. Stupid temp test.
 
-//     if (!symtab || !strtab)
-//     {
-//         kmem_free(sh_table);
-//         panic("ELF relocatable file missing symbol or string table!");
-//     }
+    Elf64_Shdr *symtab_hdr = NULL;
+    Elf64_Shdr *strtab_hdr = NULL;
 
-//     // Load symbol table
-//     elf_sym_t *symbols = kmem_alloc(symtab->size);
-//     file->ops->read(file, symtab->offset, symtab->size, symbols);
+    // Find the symbol table and string table sections. Could do this only once at the start.
+    for (int i = 0; i < ehdr.e_shnum; i++)
+    {
+        log("sh_type: %u", shdr[i].sh_type);
 
-//     // Load string table
-//     char *strtab_data = kmem_alloc(strtab->size);
-//     file->ops->read(file, strtab->offset, strtab->size, strtab_data);
+        if (shdr[i].sh_type == SHT_SYMTAB)
+            symtab_hdr = &shdr[i];      
+        else if (shdr[i].sh_type == SHT_STRTAB)
+            strtab_hdr = &shdr[i];
+    }
 
-//     // Load sections into memory
-//     for (uint i = 0; i < hdr->shnum; i++)
-//     {
-//         sh_t *sh = &sh_table[i];
+    if (!symtab_hdr)
+    {
+        log("Missing symbol table!");
+        return false;
+    }
+    if (!strtab_hdr)
+    {
+        log("Missing string table!");
+        return false; 
+    }
 
-//         if (sh->flags & SH_ALLOC) // Loadable section
-//         {
-//             uptr start = FLOOR(sh->addr, ARCH_PAGE_GRAN);
-//             u64 len = CEIL(sh->size, ARCH_PAGE_GRAN);
+    // symbol table
+    size_t symtab_size = symtab_hdr->sh_size;
+    Elf64_Sym *symtab = kmem_alloc(symtab_size);
+    file->ops->read(file, symtab_hdr->sh_offset, symtab_size, symtab);
 
-//             vmm_map_anon(as, start, len);
-//             file->ops->read(file, sh->offset, sh->size,
-//             (void*)(vmm_virt_to_phys(as, sh->addr) + HHDM));
-//         }
-//     }
+    // string table
+    size_t strtab_size = strtab_hdr->sh_size;
+    char *strtab = kmem_alloc(strtab_size);
+    file->ops->read(file, strtab_hdr->sh_offset, strtab_size, strtab);
 
-//     // Process relocations
-//     for (uint i = 0; i < hdr->shnum; i++)
-//     {
-//         sh_t *sh = &sh_table[i];
+    // Find driver_load symbol.
+    void *driver_load_addr = NULL;
+    size_t sym_count = symtab_size / sizeof(Elf64_Sym);
 
-//         if (sh->type == SH_REL)
-//         {
-//             elf_rel_t *relocs = kmem_alloc(sh->size);
-//             file->ops->read(file, sh->offset, sh->size, relocs);
+    for (size_t i = 0; i < sym_count; i++)
+    {
+        Elf64_Sym *sym = &symtab[i];
+        const char *name = &strtab[sym->st_name];
 
-//             uint count = sh->size / sizeof(elf_rel_t);
-//             for (uint j = 0; j < count; j++)
-//             {
-//                 elf_rel_t *rel = &relocs[j];
-//                 u32 sym_idx = ELF_R_SYM(rel->info);
-//                 u32 rel_type = ELF_R_TYPE(rel->info);
+        if (strcmp(name, "driver_load") == 0)
+        {
+            driver_load_addr = (void *)sym->st_value;
+            break;
+        }
+    }
 
-//                 elf_sym_t *sym = &symbols[sym_idx];
-//                 uptr sym_value = sym->value; // Assume pre-resolved
+    if (driver_load_addr)
+    {
+        void (*driver_load_func)(void) = (void (*)(void))driver_load_addr;
+        log("calling driver_load function at %p", driver_load_addr);
+        driver_load_func();
+    }
+    else
+        log("driver_load not found.");
 
-//                 uptr *target = (uptr *)(vmm_virt_to_phys(as, rel->offset) +
-//                 HHDM);
-
-//                 switch (rel_type)
-//                 {
-//                     case R_X86_64_64:
-//                         *target += sym_value;
-//                         break;
-
-//                     case R_X86_64_PC32:
-//                         *target += sym_value - (uptr)target;
-//                         break;
-
-//                     default:
-//                         panic("Unsupported relocation type!");
-//                 }
-//             }
-
-//             kmem_free(relocs);
-//         }
-//     }
-
-//     kmem_free(symbols);
-//     kmem_free(strtab_data);
-//     kmem_free(sh_table);
-// }
-
-uptr elf_get_entry(elf_object_t *elf_obj)
-{
-    log("entry: %#llx", elf_obj->hdr.entry);
-
-    return (uptr)elf_obj->hdr.entry;
+    log("Relocatable ELF loaded successfully.");
+    return true;
 }

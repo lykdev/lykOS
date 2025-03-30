@@ -14,4 +14,4 @@
  */
 #define ASSERT_C(ASSERTION, COMMENT)                                                                                                                                               \
     if (!(ASSERTION))                                                                                                                                                              \
-    panic("Assertion `%s` failed: %s.", #ASSERTION, COMMENT)
+        panic("Assertion `%s` failed: %s.", #ASSERTION, COMMENT)

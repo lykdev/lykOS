@@ -32,7 +32,10 @@ u8 pmm_pagecount_to_order(u64 pages)
     return (u8)(64 - __builtin_clzll(pages - 1));
 }
 
-u64 pmm_order_to_pagecount(u8 order) { return (u64)1 << order; }
+u64 pmm_order_to_pagecount(u8 order)
+{
+    return (u64)1 << order;
+}
 
 void pmm_debug_info()
 {

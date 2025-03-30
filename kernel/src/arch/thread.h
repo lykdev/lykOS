@@ -54,7 +54,8 @@ typedef struct
     u64 x0;
 #endif
     uptr entry;
-} __attribute__((packed)) arch_thread_init_stack_kernel_t;
+}
+__attribute__((packed)) arch_thread_init_stack_kernel_t;
 
 typedef struct
 {
@@ -110,4 +111,5 @@ typedef struct
     void (*userspace_init)();
     uptr entry;
     u64 user_stack;
-} __attribute__((packed)) arch_thread_init_stack_user_t;
+}
+__attribute__((packed)) arch_thread_init_stack_user_t;

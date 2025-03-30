@@ -111,7 +111,7 @@ bool vmm_pagefault_handler(vmm_addr_space_t *addr_space, uptr addr)
 void vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot)
 {
     (void)(prot);
-    ASSERT(virt % ARCH_PAGE_GRAN == 0 and len % ARCH_PAGE_GRAN == 0);
+    ASSERT(virt % ARCH_PAGE_GRAN == 0 && len % ARCH_PAGE_GRAN == 0);
     
     vmm_seg_t *created_seg = kmem_alloc_from(g_segment_cache);
     *created_seg = (vmm_seg_t) {
@@ -122,13 +122,21 @@ void vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t p
         .off  = 0,
         .list_elem = LIST_NODE_INIT
     };
-    vmm_insert_seg(addr_space, created_seg);    
+    vmm_insert_seg(addr_space, created_seg);
+
+    //TODO: this was temp
+    slock_acquire(&addr_space->slock);
+
+    for (uptr addr = 0; addr < len; addr += ARCH_PAGE_SIZE_4K)
+        arch_ptm_map(&addr_space->ptm_map, virt + addr, (uptr)pmm_alloc(0), ARCH_PAGE_SIZE_4K);
+
+    slock_release(&addr_space->slock); 
 }
 
 void vmm_map_fixed(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot, uptr phys, bool premap)
 {
     (void)(prot);
-    ASSERT(virt % ARCH_PAGE_GRAN == 0 and len % ARCH_PAGE_GRAN == 0);
+    ASSERT(virt % ARCH_PAGE_GRAN == 0 && len % ARCH_PAGE_GRAN == 0);
 
     vmm_seg_t *created_seg = kmem_alloc_from(g_segment_cache);
     *created_seg = (vmm_seg_t) {

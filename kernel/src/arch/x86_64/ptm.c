@@ -43,7 +43,7 @@ static void delete_level(pte_t *lvl, u8 depth)
     {
         for (u64 i = 0; i < 512; i++)
         {
-            if (!(lvl[i] & PRESENT) or lvl[i] & HUGE)
+            if (!(lvl[i] & PRESENT) || lvl[i] & HUGE)
                 continue;
 
             delete_level((pte_t *)(PTE_GET_ADDR(lvl[i]) + HHDM), depth - 1);
@@ -96,7 +96,10 @@ void arch_ptm_unmap(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size)
     table[table_entries[i]] = 0;
 }
 
-void arch_ptm_load_map(arch_ptm_map_t *map) { __asm__ volatile("movq %0, %%cr3" : : "r"((uptr)map->pml4 - HHDM) : "memory"); }
+void arch_ptm_load_map(arch_ptm_map_t *map)
+{
+    __asm__ volatile("movq %0, %%cr3" : : "r"((uptr)map->pml4 - HHDM) : "memory");
+}
 
 arch_ptm_map_t arch_ptm_new_map()
 {

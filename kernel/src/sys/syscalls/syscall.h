@@ -15,18 +15,20 @@ static inline proc_t *syscall_get_proc()
     return syscall_get_thread()->parent_proc;
 }
 
-void syscall_exit();
-u64  syscall_debug_log(const char *str);
-int  syscall_open(const char *path, int flags, int mode);
-int  syscall_close(int fd);
-int  syscall_write(int fd, u64 count, void *buf);
-int  syscall_read(int fd, u64 count, void *buf);
+void  syscall_exit(int code);
+u64   syscall_debug_log(const char *str);
+int   syscall_open(const char *path, int flags, int mode);
+int   syscall_close(int fd);
+int   syscall_read(int fd, void *buf, u64 count);
+int   syscall_write(int fd, void *buf, u64 count);
+void *syscall_mmap(void *addr, u64 len, int prot, int flags, int fd, u64 off);
 
-static void* g_syscall_table[] __attribute__((packed)) = {
+static void* g_syscall_table[] = {
     (void*)syscall_exit,
     (void*)syscall_debug_log,
     (void*)syscall_open,
     (void*)syscall_close,
+    (void*)syscall_read,
     (void*)syscall_write,
-    (void*)syscall_read
+    (void*)syscall_mmap
 };

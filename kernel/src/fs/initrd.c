@@ -63,19 +63,22 @@ static int read(vfs_node_t *self, u64 offset, u64 size, void *buffer)
         return -1;
 
     initrd_entry_t *entry = self->mp_node;
-    uint file_content_size = ustar_read_field(entry->ustar_data->size, 12) - 512;
+    uint file_content_size = ustar_read_field(entry->ustar_data->size, 12);
 
     if (offset >= file_content_size)
         return -1;
+        
 
     if (offset + size >= file_content_size)
         size = file_content_size - offset;
 
     u8 *file_content = (u8 *)((uptr)entry->ustar_data + 512 + offset);
-    for (uint i = 0; i < size; i++)
+
+    uint i;
+    for (i = 0; i < size; i++)
         *(u8 *)buffer++ = *file_content++;
 
-    return size;
+    return i;
 }
 
 static int lookup(vfs_node_t *self, char *name, vfs_node_t **out)

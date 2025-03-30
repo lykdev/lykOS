@@ -17,7 +17,8 @@ typedef struct
     uptr limit_high;
 
     arch_ptm_map_t ptm_map;
-} vmm_addr_space_t;
+}
+vmm_addr_space_t;
 
 typedef enum
 {

@@ -9,6 +9,7 @@ extern syscall_open
 extern syscall_close
 extern syscall_read
 extern syscall_write
+extern syscall_mmap
 
 section .data
 syscall_table:
@@ -18,6 +19,7 @@ syscall_table:
     dq syscall_close     ; 3
     dq syscall_read      ; 4
     dq syscall_write     ; 5
+    dq syscall_mmap      ; 6
 .length: dq ($ - syscall_table) / 8
 
 section .text
