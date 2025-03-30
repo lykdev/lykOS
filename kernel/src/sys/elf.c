@@ -220,65 +220,67 @@ bool elf_load_relocatable(vfs_node_t *file)
     uint a = file->ops->read(file, ehdr.e_shoff, ehdr.e_shnum * sizeof(Elf64_Shdr), shdr);
 
     // Load SHT_NOBITS sections.
+    void *section_addr[ehdr.e_shnum];
     for(int i = 0; i < ehdr.e_shnum; i++)
     {
         Elf64_Shdr *section = &shdr[i];
 
-        if (section->sh_type == SHT_NOBITS
-        &&  section->sh_size != 0
-        &&  section->sh_flags & SHF_ALLOC)
-        {
-            void *mem = kmem_alloc(section->sh_size);
-            memset(mem, 0, section->sh_size);
+        // if (section->sh_type == SHT_NOBITS
+        // &&  section->sh_size != 0
+        // &&  section->sh_flags & SHF_ALLOC)
+        // {
+        //     void *mem = kmem_alloc(section->sh_size);
+        //     memset(mem, 0, section->sh_size);
 
-            // Assign the memory offset to the section offset.
-            section->sh_offset = (uptr)mem - ehdr.e_shoff;
-            log("Allocated memory for a section %ld: %lx.", i, section->sh_size);
-        }
+        //     // Assign the memory offset to the section offset.
+        //     section->sh_offset = (uptr)mem - ehdr.e_shoff;
+        //     log("Allocated memory for a section %ld: %lx.", i, section->sh_size);
+        // }
         if (section->sh_type == SHT_PROGBITS
         &&  section->sh_size != 0)
         {
             void *mem = kmem_alloc(section->sh_size);
             file->ops->read(file, section->sh_offset, section->sh_size, mem);
-            log("Loaded SHT_PROGBITS section to memory at %p", mem);
+            section_addr[i] = mem;
+            log("Loaded SHT_PROGBITS section %d to memory at %p", i, mem);
         }
     }
 
     // Load relocation sections.
-    for (int i = 0; i < ehdr.e_shnum; i++)
-    {
-        Elf64_Shdr *section = &shdr[i];
+    // for (int i = 0; i < ehdr.e_shnum; i++)
+    // {
+    //     Elf64_Shdr *section = &shdr[i];
 
-        if (section->sh_type == SHT_RELA)
-        {
-            Elf64_Shdr *target_section = &shdr[section->sh_info];
-            Elf64_Rela rela_entries[section->sh_size / sizeof(Elf64_Rela)];
-            file->ops->read(file, section->sh_offset, section->sh_size, rela_entries);
+    //     if (section->sh_type == SHT_RELA)
+    //     {
+    //         Elf64_Shdr *target_section = &shdr[section->sh_info];
+    //         Elf64_Rela rela_entries[section->sh_size / sizeof(Elf64_Rela)];
+    //         file->ops->read(file, section->sh_offset, section->sh_size, rela_entries);
 
-            for (uint j = 0; j < section->sh_size / sizeof(Elf64_Rela); j++)
-            {
-                Elf64_Rela *rela = &rela_entries[j];
-                Elf64_Sym *sym_table = (Elf64_Sym*)(shdr[ehdr.e_shstrndx].sh_offset);
-                Elf64_Sym *sym = &sym_table[ELF64_R_SYM(rela->r_info)];
+    //         for (uint j = 0; j < section->sh_size / sizeof(Elf64_Rela); j++)
+    //         {
+    //             Elf64_Rela *rela = &rela_entries[j];
+    //             Elf64_Sym *sym_table = (Elf64_Sym*)(shdr[ehdr.e_shstrndx].sh_offset);
+    //             Elf64_Sym *sym = &sym_table[ELF64_R_SYM(rela->r_info)];
                 
-                void *addr = (void*)(target_section->sh_offset + rela->r_offset);
-                u64 sym_value = sym->st_value;
+    //             void *addr = (void*)(target_section->sh_offset + rela->r_offset);
+    //             u64 sym_value = sym->st_value;
 
-                switch (ELF64_R_TYPE(rela->r_info))
-                {
-                    case R_X86_64_64:
-                        *(u64*)addr = sym_value + rela->r_addend;
-                        break;
-                    case R_X86_64_PC32:
-                        *(u32*)addr = (u32)((sym_value + rela->r_addend) - (u64)addr);
-                        break;
-                    default:
-                        log("Unsupported relocation type: %d", ELF64_R_TYPE(rela->r_info));
-                        return false;
-                }
-            }
-        }
-    }
+    //             switch (ELF64_R_TYPE(rela->r_info))
+    //             {
+    //                 case R_X86_64_64:
+    //                     *(u64*)addr = sym_value + rela->r_addend;
+    //                     break;
+    //                 case R_X86_64_PC32:
+    //                     *(u32*)addr = (u32)((sym_value + rela->r_addend) - (u64)addr);
+    //                     break;
+    //                 default:
+    //                     log("Unsupported relocation type: %d", ELF64_R_TYPE(rela->r_info));
+    //                     return false;
+    //             }
+    //         }
+    //     }
+    // }
 
     // Find and call driver_load. Stupid temp test.
 
@@ -328,12 +330,18 @@ bool elf_load_relocatable(vfs_node_t *file)
 
         if (strcmp(name, "driver_load") == 0)
         {
-            driver_load_addr = (void *)sym->st_value;
+            driver_load_addr = (void *)sym->st_value + (uptr)section_addr[sym->st_shndx];
+            log("ddd %llx", driver_load_addr);
+
+            // void (*driver_load_func)(void) = (void (*)(void))driver_load_addr;
+            // log("calling driver_load function at %p", driver_load_addr);
+            // driver_load_func();
             break;
         }
     }
 
-    if (driver_load_addr)
+    log("ddd %llx", driver_load_addr);
+    if (driver_load_addr != NULL)
     {
         void (*driver_load_func)(void) = (void (*)(void))driver_load_addr;
         log("calling driver_load function at %p", driver_load_addr);
