@@ -1,4 +1,4 @@
-#include "elf.h"
+#include "module.h"
 
 #include <common/assert.h>
 #include <common/hhdm.h>

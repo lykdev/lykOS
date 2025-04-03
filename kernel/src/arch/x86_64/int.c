@@ -66,6 +66,8 @@ typedef enum
 }
 x86_64_exception_code_t;
 
+void (*handlers[256])() = { NULL };
+
 void arch_int_handler(cpu_state_t *cpu_state)
 {
     if (cpu_state->int_no < 32)
@@ -80,4 +82,11 @@ void arch_int_handler(cpu_state_t *cpu_state)
 
         arch_cpu_halt();
     }
+    else if (handlers[cpu_state->int_no - 32] != NULL)
+        handlers[cpu_state->int_no - 32]();
+}
+
+void arch_int_irq_register_handler(uint irq, void (*handler)())
+{
+    handlers[irq] = handler;
 }
