@@ -1,7 +1,7 @@
 global arch_syscall_entry
 
-KERNEL_STACK_OFFSET equ 8
-USER_STACK_OFFSET equ 16
+%define KERNEL_STACK_OFFSET 8
+%define USER_STACK_OFFSET 16
 
 extern syscall_exit
 extern syscall_debug_log

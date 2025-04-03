@@ -1,5 +1,6 @@
 #include "initrd.h"
 
+#include <common/assert.h>
 #include <common/limine/requests.h>
 #include <common/log.h>
 #include <common/panic.h>
@@ -160,10 +161,16 @@ static void process_entry(ustar_hdr_t *hdr)
 
 void initrd_init()
 {
-    if (request_module.response == NULL || request_module.response->module_count == 0)
+    ustar_hdr_t *hdr = NULL;
+    for (uint i = 0; i < request_module.response->module_count; i++)
+        if (strcmp(request_module.response->modules[0]->path, "/initrd.tar") == 0)
+        {
+            hdr = (ustar_hdr_t *)request_module.response->modules[0]->address;
+            break;
+        }
+    if (hdr == NULL)
         panic("Initrd module not found!");
 
-    ustar_hdr_t *hdr = (ustar_hdr_t *)request_module.response->modules[0]->address;
     while (true)
     {
         if (hdr->magic[0] == '\0' && ((ustar_hdr_t *)((uptr)hdr + 512))->magic[0] == '\0')

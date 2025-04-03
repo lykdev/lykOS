@@ -13,7 +13,7 @@
 #include <mm/kmem.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
-#include <mod/elf.h>
+#include <mod/mod.h>
 #include <sys/smp.h>
 #include <tasking/sched.h>
 

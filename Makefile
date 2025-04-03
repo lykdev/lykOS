@@ -37,11 +37,12 @@ endif
 build: limine
 	make -C kernel ARCH=$(ARCH)
 
-	tar -cvf initrd.tar --format=ustar initrd/
-
 	mkdir -p iso_root/EFI/BOOT
 
-	cp kernel/bin/kernel.elf limine.conf limine/limine-uefi-cd.bin initrd.tar \
+	llvm-nm kernel/bin/kernel.elf -n > iso_root/kernel_symbols.txt
+	tar -cvf iso_root/initrd.tar --format=ustar initrd/
+
+	cp kernel/bin/kernel.elf limine.conf limine/limine-uefi-cd.bin \
 		./iso_root/
 
 ifeq ($(ARCH), aarch64)

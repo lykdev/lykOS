@@ -1,4 +1,4 @@
-#include "elf.h"
+#include "mod.h"
 
 #include <common/assert.h>
 #include <common/hhdm.h>
@@ -221,6 +221,7 @@ bool elf_load_relocatable(vfs_node_t *file)
 
     Elf64_Shdr *shdr = kmem_alloc(ehdr.e_shnum * sizeof(Elf64_Shdr));
     
+    // Allocate memory for the program sections.
     uptr section_addr[ehdr.e_shnum];
 
     for(int i = 0; i < ehdr.e_shnum; i++)
@@ -302,49 +303,47 @@ bool elf_load_relocatable(vfs_node_t *file)
     {
         Elf64_Shdr *section = &shdr[i];
 
-        if (section->sh_type == SHT_RELA)
+        if (section->sh_type != SHT_RELA)
+            continue;
+
+        Elf64_Rela rela_entries[section->sh_size / section->sh_entsize];
+        file->ops->read(file, section->sh_offset, section->sh_size, rela_entries);
+
+        for (uint j = 0; j < section->sh_size / section->sh_entsize; j++)
         {
-            Elf64_Rela rela_entries[section->sh_size / section->sh_entsize];
-            file->ops->read(file, section->sh_offset, section->sh_size, rela_entries);
+            Elf64_Rela *rela = &rela_entries[j];
+            Elf64_Sym  *sym  = &symtab[ELF64_R_SYM(rela->r_info)];
+            
+            void *addr = (void*)(section_addr[section->sh_info] + rela->r_offset);
+            uptr value = sym->st_value + rela->r_addend;
+            u64  reloc_size;
 
-            for (uint j = 0; j < section->sh_size / section->sh_entsize; j++)
+            switch (ELF64_R_TYPE(rela->r_info))
             {
-                Elf64_Rela *rela = &rela_entries[j];
-                Elf64_Sym  *sym  = &symtab[ELF64_R_SYM(rela->r_info)];
-                
-                void *addr = (void*)(section_addr[section->sh_info] + rela->r_offset);
-                uptr value = sym->st_value + rela->r_addend;
-                u64  reloc_size;
-
-                switch (ELF64_R_TYPE(rela->r_info))
-                {
-                    case R_X86_64_64:
-                        reloc_size = 8;
-                        break;
-                    case R_X86_64_PC32:
-                    case R_X86_64_PLT32:
-                        value -= (uptr)addr;
-                        reloc_size = 4;
-                        break;
-                    case R_X86_64_32:
-                    case R_X86_64_32S:
-                        reloc_size = 4;
-                        break;
-                    case R_X86_64_PC64:
-                        value -= (uptr)addr;
-                        reloc_size = 8;
-                        break;                    
-                    default:
-                        log("Unsupported relocation type: 0x%x.", ELF64_R_TYPE(rela->r_info));
-                        return false;
-                }
-
-                memcpy(addr, &value, reloc_size);
+                case R_X86_64_64:
+                    reloc_size = 8;
+                    break;
+                case R_X86_64_PC32:
+                case R_X86_64_PLT32:
+                    value -= (uptr)addr;
+                    reloc_size = 4;
+                    break;
+                case R_X86_64_32:
+                case R_X86_64_32S:
+                    reloc_size = 4;
+                    break;
+                case R_X86_64_PC64:
+                    value -= (uptr)addr;
+                    reloc_size = 8;
+                    break;                    
+                default:
+                    log("Unsupported relocation type: 0x%x.", ELF64_R_TYPE(rela->r_info));
+                    return false;
             }
+
+            memcpy(addr, &value, reloc_size);
         }
     }
-
-    
 
     log("Relocatable ELF loaded successfully.");
     return true;

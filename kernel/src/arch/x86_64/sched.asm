@@ -1,7 +1,7 @@
 global arch_sched_context_switch
 extern sched_drop
 
-THREAD_RSP_OFFSET equ 8
+%define THREAD_RSP_OFFSET 8
 
 arch_sched_context_switch:
     push rax
