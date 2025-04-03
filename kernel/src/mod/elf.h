@@ -20,4 +20,4 @@
 
 // module_t *module_load(vfs_node_t *file);
 
-elf_load_relocatable(vfs_node_t *file);
+bool elf_load_relocatable(vfs_node_t *file);

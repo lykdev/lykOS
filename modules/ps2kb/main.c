@@ -7,13 +7,12 @@
 
 #define IRQ 1
 
+extern void abc();
+
 void ps2_init()
 {
+    abc();
     asm volatile("int $0x3");
-    // register_interrupt_handler(IRQ1, kb_irq_handler);
-
-    // outb(PS2_CMD_REG, 0xAE); // Enable keyboard port
-    // outb(PS2_DATA_PORT, 0xF4); // Enable scanning
 }
 
 MODULE_INSTALL(ps2_init);

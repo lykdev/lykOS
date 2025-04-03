@@ -1,4 +1,4 @@
-#include "module.h"
+#include "elf.h"
 
 #include <common/assert.h>
 #include <common/hhdm.h>
@@ -105,6 +105,10 @@ Elf64_Shdr;
 #define SHF_ALLOC     0x2
 #define SHF_EXECINSTR 0x4
 
+#define SHN_UNDEF  0x0
+#define SHN_ABS    0xFFF1
+#define SHN_COMMON 0xFFF2
+
 // Symbol Table
 
 typedef struct
@@ -151,8 +155,13 @@ Elf64_Rela;
 #define ELF64_R_TYPE(I)    ((I) & 0xFFFFFFFFl)
 #define ELF64_R_INFO(S, T) (((S) << 32) + ((T) & 0xFFFFFFFFl))
 
-#define R_X86_64_64   1
-#define R_X86_64_PC32 2
+#define R_X86_64_NONE   0
+#define R_X86_64_64     1
+#define R_X86_64_PC32   2
+#define R_X86_64_PLT32  4
+#define R_X86_64_32    10
+#define R_X86_64_32S   11
+#define R_X86_64_PC64  24
 
 // Code
 
@@ -211,12 +220,12 @@ bool elf_load_relocatable(vfs_node_t *file)
     }
 
     Elf64_Shdr *shdr = kmem_alloc(ehdr.e_shnum * sizeof(Elf64_Shdr));
-    file->ops->read(file, ehdr.e_shoff, ehdr.e_shnum * sizeof(Elf64_Shdr), shdr);
-
-    // Load SHT_NOBITS sections.
+    
     uptr section_addr[ehdr.e_shnum];
+
     for(int i = 0; i < ehdr.e_shnum; i++)
     {
+        file->ops->read(file, ehdr.e_shoff + (ehdr.e_shentsize * i), sizeof(Elf64_Shdr), &shdr[i]);
         Elf64_Shdr *section = &shdr[i];
 
         if (section->sh_type == SHT_NOBITS
@@ -224,106 +233,118 @@ bool elf_load_relocatable(vfs_node_t *file)
         &&  section->sh_flags & SHF_ALLOC)
         {
             void *mem = kmem_alloc(section->sh_size);
+            ASSERT(mem);
             memset(mem, 0, section->sh_size);
             section_addr[i] = (uptr)mem;
             log("Loaded SHT_NOBITS section %d to memory at %p", i, mem);
         }
         if (section->sh_type == SHT_PROGBITS
-        &&  section->sh_size != 0)
+        &&  section->sh_size != 0
+        &&  section->sh_flags & SHF_ALLOC)
         {
             void *mem = kmem_alloc(section->sh_size);
+            ASSERT(mem);
             file->ops->read(file, section->sh_offset, section->sh_size, mem);
             section_addr[i] = (uptr)mem;
             log("Loaded SHT_PROGBITS section %d to memory at %p", i, mem);
         }
     }
 
+    // Symbol table.
     Elf64_Shdr *symtab_hdr = NULL;
-    Elf64_Shdr *strtab_hdr = NULL;
     for (int i = 0; i < ehdr.e_shnum; i++)
-    {
         if (shdr[i].sh_type == SHT_SYMTAB)
-            symtab_hdr = &shdr[i];      
-        else if (shdr[i].sh_type == SHT_STRTAB)
-            strtab_hdr = &shdr[i];
-    }
-
+            symtab_hdr = &shdr[i];                 
     if (!symtab_hdr)
     {
         log("Missing symbol table!");
         return false;
     }
+    void *symtab = kmem_alloc(symtab_hdr->sh_size);
+    file->ops->read(file, symtab_hdr->sh_offset, symtab_hdr->sh_size, symtab);
+
+    // String table.
+    Elf64_Shdr *strtab_hdr = &shdr[symtab_hdr->sh_link];
     if (!strtab_hdr)
     {
         log("Missing string table!");
-        return false; 
+        return false;
+    }
+    char *strtab = kmem_alloc(strtab_hdr->sh_size);
+    file->ops->read(file, strtab_hdr->sh_offset, strtab_hdr->sh_size, strtab);
+
+    // Resolve symbols.
+    size_t sym_count = symtab_hdr->sh_size / symtab_hdr->sh_entsize;
+    for (size_t i = 0; i < sym_count; i++)
+    {
+        Elf64_Sym  *sym  = (Elf64_Sym*)(symtab + (i * symtab_hdr->sh_entsize));
+        const char *name = &strtab[sym->st_name];
+
+        log("sym: %s", name);
+
+        switch (sym->st_shndx)
+        {
+        case SHN_UNDEF:
+            break;
+        case SHN_ABS:
+            break;
+        case SHN_COMMON:
+            log("Warning: unexpected common symbol.");
+            break;
+        default:
+            sym->st_value += section_addr[sym->st_shndx];
+            break;
+        }
     }
 
-    // symbol table
-    size_t symtab_size = symtab_hdr->sh_size;
-    Elf64_Sym *symtab = kmem_alloc(symtab_size);
-    file->ops->read(file, symtab_hdr->sh_offset, symtab_size, symtab);
-
-    // string table
-    size_t strtab_size = strtab_hdr->sh_size;
-    char *strtab = kmem_alloc(strtab_size);
-    file->ops->read(file, strtab_hdr->sh_offset, strtab_size, strtab);
-
     // Load relocation sections.
-    for (int i = 0; i < ehdr.e_shnum; i++)
+    for (size_t i = 0; i < ehdr.e_shnum; i++)
     {
         Elf64_Shdr *section = &shdr[i];
 
         if (section->sh_type == SHT_RELA)
         {
-            Elf64_Shdr *target_section = &shdr[section->sh_info];
-            Elf64_Rela rela_entries[section->sh_size / sizeof(Elf64_Rela)];
+            Elf64_Rela rela_entries[section->sh_size / section->sh_entsize];
             file->ops->read(file, section->sh_offset, section->sh_size, rela_entries);
 
-            for (uint j = 0; j < section->sh_size / sizeof(Elf64_Rela); j++)
+            for (uint j = 0; j < section->sh_size / section->sh_entsize; j++)
             {
                 Elf64_Rela *rela = &rela_entries[j];
-                Elf64_Sym *sym = &symtab[ELF64_R_SYM(rela->r_info)];
+                Elf64_Sym  *sym  = &symtab[ELF64_R_SYM(rela->r_info)];
                 
                 void *addr = (void*)(section_addr[section->sh_info] + rela->r_offset);
-                u64 sym_value = sym->st_value;
+                uptr value = sym->st_value + rela->r_addend;
+                u64  reloc_size;
 
                 switch (ELF64_R_TYPE(rela->r_info))
                 {
                     case R_X86_64_64:
-                        *(u64*)addr = sym_value + rela->r_addend;
+                        reloc_size = 8;
                         break;
                     case R_X86_64_PC32:
-                        *(u32*)addr = (u32)((sym_value + rela->r_addend) - (u64)addr);
+                    case R_X86_64_PLT32:
+                        value -= (uptr)addr;
+                        reloc_size = 4;
                         break;
+                    case R_X86_64_32:
+                    case R_X86_64_32S:
+                        reloc_size = 4;
+                        break;
+                    case R_X86_64_PC64:
+                        value -= (uptr)addr;
+                        reloc_size = 8;
+                        break;                    
                     default:
-                        log("Unsupported relocation type: %d", ELF64_R_TYPE(rela->r_info));
+                        log("Unsupported relocation type: 0x%x.", ELF64_R_TYPE(rela->r_info));
                         return false;
                 }
+
+                memcpy(addr, &value, reloc_size);
             }
         }
     }
 
-    // Find driver_load symbol.
-    void *driver_load_addr = NULL;
-    size_t sym_count = symtab_size / sizeof(Elf64_Sym);
-
-    for (size_t i = 0; i < sym_count; i++)
-    {
-        Elf64_Sym *sym = &symtab[i];
-        const char *name = &strtab[sym->st_name];
-
-        if (strcmp(name, "__module_install") == 0)
-        {
-            driver_load_addr = (void *)sym->st_value + (uptr)section_addr[sym->st_shndx];
-            log("ddd %llx", driver_load_addr);
-
-            void (*driver_load_func)(void) = (void (*)(void))driver_load_addr;
-            log("calling driver_load function at %p", driver_load_addr);
-            driver_load_func();
-            break;
-        }
-    }
+    
 
     log("Relocatable ELF loaded successfully.");
     return true;
