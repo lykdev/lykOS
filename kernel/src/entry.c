@@ -46,9 +46,17 @@ void _entry()
     
     //sched_queue_add(t);
 
+    mod_ksym_init();
+
     vfs_node_t *file;
     vfs_lookup("/initrd/main.elf", &file);
-    elf_load_relocatable(file);   
+    module_t *mod = module_load(file);   
+
+    log("_a %llx", mod->install);
+
+    mod->install();
+
+    log("a");
 
     //smp_init();
 

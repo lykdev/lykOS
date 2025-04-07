@@ -163,9 +163,9 @@ void initrd_init()
 {
     ustar_hdr_t *hdr = NULL;
     for (uint i = 0; i < request_module.response->module_count; i++)
-        if (strcmp(request_module.response->modules[0]->path, "/initrd.tar") == 0)
+        if (strcmp(request_module.response->modules[i]->path, "/initrd.tar") == 0)
         {
-            hdr = (ustar_hdr_t *)request_module.response->modules[0]->address;
+            hdr = (ustar_hdr_t *)request_module.response->modules[i]->address;
             break;
         }
     if (hdr == NULL)

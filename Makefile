@@ -34,12 +34,13 @@ endif
 
 # BUILDING
 
-build: limine
+build: limine tools/ksym
 	make -C kernel ARCH=$(ARCH)
 
 	mkdir -p iso_root/EFI/BOOT
 
-	llvm-nm kernel/bin/kernel.elf -n > iso_root/kernel_symbols.txt
+	llvm-nm kernel/bin/kernel.elf -n > kernel_symbols.txt
+	./tools/ksym kernel_symbols.txt iso_root/kernel_symbols.bin
 	tar -cvf iso_root/initrd.tar --format=ustar initrd/
 
 	cp kernel/bin/kernel.elf limine.conf limine/limine-uefi-cd.bin \
@@ -67,12 +68,15 @@ endif
 limine:
 	git clone https://github.com/limine-bootloader/limine.git --branch=v8.x-binary --depth=1
 
+tools/ksym:
+	cc tools/ksym.c -O2 -o tools/ksym
+
 # CLEAN
 
 clean:
 	rm -rf iso_root
 	rm -rf $(LYKOS_ISO)
-	rm -f qemu/log.txt
+	rm -f  qemu/log.txt
 	rm -rf initrd.tar
 
 	make -C kernel clean
@@ -80,6 +84,7 @@ clean:
 distclean: clean
 	rm -rf limine
 	rm -rf qemu
+	rm -f  tools/ksym
 
 	make -C kernel distclean
 	
