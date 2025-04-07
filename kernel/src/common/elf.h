@@ -1,7 +1,6 @@
 #pragma once
 
 #include <lib/def.h>
-#include <fs/vfs.h>
 
 typedef u64 Elf64_Addr;
 typedef u64 Elf64_Off;
@@ -98,6 +97,10 @@ Elf64_Shdr;
 #define SHF_ALLOC     0x2
 #define SHF_EXECINSTR 0x4
 
+#define SHN_UNDEF  0x0
+#define SHN_ABS    0xFFF1
+#define SHN_COMMON 0xFFF2
+
 // Symbol Table
 
 typedef struct
@@ -144,9 +147,12 @@ Elf64_Rela;
 #define ELF64_R_TYPE(I)    ((I) & 0xFFFFFFFFl)
 #define ELF64_R_INFO(S, T) (((S) << 32) + ((T) & 0xFFFFFFFFl))
 
-#define R_X86_64_64   1
-#define R_X86_64_PC32 2
+#define R_X86_64_NONE   0
+#define R_X86_64_64     1
+#define R_X86_64_PC32   2
+#define R_X86_64_PLT32  4
+#define R_X86_64_32    10
+#define R_X86_64_32S   11
+#define R_X86_64_PC64  24
 
 bool elf_check_compatibility(Elf64_Ehdr *hdr);
-
-bool elf_load_relocatable(vfs_node_t *file);

@@ -13,7 +13,7 @@
 #include <mm/kmem.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
-#include <mod/mod.h>
+#include <mod.h>
 #include <sys/smp.h>
 #include <tasking/sched.h>
 
@@ -46,17 +46,13 @@ void _entry()
     
     //sched_queue_add(t);
 
-    mod_ksym_init();
+    mod_init();
 
     vfs_node_t *file;
     vfs_lookup("/initrd/main.elf", &file);
     module_t *mod = module_load(file);   
 
-    log("_a %llx", mod->install);
-
     mod->install();
-
-    log("a");
 
     //smp_init();
 

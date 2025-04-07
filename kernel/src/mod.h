@@ -5,10 +5,6 @@
 
 typedef struct
 {
-    char *name;
-    char *author;
-    char *description;
-
     void (*install)();
     void (*destroy)();
     void (*probe)();
@@ -17,8 +13,8 @@ typedef struct
 }
 module_t;
 
-void mod_ksym_init();
+extern list_t g_mod_module_list;
 
-uptr mod_resolve_sym(const char *name);
+void mod_init();
 
 module_t *module_load(vfs_node_t *file);

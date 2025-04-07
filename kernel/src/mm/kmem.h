@@ -37,10 +37,19 @@ void *kmem_alloc_from(kmem_cache_t *cache);
 
 void *kmem_alloc(uint size);
 
-void kmem_free(void *obj, uint size);
+void kmem_free(void *obj);
 
 void *kmem_realloc(void *obj, uint old_size, uint new_size);
 
 void kmem_init();
 
 void kmem_debug();
+
+static void _cleanup_free(void *p)
+{
+    kmem_free(*(void**) p);
+}
+
+#define CLEANUP __attribute__((cleanup(_cleanup_free)))
+
+#define CLEANUP_FUNC(func) __attribute__((cleanup(func)))

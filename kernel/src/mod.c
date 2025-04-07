@@ -1,57 +1,62 @@
 #include "mod.h"
 
 #include <common/assert.h>
+#include <common/elf.h>
 #include <common/hhdm.h>
+#include <common/limine/requests.h>
 #include <common/log.h>
+#include <common/panic.h>
 #include <lib/def.h>
 #include <lib/string.h>
 #include <mm/kmem.h>
 #include <mm/pmm.h>
-#include <mod/elf.h>
 
-// Code
-
-bool elf_check_compatibility(Elf64_Ehdr *hdr)
+typedef struct
 {
-    // Check if it's and ELF file first.
-    if (memcmp(hdr->e_ident, "\x7F""ELF", 4))
+    uint64_t addr;
+    char name[];
+}
+__attribute__((packed))
+ksym_t;
+
+static void *ksym_data;
+static u64   ksym_size;
+
+list_t g_mod_module_list = LIST_INIT;
+
+static uptr mod_resolve_sym(const char *name)
+{
+    void *p = ksym_data;
+    while (p < ksym_data + ksym_size)
     {
-        log("Invalid ELF magic number.");
-        return false;
+        ksym_t *sym = (ksym_t*)p;
+
+        if (strcmp(name, (const char *)&sym->name) == 0)
+            return sym->addr;
+        
+        p += sizeof(sym->addr) + strlen(sym->name) + 1;
     }
 
-    bool ret = true;
-    if (hdr->e_ident[EI_CLASS] != ELFCLASS64)
+    return 0;
+}
+
+void mod_init()
+{
+    for (uint i = 0; i < request_module.response->module_count; i++)
+    if (strcmp(request_module.response->modules[i]->path, "/kernel_symbols.bin") == 0)
     {
-        log("Unsupported class.");
-        ret = false;
-    }
-    if(hdr->e_ident[EI_DATA] != ELFDATA2LSB)
-    {
-		log("Unsupported endianness.");
-		ret = false;
-	}
-#if defined(__x86_64__)
-    if (hdr->e_machine != EM_x86_64)
-#elif defined(__aarch64__)
-    if (hdr->e_machine != EM_AARCH64)
-#endif
-    {
-        log("Unsupported target architecture.");
-        ret = false;
-    }
-    if (hdr->e_ident[EI_VERSION] != EV_CURRENT)
-    {
-        log("Unsupported object file format version.");
-        ret = false;
+        ksym_data = (void*)request_module.response->modules[i]->address;
+        ksym_size = request_module.response->modules[i]->size;
+        break;
     }
 
-    return ret;
+    if (ksym_data == NULL)
+        panic("\"kernel_symbols.bin\" bootloader module not found!");
 }
 
 module_t *module_load(vfs_node_t *file)
 {
-    module_t *module = kmem_alloc(sizeof(module_t));
+    module_t module;
 
     Elf64_Ehdr ehdr;
     file->ops->read(file, 0, sizeof(Elf64_Ehdr), &ehdr);
@@ -67,36 +72,22 @@ module_t *module_load(vfs_node_t *file)
         return NULL;
     }
 
-    Elf64_Shdr *shdr = kmem_alloc(ehdr.e_shnum * sizeof(Elf64_Shdr));
-    
-    // Allocate memory for the program sections.
-    uptr section_addr[ehdr.e_shnum];
+    // Allocate memory for the sections and save the address.
+    CLEANUP Elf64_Shdr *shdr = kmem_alloc(ehdr.e_shnum * sizeof(Elf64_Shdr));
+    CLEANUP uptr *section_addr = kmem_alloc(ehdr.e_shnum * sizeof(uptr));
 
     for(int i = 0; i < ehdr.e_shnum; i++)
     {
         file->ops->read(file, ehdr.e_shoff + (ehdr.e_shentsize * i), sizeof(Elf64_Shdr), &shdr[i]);
         Elf64_Shdr *section = &shdr[i];
 
-        if (section->sh_type == SHT_NOBITS
-        &&  section->sh_size != 0
-        &&  section->sh_flags & SHF_ALLOC)
-        {
-            void *mem = kmem_alloc(section->sh_size);
-            ASSERT(mem);
-            memset(mem, 0, section->sh_size);
-            section_addr[i] = (uptr)mem;
-            log("Loaded SHT_NOBITS section %d to memory at %p", i, mem);
-        }
         if (section->sh_type == SHT_PROGBITS
         &&  section->sh_size != 0
         &&  section->sh_flags & SHF_ALLOC)
         {
-            //void *mem = kmem_alloc(section->sh_size);
-            void *mem = (void*)((uptr)pmm_alloc(1) + HHDM);
-            ASSERT(mem);
+            void *mem = kmem_alloc(section->sh_size);
             file->ops->read(file, section->sh_offset, section->sh_size, mem);
             section_addr[i] = (uptr)mem;
-            log("Loaded SHT_PROGBITS section %d to memory at %p", i, mem);
         }
     }
 
@@ -110,7 +101,7 @@ module_t *module_load(vfs_node_t *file)
         log("Missing symbol table!");
         return NULL;
     }
-    void *symtab = kmem_alloc(symtab_hdr->sh_size);
+    CLEANUP void *symtab = kmem_alloc(symtab_hdr->sh_size);
     file->ops->read(file, symtab_hdr->sh_offset, symtab_hdr->sh_size, symtab);
 
     // String table.
@@ -120,7 +111,7 @@ module_t *module_load(vfs_node_t *file)
         log("Missing string table!");
         return NULL;
     }
-    char *strtab = kmem_alloc(strtab_hdr->sh_size);
+    CLEANUP char *strtab = kmem_alloc(strtab_hdr->sh_size);
     file->ops->read(file, strtab_hdr->sh_offset, strtab_hdr->sh_size, strtab);
 
     // Resolve symbols.
@@ -130,13 +121,10 @@ module_t *module_load(vfs_node_t *file)
         Elf64_Sym  *sym  = (Elf64_Sym*)(symtab + (i * symtab_hdr->sh_entsize));
         const char *name = &strtab[sym->st_name];
 
-        log("sym: %s", name);
-
         switch (sym->st_shndx)
         {
         case SHN_UNDEF:
             sym->st_value = mod_resolve_sym(name);
-            log("resolved to: %llx", sym->st_value);
             break;
         case SHN_ABS:
             break;
@@ -147,11 +135,11 @@ module_t *module_load(vfs_node_t *file)
             sym->st_value += section_addr[sym->st_shndx];
 
             if (strcmp(name, "__module_install") == 0)
-                module->install = (void(*)())sym->st_value;
+                module.install = (void(*)())sym->st_value;
             else if (strcmp(name, "__module_destroy") == 0)
-                module->destroy = (void(*)())sym->st_value;
+                module.destroy = (void(*)())sym->st_value;
             else if (strcmp(name, "__module_probe") == 0)
-                module->probe   = (void(*)())sym->st_value;
+                module.probe   = (void(*)())sym->st_value;
 
             break;
         }
@@ -176,8 +164,6 @@ module_t *module_load(vfs_node_t *file)
             void *addr = (void*)(section_addr[section->sh_info] + rela->r_offset);
             uptr value = sym->st_value + rela->r_addend;
             u64  reloc_size;
-
-            log("addr %llx val %llx", addr, value);
 
             switch (ELF64_R_TYPE(rela->r_info))
             {
@@ -206,6 +192,11 @@ module_t *module_load(vfs_node_t *file)
         }
     }
 
-    log("Relocatable ELF loaded successfully.");
-    return module;
+    // TODO: clean the actual segments allocated for the module.
+
+    module_t *ret = kmem_alloc(sizeof(module_t));
+    *ret = module;
+
+    log("Kernel module loaded successfully.");
+    return ret;
 }

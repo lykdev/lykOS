@@ -121,10 +121,8 @@ void *kmem_alloc(uint size)
     return NULL;
 }
 
-void kmem_free(void *obj, uint size)
+void kmem_free(void *obj)
 {
-    (void)size;
-
     int curr_cpu_id = 0;
     // Before SMP is initialized all allocations will be assigned to the active
     // slab of CPU core 0.
@@ -179,7 +177,7 @@ void *kmem_realloc(void *obj, uint old_size, uint new_size)
 
     void *new_obj = kmem_alloc(new_size);
     memcpy(new_obj, obj, old_size);
-    kmem_free(obj, old_size);
+    kmem_free(obj);
 
     return new_obj;
 }
