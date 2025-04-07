@@ -4,15 +4,16 @@ LYKOS_ISO = lykos.iso
 
 # QEMU
 
-QEMU_FLAGS := -m 2G					\
-			  -smp 4				\
-			  -no-shutdown 			\
-			  -no-reboot 			\
-			  -cdrom $(LYKOS_ISO) 	\
-			  -boot d 				\
-			  -d int				\
-			  -D qemu/log.txt		\
-			  -serial stdio
+QEMU_FLAGS := -m 2G					   \
+			  -smp 4				   \
+			  -no-shutdown 			   \
+			  -no-reboot 			   \
+			  -cdrom $(LYKOS_ISO) 	   \
+			  -boot d 				   \
+			  -d int				   \
+			  -D qemu/log.txt		   \
+			  -serial file:/dev/stdout \
+			  -monitor stdio
 
 OVMF := qemu/ovmf-$(ARCH)
 

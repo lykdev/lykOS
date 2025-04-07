@@ -125,7 +125,7 @@ module_t *module_load(vfs_node_t *file)
 
     // Resolve symbols.
     size_t sym_count = symtab_hdr->sh_size / symtab_hdr->sh_entsize;
-    for (size_t i = 0; i < sym_count; i++)
+    for (size_t i = 1; i < sym_count; i++)
     {
         Elf64_Sym  *sym  = (Elf64_Sym*)(symtab + (i * symtab_hdr->sh_entsize));
         const char *name = &strtab[sym->st_name];
@@ -171,11 +171,13 @@ module_t *module_load(vfs_node_t *file)
         for (uint j = 0; j < section->sh_size / section->sh_entsize; j++)
         {
             Elf64_Rela *rela = &rela_entries[j];
-            Elf64_Sym  *sym  = &symtab[ELF64_R_SYM(rela->r_info)];
+            Elf64_Sym  *sym  = (Elf64_Sym*)(symtab + (ELF64_R_SYM(rela->r_info) * symtab_hdr->sh_entsize));
             
             void *addr = (void*)(section_addr[section->sh_info] + rela->r_offset);
             uptr value = sym->st_value + rela->r_addend;
             u64  reloc_size;
+
+            log("addr %llx val %llx", addr, value);
 
             switch (ELF64_R_TYPE(rela->r_info))
             {
