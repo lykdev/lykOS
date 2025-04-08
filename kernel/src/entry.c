@@ -13,9 +13,11 @@
 #include <mm/kmem.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
-#include <mod.h>
 #include <sys/smp.h>
 #include <tasking/sched.h>
+
+#include <module.h>
+#include <device.h>
 
 void _entry()
 {
@@ -57,5 +59,6 @@ void _entry()
     //smp_init();
 
     log("Kernel end.");
+
     arch_cpu_halt();
 }

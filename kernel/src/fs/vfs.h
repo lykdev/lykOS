@@ -31,15 +31,17 @@ struct vfs_node
     u64 atime; // Time accessed.
 
     vfs_node_ops_t *ops;
+
     void *mp_node;
 };
 
 struct vfs_node_ops
 {
-    int (*read)(vfs_node_t *self, u64 offset, u64 count, void *buffer);
-    int (*write)(vfs_node_t *self, u64 offset, u64 count, void *buffer);
+    int (*read)(vfs_node_t *self, u64 offset, void *buffer, u64 count);
+    int (*write)(vfs_node_t *self, u64 offset, void *buffer, u64 count);
     int (*lookup)(vfs_node_t *self, char *name, vfs_node_t **out);
     int (*list)(vfs_node_t *self, uint *index, char **out);
+    int (*ioctl)(vfs_node_t *self, int op, ...);
 };
 
 int vfs_mount(const char *path, vfs_mountpoint_t *mp);

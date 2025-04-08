@@ -16,7 +16,7 @@ int syscall_write(int fd, void *buf, u64 count)
     if (node == NULL)
         return -1;
 
-    node->ops->write(node, 0, count, buf);
+    node->ops->write(node, 0, buf, count);
 
     return count;
 }

@@ -12,6 +12,6 @@ int syscall_read(int fd, void *buf, u64 count)
     if (node == NULL)
         return -1;
 
-    node->ops->read(node, 0, count, buf);
+    node->ops->read(node, 0, buf, count);
     return 0;
 }

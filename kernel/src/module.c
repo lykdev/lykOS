@@ -59,7 +59,7 @@ module_t *module_load(vfs_node_t *file)
     module_t module;
 
     Elf64_Ehdr ehdr;
-    file->ops->read(file, 0, sizeof(Elf64_Ehdr), &ehdr);
+    file->ops->read(file, 0, &ehdr, sizeof(Elf64_Ehdr));
 
     if (!elf_check_compatibility(&ehdr))
     {
@@ -78,7 +78,7 @@ module_t *module_load(vfs_node_t *file)
 
     for(int i = 0; i < ehdr.e_shnum; i++)
     {
-        file->ops->read(file, ehdr.e_shoff + (ehdr.e_shentsize * i), sizeof(Elf64_Shdr), &shdr[i]);
+        file->ops->read(file, ehdr.e_shoff + (ehdr.e_shentsize * i), &shdr[i], sizeof(Elf64_Shdr));
         Elf64_Shdr *section = &shdr[i];
 
         if (section->sh_type == SHT_PROGBITS
@@ -86,7 +86,7 @@ module_t *module_load(vfs_node_t *file)
         &&  section->sh_flags & SHF_ALLOC)
         {
             void *mem = kmem_alloc(section->sh_size);
-            file->ops->read(file, section->sh_offset, section->sh_size, mem);
+            file->ops->read(file, section->sh_offset, mem, section->sh_size);
             section_addr[i] = (uptr)mem;
         }
     }
@@ -102,7 +102,7 @@ module_t *module_load(vfs_node_t *file)
         return NULL;
     }
     CLEANUP void *symtab = kmem_alloc(symtab_hdr->sh_size);
-    file->ops->read(file, symtab_hdr->sh_offset, symtab_hdr->sh_size, symtab);
+    file->ops->read(file, symtab_hdr->sh_offset, symtab, symtab_hdr->sh_size);
 
     // String table.
     Elf64_Shdr *strtab_hdr = &shdr[symtab_hdr->sh_link];
@@ -112,7 +112,7 @@ module_t *module_load(vfs_node_t *file)
         return NULL;
     }
     CLEANUP char *strtab = kmem_alloc(strtab_hdr->sh_size);
-    file->ops->read(file, strtab_hdr->sh_offset, strtab_hdr->sh_size, strtab);
+    file->ops->read(file, strtab_hdr->sh_offset, strtab, strtab_hdr->sh_size);
 
     // Resolve symbols.
     size_t sym_count = symtab_hdr->sh_size / symtab_hdr->sh_entsize;
@@ -125,6 +125,11 @@ module_t *module_load(vfs_node_t *file)
         {
         case SHN_UNDEF:
             sym->st_value = mod_resolve_sym(name);
+            if (sym->st_value == 0)
+            {
+                log("Symbol `%s` could not be resolved!", name);
+                return NULL;   
+            }
             break;
         case SHN_ABS:
             break;
@@ -154,7 +159,7 @@ module_t *module_load(vfs_node_t *file)
             continue;
 
         Elf64_Rela rela_entries[section->sh_size / section->sh_entsize];
-        file->ops->read(file, section->sh_offset, section->sh_size, rela_entries);
+        file->ops->read(file, section->sh_offset, rela_entries, section->sh_size);
 
         for (uint j = 0; j < section->sh_size / section->sh_entsize; j++)
         {

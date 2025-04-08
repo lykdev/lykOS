@@ -58,7 +58,7 @@ typedef struct
 } initrd_entry_t;
 static list_t g_entry_list;
 
-static int read(vfs_node_t *self, u64 offset, u64 size, void *buffer)
+static int read(vfs_node_t *self, u64 offset, void *buffer, u64 size)
 {
     if (self->type != VFS_NODE_FILE)
         return -1;

@@ -45,6 +45,7 @@ void kmem_init();
 
 void kmem_debug();
 
+__attribute__((unused))
 static void _cleanup_free(void *p)
 {
     kmem_free(*(void**) p);
