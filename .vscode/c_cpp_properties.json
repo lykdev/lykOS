@@ -3,8 +3,7 @@
         {
             "name": "LykOS",
             "includePath": [
-                "${workspaceFolder}/kernel/src/",
-                "${workspaceFolder}/modules"
+                "${workspaceFolder}/kernel/src/"
             ],
             "defines": [
                 "__aarch64__",
