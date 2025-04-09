@@ -12,10 +12,7 @@
 
 void __module_install()
 {
-    device_t *device = kmem_alloc(sizeof(device_t));
-    //strcpy(device->vfs_node.name, "ps2kb");
-    
-    device_register(device);
+    log("Hello world from inside module!");
 }
 
 void __module_destroy()

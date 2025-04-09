@@ -1,58 +1,15 @@
-#include "mod.h"
+#include "module.h"
 
-#include <common/assert.h>
 #include <common/elf.h>
 #include <common/hhdm.h>
-#include <common/limine/requests.h>
 #include <common/log.h>
 #include <common/panic.h>
 #include <lib/def.h>
 #include <lib/string.h>
 #include <mm/kmem.h>
-#include <mm/pmm.h>
-
-typedef struct
-{
-    uint64_t addr;
-    char name[];
-}
-__attribute__((packed))
-ksym_t;
-
-static void *ksym_data;
-static u64   ksym_size;
+#include <sys/ksym.h>
 
 list_t g_mod_module_list = LIST_INIT;
-
-static uptr mod_resolve_sym(const char *name)
-{
-    void *p = ksym_data;
-    while (p < ksym_data + ksym_size)
-    {
-        ksym_t *sym = (ksym_t*)p;
-
-        if (strcmp(name, (const char *)&sym->name) == 0)
-            return sym->addr;
-        
-        p += sizeof(sym->addr) + strlen(sym->name) + 1;
-    }
-
-    return 0;
-}
-
-void mod_init()
-{
-    for (uint i = 0; i < request_module.response->module_count; i++)
-    if (strcmp(request_module.response->modules[i]->path, "/kernel_symbols.bin") == 0)
-    {
-        ksym_data = (void*)request_module.response->modules[i]->address;
-        ksym_size = request_module.response->modules[i]->size;
-        break;
-    }
-
-    if (ksym_data == NULL)
-        panic("\"kernel_symbols.bin\" bootloader module not found!");
-}
 
 module_t *module_load(vfs_node_t *file)
 {
@@ -124,7 +81,7 @@ module_t *module_load(vfs_node_t *file)
         switch (sym->st_shndx)
         {
         case SHN_UNDEF:
-            sym->st_value = mod_resolve_sym(name);
+            sym->st_value = ksym_resolve_symbol(name);
             if (sym->st_value == 0)
             {
                 log("Symbol `%s` could not be resolved!", name);

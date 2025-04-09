@@ -102,7 +102,7 @@ static int lookup(vfs_node_t *self, char *name, vfs_node_t **out)
         if (strcmp(path, node->ustar_data->filename) == 0)
         {
             *out = &node->vfs_node;
-            return 0;
+            return 1;
         }
     }
 
@@ -132,9 +132,10 @@ int list(vfs_node_t *self, uint *index, char **out)
             if (l_index == *index)
             {
                 (*index)++;
-                *out = (char *)&node->ustar_data->filename;
-                return 0;
-            } else
+                *out = (char *)&node->ustar_data->filename[strlen(path)];
+                return 1;
+            }
+            else
                 l_index++;
         }
     }
@@ -154,7 +155,11 @@ static void process_entry(ustar_hdr_t *hdr)
     initrd_entry_t *node = kmem_alloc(sizeof(initrd_entry_t));
     node->ustar_data = hdr;
 
-    node->vfs_node = (vfs_node_t){.type = hdr->type == '5' ? VFS_NODE_DIR : VFS_NODE_FILE, .mp_node = node, .ops = &g_node_ops};
+    node->vfs_node = (vfs_node_t) {
+        .type = hdr->type == '5' ? VFS_NODE_DIR : VFS_NODE_FILE,
+        .mp_node = node,
+        .ops = &g_node_ops
+    };
 
     list_append(&g_entry_list, &node->list_elem);
 }

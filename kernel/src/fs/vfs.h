@@ -3,6 +3,8 @@
 #include <common/sync/slock.h>
 #include <lib/def.h>
 
+#define VFS_MAX_NAME_LEN 64
+
 typedef struct vfs_node vfs_node_t;
 typedef struct vfs_mountpoint vfs_mountpoint_t;
 typedef struct vfs_node_ops vfs_node_ops_t;
@@ -20,7 +22,7 @@ typedef enum
 
 struct vfs_node
 {
-    char name[128]; // Filename.
+    char name[VFS_MAX_NAME_LEN]; // Filename.
     vfs_node_type_t type;
     u32 perm;  // Permission mask.
     u32 uid;   // User id.

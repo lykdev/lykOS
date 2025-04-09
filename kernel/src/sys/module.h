@@ -15,6 +15,4 @@ module_t;
 
 extern list_t g_mod_module_list;
 
-void mod_init();
-
 module_t *module_load(vfs_node_t *file);

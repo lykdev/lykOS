@@ -13,11 +13,10 @@
 #include <mm/kmem.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
+#include <sys/ksym.h>
+#include <sys/module.h>
 #include <sys/smp.h>
 #include <tasking/sched.h>
-
-#include <module.h>
-#include <device.h>
 
 void _entry()
 {
@@ -35,28 +34,29 @@ void _entry()
     vfs_init();
     initrd_init();
 
-    arch_syscall_init();
+    // Load kernel modules.
 
-    // vfs_node_t *elf_file;
-    // vfs_lookup("/initrd/test.elf", &elf_file);
-    // elf_object_t *elf_obj = elf_read(elf_file);
-    // ASSERT(elf_is_compatible(elf_obj));
-    // proc_t *proc = proc_new(PROC_USER);
-    // elf_load_exec(elf_obj, proc->addr_space);
-    // thread_t *t = thread_new(proc, elf_get_entry(elf_obj));
+    ksym_load_symbols();
+    vfs_node_t *module_dir;
+    vfs_lookup("/initrd/modules", &module_dir);
+    if (module_dir == NULL || module_dir->type != VFS_NODE_DIR)
+        panic("Could not find directory `/initrd/modules`.");
+    int idx = 0;
+    const char *name;
+    while (module_dir->ops->list(module_dir, &idx, &name))
+    {
+        log("Loading module `%s`.", name);
+        if (name[0] != '\0')
+        {
+            vfs_node_t *file;
+            module_dir->ops->lookup(module_dir, name, &file);
 
+            module_t *mod = module_load(file);
+            mod->install();
+        }    
+    }
     
-    //sched_queue_add(t);
-
-    mod_init();
-
-    vfs_node_t *file;
-    vfs_lookup("/initrd/main.elf", &file);
-    module_t *mod = module_load(file);   
-
-    mod->install();
-
-    //smp_init();
+    smp_init();
 
     log("Kernel end.");
 

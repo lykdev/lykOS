@@ -34,7 +34,7 @@ static char *vfs_get_mountpoint(const char *path, vfs_mountpoint_t **out)
 
     while (*path != '\0')
     {
-        char comp[32];
+        char comp[VFS_MAX_NAME_LEN];
         char *path_next = path_consume_comp(path, comp);
 
         if (*comp == '\0') // Handle empty components gracefully
@@ -59,7 +59,7 @@ int vfs_mount(const char *path, vfs_mountpoint_t *mp)
 
     while (*path != '\0')
     {
-        char comp[32];
+        char comp[VFS_MAX_NAME_LEN];
         path = path_consume_comp(path, comp);
 
         // Search for the token among the current node's children.
