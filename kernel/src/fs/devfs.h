@@ -1,3 +1,3 @@
-// #pragma once
+#pragma once
 
-// void devfs_init();
+void devfs_init();

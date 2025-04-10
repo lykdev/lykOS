@@ -6,6 +6,7 @@
 #include <common/assert.h>
 #include <common/limine/requests.h>
 #include <common/log.h>
+#include <fs/devfs.h>
 #include <fs/initrd.h>
 #include <fs/vfs.h>
 #include <graphics/video.h>
@@ -17,6 +18,8 @@
 #include <sys/module.h>
 #include <sys/smp.h>
 #include <tasking/sched.h>
+
+extern void dev_fb_init();
 
 void _entry()
 {
@@ -33,6 +36,7 @@ void _entry()
 
     vfs_init();
     initrd_init();
+    devfs_init();
 
     // Load kernel modules.
 
@@ -54,6 +58,13 @@ void _entry()
             mod->install();
         }    
     }
+
+    dev_fb_init();
+    vfs_node_t *fb = vfs_lookup("/dev/fb");
+    u32 pixels[] = {0xFF0000, 0xFF0000, 0xFF0000,
+                    0x00FF00, 0x00FF00, 0x00FF00,
+                    0x0000FF, 0x0000FF, 0x0000FF};
+    fb->ops->write(fb, 12, pixels, 9 * 4);
     
     //smp_init();
 

@@ -1,49 +1,62 @@
-// #include "devfs.h"
+#include "devfs.h"
 
-// #include <common/log.h>
-// #include <lib/string.h>
+#include <common/log.h>
+#include <common/panic.h>
+#include <fs/vfs.h>
+#include <lib/string.h>
+#include <mm/kmem.h>
 
-// static vfs_node_t ;
-// static int dev_cnt = 0;
+static vfs_node_t *nodes[256];
 
-// static int root_lookup(vfs_node_t*, char *name, vfs_node_t **out)
-// {
-//     for (int i = 0; i < dev_cnt; i++)
-//         if (strcmp(name, devices[i]->vfs_node.name) == 0)
-//         {
-//             *out = &devices[i]->vfs_node;
-//             return 0;
-//         }  
-
-//     *out = NULL;
-//     return 0;
-// }
-
-// static int root_list(vfs_node_t *self, uint *index, char **out)
-// {
+static vfs_node_t *root_create(vfs_node_t*, vfs_node_type_t t, char *name)
+{
+    if (t != VFS_NODE_CHAR)
+        panic("Only creating char inside `/dev` is supported right now!");
     
+    for (int i = 0; i < 256; i++)
+        if (nodes[i] == NULL)
+        {
+            nodes[i] = kmem_alloc(sizeof(vfs_node_t));
+            nodes[i]->size = 0;
+            strcpy(nodes[i]->name, name);
+            return nodes[i];
+        }
 
-//     return 0;
-// }
+    panic("Maximum number of files under `/dev` reached!");
+}
 
-// static vfs_node_ops_t root_ops = (vfs_node_ops_t) {
-//     .read = NULL,
-//     .write = NULL,
-//     .lookup = root_lookup,
-//     .list = root_list,
-//     .ioctl = NULL
-// };
+static vfs_node_t *root_lookup(vfs_node_t*, char *name)
+{
+    for (int i = 0; i < 256; i++)
+        if (strcmp(name, nodes[i]->name) == 0)
+            return nodes[i];
 
-// static vfs_node_t root_node = (vfs_node_t) {
-//     .type = VFS_NODE_DIR,
-//     .ops  = &root_ops
-// };
+    return NULL;
+}
 
-// static vfs_mountpoint_t devfs_mp = (vfs_mountpoint_t) {
-//     .root_node = &root_node
-// };
+static const char* root_list(vfs_node_t *, uint *index)
+{
+    return (const char *)&nodes[*index++]->name;
+}
 
-// void devfs_init()
-// {
-//     vfs_mount("/dev", &devfs_mp);
-// }
+static vfs_node_ops_t root_ops = (vfs_node_ops_t) {
+    .create = root_create,
+    .lookup = root_lookup,
+    .list = root_list
+};
+
+static vfs_node_t root_node = (vfs_node_t) {
+    .type = VFS_NODE_DIR,
+    .ops  = &root_ops
+};
+
+static vfs_mountpoint_t devfs_mp = (vfs_mountpoint_t) {
+    .root_node = &root_node
+};
+
+void devfs_init()
+{
+    vfs_mount("/dev", &devfs_mp);
+
+    log("Mounted devfs at `/dev`.");
+}

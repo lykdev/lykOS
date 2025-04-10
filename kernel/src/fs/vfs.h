@@ -17,7 +17,9 @@ struct vfs_mountpoint
 typedef enum
 {
     VFS_NODE_FILE,
-    VFS_NODE_DIR
+    VFS_NODE_DIR,
+    VFS_NODE_CHAR,
+    VFS_NODE_BLOCK
 }
 vfs_node_type_t;
 
