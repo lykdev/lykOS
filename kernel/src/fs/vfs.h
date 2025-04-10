@@ -18,7 +18,8 @@ typedef enum
 {
     VFS_NODE_FILE,
     VFS_NODE_DIR
-} vfs_node_type_t;
+}
+vfs_node_type_t;
 
 struct vfs_node
 {
@@ -39,16 +40,16 @@ struct vfs_node
 
 struct vfs_node_ops
 {
-    int (*read)(vfs_node_t *self, u64 offset, void *buffer, u64 count);
-    int (*write)(vfs_node_t *self, u64 offset, void *buffer, u64 count);
-    int (*lookup)(vfs_node_t *self, char *name, vfs_node_t **out);
-    int (*list)(vfs_node_t *self, uint *index, char **out);
-    int (*ioctl)(vfs_node_t *self, int op, ...);
+    u64 (*read)(vfs_node_t *self, u64 offset, void *buffer, u64 count);
+    u64 (*write)(vfs_node_t *self, u64 offset, void *buffer, u64 count);
+    vfs_node_t* (*lookup)(vfs_node_t *self, char *name);
+    const char* (*list)(vfs_node_t *self, uint *index);
+    vfs_node_t* (*create)(vfs_node_t *self, vfs_node_type_t t, char *name);
 };
 
 int vfs_mount(const char *path, vfs_mountpoint_t *mp);
 
-int vfs_lookup(const char *path, vfs_node_t **out);
+vfs_node_t *vfs_lookup(const char *path);
 
 void vfs_init();
 

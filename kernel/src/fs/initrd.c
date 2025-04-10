@@ -58,7 +58,7 @@ typedef struct
 } initrd_entry_t;
 static list_t g_entry_list;
 
-static int read(vfs_node_t *self, u64 offset, void *buffer, u64 size)
+static u64 read(vfs_node_t *self, u64 offset, void *buffer, u64 size)
 {
     if (self->type != VFS_NODE_FILE)
         return -1;
@@ -82,13 +82,10 @@ static int read(vfs_node_t *self, u64 offset, void *buffer, u64 size)
     return i;
 }
 
-static int lookup(vfs_node_t *self, char *name, vfs_node_t **out)
+static vfs_node_t *lookup(vfs_node_t *self, char *name)
 {
     if (self->type != VFS_NODE_DIR)
-    {
-        *out = NULL;
-        return -1;
-    }
+        return NULL;
 
     // Maybe optimise this later... if you care enough.
     char path[100] = "";
@@ -100,23 +97,16 @@ static int lookup(vfs_node_t *self, char *name, vfs_node_t **out)
     {
         initrd_entry_t *node = LIST_GET_CONTAINER(n, initrd_entry_t, list_elem);
         if (strcmp(path, node->ustar_data->filename) == 0)
-        {
-            *out = &node->vfs_node;
-            return 1;
-        }
+            return &node->vfs_node;
     }
 
-    *out = NULL;
-    return 0;
+    return NULL;
 }
 
-int list(vfs_node_t *self, uint *index, char **out)
+const char *list(vfs_node_t *self, uint *index)
 {
     if (self->type != VFS_NODE_DIR)
-    {
-        *out = NULL;
-        return -1;
-    }
+        return NULL;
 
     // Maybe optimise this later... if you care enough.
     char path[100] = "";
@@ -132,19 +122,22 @@ int list(vfs_node_t *self, uint *index, char **out)
             if (l_index == *index)
             {
                 (*index)++;
-                *out = (char *)&node->ustar_data->filename[strlen(path)];
-                return 1;
+                return (const char *)&node->ustar_data->filename[strlen(path)];
             }
             else
                 l_index++;
         }
     }
 
-    *out = NULL;
-    return 0;
+    return NULL;
 }
 
-static vfs_node_ops_t g_node_ops = (vfs_node_ops_t){.read = read, .lookup = lookup, .list = list};
+static vfs_node_ops_t g_node_ops = (vfs_node_ops_t) {
+    .read = read, 
+    .write = NULL,
+    .lookup = lookup, 
+    .list = list
+};
 
 static vfs_mountpoint_t g_mountpoint;
 

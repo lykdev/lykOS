@@ -8,8 +8,8 @@ int syscall_open(const char *path, int flags, int mode)
     log("OPEN");
     proc_t *proc = syscall_get_proc();
     
-    vfs_node_t *node;
-    if(vfs_lookup(path, &node) < 0)
+    vfs_node_t *node = vfs_lookup(path);
+    if(node == NULL)
     {
         log("FAILED");
     }

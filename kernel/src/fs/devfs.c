@@ -1,9 +1,9 @@
-// #include "dev.h"
+// #include "devfs.h"
 
 // #include <common/log.h>
 // #include <lib/string.h>
 
-// static device_t *devices[256];
+// static vfs_node_t ;
 // static int dev_cnt = 0;
 
 // static int root_lookup(vfs_node_t*, char *name, vfs_node_t **out)
@@ -30,13 +30,12 @@
 //     .read = NULL,
 //     .write = NULL,
 //     .lookup = root_lookup,
-//     .list = NULL,
+//     .list = root_list,
 //     .ioctl = NULL
 // };
 
 // static vfs_node_t root_node = (vfs_node_t) {
 //     .type = VFS_NODE_DIR,
-//     .name = "dev",
 //     .ops  = &root_ops
 // };
 
@@ -44,13 +43,7 @@
 //     .root_node = &root_node
 // };
 
-// void dev_init()
+// void devfs_init()
 // {
 //     vfs_mount("/dev", &devfs_mp);
-// }
-
-// void device_register(device_t *dev)
-// {
-//     devices[dev_cnt++] = dev;
-//     log("Registered device `%s`.", dev->vfs_node.name);
 // }

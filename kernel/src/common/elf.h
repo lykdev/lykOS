@@ -105,12 +105,12 @@ Elf64_Shdr;
 
 typedef struct
 {
-    Elf64_Word st_name;
+    Elf64_Word    st_name;
     unsigned char st_info;
     unsigned char st_other;
-    Elf64_Half st_shndx;
-    Elf64_Addr st_value;
-    Elf64_Xword st_size;
+    Elf64_Half    st_shndx;
+    Elf64_Addr    st_value;
+    Elf64_Xword   st_size;
 }
 __attribute__((packed))
 Elf64_Sym;
@@ -128,7 +128,7 @@ Elf64_Sym;
 
 typedef struct
 {
-    Elf64_Addr r_offset;
+    Elf64_Addr  r_offset;
     Elf64_Xword r_info;
 }
 __attribute__((packed))
@@ -136,8 +136,8 @@ Elf64_Rel;
 
 typedef struct
 {
-    Elf64_Addr r_offset;
-    Elf64_Xword r_info;
+    Elf64_Addr   r_offset;
+    Elf64_Xword  r_info;
     Elf64_Sxword r_addend;
 }
 __attribute__((packed))
@@ -156,3 +156,25 @@ Elf64_Rela;
 #define R_X86_64_PC64  24
 
 bool elf_check_compatibility(Elf64_Ehdr *hdr);
+
+// Program header table
+
+typedef struct
+{
+    Elf64_Word  p_type;
+    Elf64_Word  p_flags;
+    Elf64_Off   p_offset;
+    Elf64_Addr  p_vaddr;
+    Elf64_Addr  p_paddr;
+    Elf64_Xword p_filesz;
+    Elf64_Xword p_memsz;
+    Elf64_Xword p_align;
+} 
+__attribute__((packed))
+Elf64_Phdr;
+
+#define PT_NULL    0
+#define PT_LOAD    1
+#define PT_DYNAMIC 2
+#define PT_INTERP  3
+#define PT_NOTE    4

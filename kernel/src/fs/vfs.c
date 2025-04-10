@@ -77,10 +77,8 @@ int vfs_mount(const char *path, vfs_mountpoint_t *mp)
     return 0;
 }
 
-int vfs_lookup(const char *path, vfs_node_t **out)
+vfs_node_t *vfs_lookup(const char *path)
 {
-    *out = NULL;
-
     vfs_mountpoint_t *mp;
     path = vfs_get_mountpoint(path, &mp);
     ASSERT(mp != NULL);
@@ -92,15 +90,12 @@ int vfs_lookup(const char *path, vfs_node_t **out)
         path = path_consume_comp(path, comp);
 
         if (comp[0] != '\0')
-            curr->ops->lookup(curr, comp, &curr);
+            curr = curr->ops->lookup(curr, comp);
         else
-        {
-            *out = curr;
-            return 0;
-        }
+            return curr;
     }
 
-    return 0;
+    return NULL;
 }
 
 void vfs_init()

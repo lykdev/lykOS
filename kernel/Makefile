@@ -97,6 +97,7 @@ limine:
 $(KERNEL_ELF): $(OBJ_FILES)
 	mkdir -p $(@D)
 	$(LD) $(LD_FLAGS) -o $@ $^
+		llvm-nm $@ -n -g > bin/kernel_symbols.txt
 
 obj/%.c.o: src/%.c
 	mkdir -p $(@D)

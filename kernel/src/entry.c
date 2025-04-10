@@ -37,26 +37,25 @@ void _entry()
     // Load kernel modules.
 
     ksym_load_symbols();
-    vfs_node_t *module_dir;
-    vfs_lookup("/initrd/modules", &module_dir);
+
+    vfs_node_t *module_dir = vfs_lookup("/initrd/modules");
     if (module_dir == NULL || module_dir->type != VFS_NODE_DIR)
         panic("Could not find directory `/initrd/modules`.");
     int idx = 0;
     const char *name;
-    while (module_dir->ops->list(module_dir, &idx, &name))
+    while (name = module_dir->ops->list(module_dir, &idx))
     {
         log("Loading module `%s`.", name);
         if (name[0] != '\0')
         {
-            vfs_node_t *file;
-            module_dir->ops->lookup(module_dir, name, &file);
+            vfs_node_t *file = module_dir->ops->lookup(module_dir, name);
 
             module_t *mod = module_load(file);
             mod->install();
         }    
     }
     
-    smp_init();
+    //smp_init();
 
     log("Kernel end.");
 

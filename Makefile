@@ -39,9 +39,7 @@ build: limine tools/ksym
 	make -C kernel ARCH=$(ARCH)
 
 	mkdir -p iso_root/EFI/BOOT
-
-	llvm-nm kernel/bin/kernel.elf -n > kernel_symbols.txt
-	./tools/ksym kernel_symbols.txt iso_root/kernel_symbols.bin
+	./tools/ksym kernel/bin/kernel_symbols.txt iso_root/kernel_symbols.bin
 	tar -cvf iso_root/initrd.tar --format=ustar initrd/
 
 	cp kernel/bin/kernel.elf limine.conf limine/limine-uefi-cd.bin \
