@@ -1,7 +1,7 @@
 #include <arch/serial.h>
 
+#include <common/log.h>
 #include <mm/kmem.h>
-#include <sys/devices/dev.h>
 #include <lib/string.h>
 
 // #define PS2_DATA_PORT  0x60
@@ -17,10 +17,10 @@ void __module_install()
 
 void __module_destroy()
 {
-    
+
 }
 
 void __module__probe()
 {
-    
+
 }

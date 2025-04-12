@@ -12,7 +12,7 @@ static vfs_node_t *root_create(vfs_node_t*, vfs_node_type_t t, char *name)
 {
     if (t != VFS_NODE_CHAR)
         panic("Only creating char inside `/dev` is supported right now!");
-    
+
     for (int i = 0; i < 256; i++)
         if (nodes[i] == NULL)
         {
@@ -23,9 +23,10 @@ static vfs_node_t *root_create(vfs_node_t*, vfs_node_type_t t, char *name)
         }
 
     panic("Maximum number of files under `/dev` reached!");
+    return NULL;
 }
 
-static vfs_node_t *root_lookup(vfs_node_t*, char *name)
+static vfs_node_t *root_lookup(vfs_node_t*, const char *name)
 {
     for (int i = 0; i < 256; i++)
         if (strcmp(name, nodes[i]->name) == 0)

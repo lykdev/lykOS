@@ -19,6 +19,8 @@
 #include <sys/smp.h>
 #include <tasking/sched.h>
 
+#include <lib/string.h>
+
 extern void dev_fb_init();
 
 void _entry()
@@ -45,9 +47,9 @@ void _entry()
     vfs_node_t *module_dir = vfs_lookup("/initrd/modules");
     if (module_dir == NULL || module_dir->type != VFS_NODE_DIR)
         panic("Could not find directory `/initrd/modules`.");
-    int idx = 0;
+    uint idx = 0;
     const char *name;
-    while (name = module_dir->ops->list(module_dir, &idx))
+    while ((name = module_dir->ops->list(module_dir, &idx)))
     {
         log("Loading module `%s`.", name);
         if (name[0] != '\0')
@@ -56,16 +58,22 @@ void _entry()
 
             module_t *mod = module_load(file);
             mod->install();
-        }    
+        }
     }
 
     dev_fb_init();
+
+    u32 pix[100];
+    for (size_t i = 0; i < 50; i++)
+        pix[i] = 0xFF0000;
+    for (size_t i = 50; i < 100; i++)
+        pix[i] = 0x00FF00;
+
     vfs_node_t *fb = vfs_lookup("/dev/fb");
-    u32 pixels[] = {0xFF0000, 0xFF0000, 0xFF0000,
-                    0x00FF00, 0x00FF00, 0x00FF00,
-                    0x0000FF, 0x0000FF, 0x0000FF};
-    fb->ops->write(fb, 12, pixels, 9 * 4);
-    
+    ASSERT(fb != NULL);
+    fb->ops->write(fb, 0, pix, 100 * 4);
+
+
     //smp_init();
 
     log("Kernel end.");

@@ -5,6 +5,5 @@
 
 *.iso
 
-.vscode
-.chariot-cache/*
-!.chariot-cache/patches
+/.*
+!/.gitignore

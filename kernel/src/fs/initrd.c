@@ -55,7 +55,8 @@ typedef struct
     vfs_node_t vfs_node;
 
     list_node_t list_elem;
-} initrd_entry_t;
+}
+initrd_entry_t;
 static list_t g_entry_list;
 
 static u64 read(vfs_node_t *self, u64 offset, void *buffer, u64 size)
@@ -68,7 +69,7 @@ static u64 read(vfs_node_t *self, u64 offset, void *buffer, u64 size)
 
     if (offset >= file_content_size)
         return -1;
-        
+
 
     if (offset + size >= file_content_size)
         size = file_content_size - offset;
@@ -82,7 +83,7 @@ static u64 read(vfs_node_t *self, u64 offset, void *buffer, u64 size)
     return i;
 }
 
-static vfs_node_t *lookup(vfs_node_t *self, char *name)
+static vfs_node_t *lookup(vfs_node_t *self, const char *name)
 {
     if (self->type != VFS_NODE_DIR)
         return NULL;
@@ -133,9 +134,9 @@ const char *list(vfs_node_t *self, uint *index)
 }
 
 static vfs_node_ops_t g_node_ops = (vfs_node_ops_t) {
-    .read = read, 
+    .read = read,
     .write = NULL,
-    .lookup = lookup, 
+    .lookup = lookup,
     .list = list
 };
 
