@@ -9,7 +9,7 @@
 #include <lib/string.h>
 
 static int line = 0;
-static slock_t slock = SLOCK_INIT;
+static spinlock_t slock = SPINLOCK_INIT;
 
 void _log(const char *format, ...)
 {
@@ -23,7 +23,7 @@ void _log(const char *format, ...)
 
 void _n_log(const char *format, va_list list)
 {
-    slock_acquire(&slock);
+    spinlock_acquire(&slock);
 
     char buf[256] = {0};
     vsnprintf(buf, 256, format, list);
@@ -35,7 +35,7 @@ void _n_log(const char *format, va_list list)
 
     if (line > 45)
     {
-        slock_release(&slock);
+        spinlock_release(&slock);
         return;
     }
 
@@ -43,5 +43,5 @@ void _n_log(const char *format, va_list list)
         draw_char(&video_fb, i * font_basic.width, line * font_basic.height, buf[i], &font_basic, 0xFFFFFF);
     line++;
 
-    slock_release(&slock);
+    spinlock_release(&slock);
 }

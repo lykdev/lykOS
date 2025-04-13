@@ -4,16 +4,16 @@
 
 #include <common/panic.h>
 
-void slock_acquire(volatile slock_t *lock)
+void spinlock_acquire(volatile spinlock_t *slock)
 {
     volatile u64 deadlock_cnt = 0;
 
     while (true)
     {
-        if (!__atomic_test_and_set(lock, __ATOMIC_ACQUIRE))
+        if (!__atomic_test_and_set(slock, __ATOMIC_ACQUIRE))
             return;
 
-        while (__atomic_load_n(lock, __ATOMIC_RELAXED))
+        while (__atomic_load_n(slock, __ATOMIC_RELAXED))
         {
             arch_cpu_relax();
 
@@ -23,7 +23,7 @@ void slock_acquire(volatile slock_t *lock)
     }
 }
 
-void slock_release(volatile slock_t *lock)
+void spinlock_release(volatile spinlock_t *slock)
 {
-    __atomic_clear(lock, __ATOMIC_RELEASE);
+    __atomic_clear(slock, __ATOMIC_RELEASE);
 }

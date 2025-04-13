@@ -22,7 +22,7 @@ typedef struct
 {
     resource_t **resources;
     int length;
-    slock_t lock;
+    spinlock_t lock;
 }
 resource_table_t;
 

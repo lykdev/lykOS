@@ -2,10 +2,10 @@
 
 #include <lib/def.h>
 
-typedef uint8_t slock_t;
+typedef uint8_t spinlock_t;
 
-#define SLOCK_INIT 0
+#define SPINLOCK_INIT (0)
 
-void slock_acquire(volatile slock_t *lock);
+void spinlock_acquire(volatile spinlock_t *lock);
 
-void slock_release(volatile slock_t *lock);
+void spinlock_release(volatile spinlock_t *lock);

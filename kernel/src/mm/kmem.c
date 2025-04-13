@@ -1,4 +1,5 @@
 #include "kmem.h"
+#include "common/sync/slock.h"
 
 #include <arch/cpu.h>
 
@@ -28,7 +29,7 @@ static kmem_slab_t *kmem_new_slab(kmem_cache_t *parent_cache)
                           .freelist_len = _obj_cnt,
                           .freelist_sec = NULL,
                           .freelist_sec_len = 0,
-                          .lock = SLOCK_INIT,
+                          .lock = SPINLOCK_INIT,
                           .assigned_cpu_id = -1};
 
     uptr base = (uptr)slab + sizeof(kmem_slab_t);
@@ -49,7 +50,7 @@ kmem_cache_t *kmem_new_cache(char *name, uint obj_size)
     cache->obj_size = obj_size;
     cache->slabs_partial = LIST_INIT;
     cache->slabs_full = LIST_INIT;
-    cache->slab_list_lock = SLOCK_INIT;
+    cache->slab_list_lock = SPINLOCK_INIT;
 
     for (uint i = 0; i < g_cpu_count; i++)
         cache->per_cpu_active_slab[i] = kmem_new_slab(cache);
@@ -77,7 +78,7 @@ void *kmem_alloc_from(kmem_cache_t *cache)
 
     if (active_slab->freelist == NULL)
     {
-        slock_acquire(&active_slab->lock);
+        spinlock_acquire(&active_slab->lock);
         if (active_slab->freelist_sec != NULL)
         {
             active_slab->freelist = active_slab->freelist_sec;
@@ -87,7 +88,7 @@ void *kmem_alloc_from(kmem_cache_t *cache)
             active_slab->freelist_sec_len = 0;
         } else
         {
-            slock_acquire(&cache->slab_list_lock);
+            spinlock_acquire(&cache->slab_list_lock);
 
             active_slab->assigned_cpu_id = -1;
             list_append(&cache->slabs_full, &active_slab->list_elem);
@@ -98,9 +99,9 @@ void *kmem_alloc_from(kmem_cache_t *cache)
                 cache->per_cpu_active_slab[curr_cpu_id] = LIST_GET_CONTAINER(list_pop_head(&cache->slabs_partial), kmem_slab_t, list_elem);
             cache->per_cpu_active_slab[curr_cpu_id]->assigned_cpu_id = curr_cpu_id;
 
-            slock_release(&cache->slab_list_lock);
+            spinlock_release(&cache->slab_list_lock);
         }
-        slock_release(&active_slab->lock);
+        spinlock_release(&active_slab->lock);
     }
 
     return ret;
@@ -133,13 +134,13 @@ void kmem_free(void *obj)
 
     if (slab->assigned_cpu_id == -1) // Non-active slab.
     {
-        slock_acquire(&slab->lock);
+        spinlock_acquire(&slab->lock);
 
         *(void **)obj = slab->freelist;
         slab->freelist = obj;
         slab->freelist_len++;
 
-        slock_acquire(&slab->parent_cache->slab_list_lock);
+        spinlock_acquire(&slab->parent_cache->slab_list_lock);
         if (slab->freelist_len == 1) // The slab was previously full and now is partial.
         {
             list_remove(&slab->parent_cache->slabs_full, &slab->list_elem);
@@ -150,9 +151,9 @@ void kmem_free(void *obj)
             list_remove(&slab->parent_cache->slabs_partial, &slab->list_elem);
             pmm_free((void *)((uptr)slab - HHDM));
         }
-        slock_release(&slab->parent_cache->slab_list_lock);
+        spinlock_release(&slab->parent_cache->slab_list_lock);
 
-        slock_release(&slab->lock);
+        spinlock_release(&slab->lock);
     } else if (slab->assigned_cpu_id == curr_cpu_id) // Active slab belonging to the current CPU.
     {
         *(void **)obj = slab->freelist;
@@ -160,13 +161,13 @@ void kmem_free(void *obj)
         slab->freelist_len++;
     } else // Active slab belonging to another CPU.
     {
-        slock_acquire(&slab->lock);
+        spinlock_acquire(&slab->lock);
 
         *(void **)obj = slab->freelist_sec;
         slab->freelist_sec = obj;
         slab->freelist_sec_len++;
 
-        slock_release(&slab->lock);
+        spinlock_release(&slab->lock);
     }
 }
 

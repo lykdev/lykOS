@@ -1,4 +1,5 @@
 #include "vmm.h"
+#include "common/sync/slock.h"
 
 #include <arch/ptm.h>
 
@@ -19,7 +20,7 @@ static kmem_cache_t *g_segment_cache;
 
 static void vmm_insert_seg(vmm_addr_space_t *addr_space, vmm_seg_t *seg)
 {
-    slock_acquire(&addr_space->slock);
+    spinlock_acquire(&addr_space->slock);
 
     list_node_t *pos = NULL;
     FOREACH(n, addr_space->segments)
@@ -31,7 +32,7 @@ static void vmm_insert_seg(vmm_addr_space_t *addr_space, vmm_seg_t *seg)
     }
     list_insert_after(&addr_space->segments, pos, &seg->list_elem);
 
-    slock_release(&addr_space->slock);
+    spinlock_release(&addr_space->slock);
 }
 
 uptr vmm_find_space(vmm_addr_space_t *addr_space, u64 len)
@@ -112,7 +113,7 @@ void vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t p
 {
     (void)(prot);
     ASSERT(virt % ARCH_PAGE_GRAN == 0 && len % ARCH_PAGE_GRAN == 0);
-    
+
     vmm_seg_t *created_seg = kmem_alloc_from(g_segment_cache);
     *created_seg = (vmm_seg_t) {
         .addr_space = addr_space,
@@ -125,12 +126,12 @@ void vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t p
     vmm_insert_seg(addr_space, created_seg);
 
     //TODO: this was temp
-    slock_acquire(&addr_space->slock);
+    spinlock_acquire(&addr_space->slock);
 
     for (uptr addr = 0; addr < len; addr += ARCH_PAGE_SIZE_4K)
         arch_ptm_map(&addr_space->ptm_map, virt + addr, (uptr)pmm_alloc(0), ARCH_PAGE_SIZE_4K);
 
-    slock_release(&addr_space->slock); 
+    spinlock_release(&addr_space->slock);
 }
 
 void vmm_map_fixed(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot, uptr phys, bool premap)
@@ -151,12 +152,12 @@ void vmm_map_fixed(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t 
 
     if (premap)
     {
-        slock_acquire(&addr_space->slock);
+        spinlock_acquire(&addr_space->slock);
 
         for (uptr addr = 0; addr < len; addr += ARCH_PAGE_SIZE_4K)
             arch_ptm_map(&addr_space->ptm_map, virt + addr, phys + addr, ARCH_PAGE_SIZE_4K);
 
-        slock_release(&addr_space->slock);
+        spinlock_release(&addr_space->slock);
     }
 }
 
@@ -170,10 +171,10 @@ vmm_addr_space_t *vmm_new_addr_space(uptr limit_low, uptr limit_high)
     vmm_addr_space_t *addr_space = kmem_alloc(sizeof(vmm_addr_space_t));
 
     *addr_space = (vmm_addr_space_t) {
-        .slock = SLOCK_INIT,
+        .slock = SPINLOCK_INIT,
         .segments = LIST_INIT,
         .limit_low = limit_low,
-        .limit_high = limit_high, 
+        .limit_high = limit_high,
         .ptm_map = arch_ptm_new_map()
     };
     return addr_space;

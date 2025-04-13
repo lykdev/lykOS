@@ -11,7 +11,7 @@
 
 typedef struct
 {
-    slock_t slock;
+    spinlock_t slock;
     list_t segments;
     uptr limit_low;
     uptr limit_high;

@@ -1,3 +1,4 @@
+#include "common/sync/slock.h"
 #include <arch/cpu.h>
 #include <arch/init.h>
 
@@ -23,8 +24,8 @@ static void thread_idle_func()
 
 static void core_init(struct limine_mp_info *mp_info)
 {
-    static slock_t slock = SLOCK_INIT;
-    slock_acquire(&slock); // Assure CPU cores are initialized sequentially.
+    static spinlock_t slock = SPINLOCK_INIT;
+    spinlock_acquire(&slock); // Assure CPU cores are initialized sequentially.
 
     log("NEW CORE %u", mp_info->extra_argument);
 
@@ -38,7 +39,7 @@ static void core_init(struct limine_mp_info *mp_info)
     idle_thread->assigned_core = cpu_core;
     arch_cpu_write_thread_reg(idle_thread);
 
-    slock_release(&slock);
+    spinlock_release(&slock);
 
     thread_idle_func();
 }

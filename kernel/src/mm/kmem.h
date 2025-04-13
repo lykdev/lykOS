@@ -15,7 +15,7 @@ struct kmem_slab
     uint freelist_len;
     void *freelist_sec;
     uint freelist_sec_len;
-    slock_t lock;
+    spinlock_t lock;
     int assigned_cpu_id;
     list_node_t list_elem;
 };
@@ -26,7 +26,7 @@ struct kmem_cache
     uint obj_size;
     list_t slabs_partial;
     list_t slabs_full;
-    slock_t slab_list_lock;
+    spinlock_t slab_list_lock;
     list_node_t list_elem;
     kmem_slab_t *per_cpu_active_slab[];
 };
