@@ -1,6 +1,6 @@
 #pragma once
 
-#include <common/sync/slock.h>
+#include <common/sync/spinlock.h>
 #include <lib/def.h>
 
 #define VFS_MAX_NAME_LEN 64

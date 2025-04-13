@@ -3,7 +3,7 @@
 #include <arch/ptm.h>
 #include <arch/types.h>
 
-#include <common/sync/slock.h>
+#include <common/sync/spinlock.h>
 #include <lib/def.h>
 #include <lib/list.h>
 

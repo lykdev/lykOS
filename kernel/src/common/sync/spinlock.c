@@ -1,7 +1,6 @@
-#include "slock.h"
+#include "spinlock.h"
 
 #include <arch/cpu.h>
-
 #include <common/panic.h>
 
 void spinlock_acquire(volatile spinlock_t *slock)
@@ -10,10 +9,14 @@ void spinlock_acquire(volatile spinlock_t *slock)
 
     while (true)
     {
-        if (!__atomic_test_and_set(slock, __ATOMIC_ACQUIRE))
+        if (!__atomic_test_and_set(&slock->lock, __ATOMIC_ACQUIRE))
+        {
+            slock->prev_int_state = arch_cpu_int_enabled();
+            arch_cpu_int_mask();
             return;
+        }
 
-        while (__atomic_load_n(slock, __ATOMIC_RELAXED))
+        while (__atomic_load_n(&slock->lock, __ATOMIC_RELAXED))
         {
             arch_cpu_relax();
 
@@ -25,5 +28,8 @@ void spinlock_acquire(volatile spinlock_t *slock)
 
 void spinlock_release(volatile spinlock_t *slock)
 {
-    __atomic_clear(slock, __ATOMIC_RELEASE);
+    bool prev_int_state = slock->prev_int_state;
+    __atomic_clear(&slock->lock, __ATOMIC_RELEASE);
+    if (prev_int_state)
+        arch_cpu_int_unmask();
 }

@@ -3,7 +3,7 @@
 #include <common/elf.h>
 #include <common/hhdm.h>
 #include <common/log.h>
-#include <mm/kmem.h>
+#include <mm/heap.h>
 #include <sys/proc.h>
 #include <sys/thread.h>
 #include <tasking/sched.h>
@@ -26,7 +26,7 @@ proc_t *exec_load(vfs_node_t *file)
 
     proc_t *proc = proc_new(PROC_USER);
 
-    CLEANUP Elf64_Phdr *ph_table = kmem_alloc(ehdr.e_phentsize * ehdr.e_phnum);
+    CLEANUP Elf64_Phdr *ph_table = heap_alloc(ehdr.e_phentsize * ehdr.e_phnum);
     file->ops->read(file, ehdr.e_phoff, ph_table, ehdr.e_phentsize * ehdr.e_phnum);
 
     for (uint i = 0; i < ehdr.e_phnum; i++)

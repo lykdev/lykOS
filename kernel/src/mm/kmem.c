@@ -1,41 +1,29 @@
 #include "kmem.h"
-#include "common/sync/slock.h"
 
 #include <arch/cpu.h>
-
+#include <arch/types.h>
 #include <common/assert.h>
 #include <common/hhdm.h>
-#include <common/limine/requests.h>
 #include <common/log.h>
-#include <common/panic.h>
-#include <lib/printf.h>
+#include <lib/likely.h>
+#include <lib/list.h>
 #include <lib/string.h>
 #include <mm/pmm.h>
+#include <sys/thread.h>
 #include <sys/smp.h>
 
-#define SLAB_SIZE (64 * KIB)
-
-static uint g_cpu_count;
-static list_t g_cache_list = LIST_INIT;
-
-static kmem_slab_t *kmem_new_slab(kmem_cache_t *parent_cache)
+static kmem_slab_t *cache_make_slab(kmem_cache_t *cache)
 {
-    kmem_slab_t *slab = (kmem_slab_t *)((uptr)pmm_alloc(pmm_pagecount_to_order(SLAB_SIZE / ARCH_PAGE_GRAN)) + HHDM);
-    uint _obj_cnt = (SLAB_SIZE - sizeof(kmem_slab_t)) / parent_cache->obj_size;
+    kmem_slab_t *slab = (kmem_slab_t*)((uptr)pmm_alloc(0) + HHDM);
 
-    *slab = (kmem_slab_t){.parent_cache = parent_cache,
-                          .obj_cnt = _obj_cnt,
-                          .freelist = NULL,
-                          .freelist_len = _obj_cnt,
-                          .freelist_sec = NULL,
-                          .freelist_sec_len = 0,
-                          .lock = SPINLOCK_INIT,
-                          .assigned_cpu_id = -1};
+    slab->cache = cache;
+    slab->freelist = NULL;
 
-    uptr base = (uptr)slab + sizeof(kmem_slab_t);
-    for (uint i = 0; i < slab->obj_cnt; i++)
+    size_t slab_content_size = pmm_order_to_pagecount(0) * ARCH_PAGE_GRAN - sizeof(kmem_slab_t);
+    size_t object_count = slab_content_size / cache->object_size;
+    for(size_t i = 0; i < object_count; i++)
     {
-        void **obj = (void **)(base + i * parent_cache->obj_size);
+        void **obj = (void**)((uptr)slab + sizeof(kmem_slab_t) + (i * cache->object_size));
         *obj = slab->freelist;
         slab->freelist = obj;
     }
@@ -43,170 +31,152 @@ static kmem_slab_t *kmem_new_slab(kmem_cache_t *parent_cache)
     return slab;
 }
 
-kmem_cache_t *kmem_new_cache(char *name, uint obj_size)
+static void *cache_alloc_from_slabs(kmem_cache_t *cache)
 {
-    kmem_cache_t *cache = (kmem_cache_t *)((uptr)pmm_alloc(0) + HHDM);
-    strcpy(cache->name, name);
-    cache->obj_size = obj_size;
-    cache->slabs_partial = LIST_INIT;
-    cache->slabs_full = LIST_INIT;
-    cache->slab_list_lock = SPINLOCK_INIT;
+    if (list_is_empty(&cache->slabs_partial))
+        list_append(&cache->slabs_partial, &cache_make_slab(cache)->list_node);
 
-    for (uint i = 0; i < g_cpu_count; i++)
-        cache->per_cpu_active_slab[i] = kmem_new_slab(cache);
+    kmem_slab_t *slab = LIST_GET_CONTAINER(LIST_FIRST(&cache->slabs_partial), kmem_slab_t, list_node);
+    ASSERT(slab->freelist != NULL);
 
-    list_append(&g_cache_list, &cache->list_elem);
+    void *obj = slab->freelist;
+    slab->freelist = *(void**)obj;
+
+    if (slab->freelist == NULL)
+    {
+        list_remove(&cache->slabs_partial, &slab->list_node);
+        list_append(&cache->slabs_full, &slab->list_node);
+    }
+
+    return obj;
+}
+
+static kmem_magazine_t *cache_make_magazine(kmem_cache_t *cache, bool populate)
+{
+    kmem_magazine_t *mag = (kmem_magazine_t*)((uptr)pmm_alloc(0) + HHDM);
+    mag->count = 0;
+
+    if (!populate)
+        return mag;
+
+    spinlock_acquire(&cache->slabs_lock);
+
+    while (mag->count < MAG_SIZE)
+        mag->objects[mag->count++] = cache_alloc_from_slabs(cache);
+
+    spinlock_release(&cache->slabs_lock);
+
+    return mag;
+}
+
+void kmem_cache_intialize(kmem_cache_t *cache, const char *name, size_t size)
+{
+    *cache = (kmem_cache_t) {
+        .name = name,
+        .object_size = size,
+        .slabs_full = LIST_INIT,
+        .slabs_partial = LIST_INIT,
+        .slabs_lock = SPINLOCK_INIT,
+        .magazines_full = LIST_INIT,
+        .magazines_empty = LIST_INIT,
+        .magazines_lock = SPINLOCK_INIT
+    };
+
+    for (int i = 0; i < MAX_CPUS; i++)
+    {
+        cache->cpu_cache[i] = (kmem_cpu_cache_t) {
+            .loaded = cache_make_magazine(cache, true),
+            .previous = cache_make_magazine(cache, false)
+        };
+    }
+}
+
+void *kmem_alloc_cache(kmem_cache_t *cache)
+{
+    u64 cpu_id = 0;
+    if (g_smp_initialized)
+        cpu_id = ((thread_t*)arch_cpu_read_thread_reg())->assigned_core->id;
+    kmem_cpu_cache_t *cpu_cache = &cache->cpu_cache[cpu_id];
+
+    kmem_magazine_t *mag = cpu_cache->loaded;
+    if (mag->count > 0)
+        return mag->objects[--mag->count];
+
+    ASSERT(cpu_cache->previous);
+    if (cpu_cache->previous->count == MAG_SIZE)
+    {
+        cpu_cache->loaded = cpu_cache->previous;
+        cpu_cache->previous = mag;
+        return cpu_cache->loaded->objects[--cpu_cache->loaded->count];
+    }
+
+    spinlock_acquire(&cache->magazines_lock);
+    mag = LIST_GET_CONTAINER(list_pop_head(&cache->magazines_full), kmem_magazine_t, list_node);
+    if (mag)
+    {
+        list_append(&cache->magazines_empty, &cpu_cache->previous->list_node);
+        cpu_cache->previous = cpu_cache->loaded;
+        cpu_cache->loaded = mag;
+        spinlock_release(&cache->magazines_lock);
+        return mag->objects[--mag->count];
+    }
+    spinlock_release(&cache->magazines_lock);
+
+    // If the depot has no full magazines then we directly allocate from a slab.
+
+    spinlock_acquire(&cache->slabs_lock);
+    void *obj = cache_alloc_from_slabs(cache);
+    spinlock_release(&cache->slabs_lock);
+
+    return obj;
+}
+
+void kmem_free_cache(kmem_cache_t *cache, void *obj)
+{
+    u64 cpu_id = 0;
+    if (g_smp_initialized)
+        cpu_id = ((thread_t*)arch_cpu_read_thread_reg())->assigned_core->id;
+    kmem_cpu_cache_t *cpu_cache = &cache->cpu_cache[cpu_id];
+
+    kmem_magazine_t *mag = cpu_cache->loaded;
+    if (mag->count < MAG_SIZE)
+        mag->objects[mag->count++] = obj;
+
+    if (cpu_cache->previous && cpu_cache->previous->count < MAG_SIZE)
+    {
+        cpu_cache->loaded = cpu_cache->previous;
+        cpu_cache->previous = mag;
+        cpu_cache->loaded->objects[cpu_cache->loaded->count++] = obj;
+        return;
+    }
+
+    spinlock_acquire(&cache->magazines_lock);
+    list_append(&cache->magazines_full, &mag->list_node);
+    kmem_magazine_t *new_mag = LIST_GET_CONTAINER(list_pop_head(&cache->magazines_full), kmem_magazine_t, list_node);
+    spinlock_release(&cache->magazines_lock);
+
+    // If the depot has no empty magazines then we create a new magazine.
+
+    if (!new_mag)
+        new_mag = cache_make_magazine(cache, false);
+
+    cpu_cache->previous = cpu_cache->loaded;
+    cpu_cache->loaded = new_mag;
+    new_mag->count = 0;
+    new_mag->objects[new_mag->count++] = obj;
+}
+
+kmem_cache_t *kmem_new_cache(const char *name, size_t size)
+{
+    kmem_cache_t *cache = (kmem_cache_t*)((uptr)pmm_alloc(0) + HHDM);
+    kmem_cache_intialize(cache, name, size);
 
     return cache;
 }
 
-void *kmem_alloc_from(kmem_cache_t *cache)
-{
-    uint curr_cpu_id = 0;
-    // Before SMP is initialized all allocations will be assigned to the active
-    // slab of CPU core 0.
-    if (g_smp_initialized)
-        curr_cpu_id = ((thread_t *)arch_cpu_read_thread_reg())->assigned_core->id;
-
-    kmem_slab_t *active_slab = cache->per_cpu_active_slab[curr_cpu_id];
-
-    // Because of the way this is implemented `ret` can be never NULL. Slabs are
-    // swapped in advance.
-    void *ret = active_slab->freelist;
-    active_slab->freelist = *(void **)active_slab->freelist;
-    active_slab->freelist_len--;
-
-    if (active_slab->freelist == NULL)
-    {
-        spinlock_acquire(&active_slab->lock);
-        if (active_slab->freelist_sec != NULL)
-        {
-            active_slab->freelist = active_slab->freelist_sec;
-            active_slab->freelist_len = active_slab->freelist_sec_len;
-
-            active_slab->freelist_sec = NULL;
-            active_slab->freelist_sec_len = 0;
-        } else
-        {
-            spinlock_acquire(&cache->slab_list_lock);
-
-            active_slab->assigned_cpu_id = -1;
-            list_append(&cache->slabs_full, &active_slab->list_elem);
-
-            if (list_is_empty(&cache->slabs_partial))
-                cache->per_cpu_active_slab[curr_cpu_id] = kmem_new_slab(cache);
-            else
-                cache->per_cpu_active_slab[curr_cpu_id] = LIST_GET_CONTAINER(list_pop_head(&cache->slabs_partial), kmem_slab_t, list_elem);
-            cache->per_cpu_active_slab[curr_cpu_id]->assigned_cpu_id = curr_cpu_id;
-
-            spinlock_release(&cache->slab_list_lock);
-        }
-        spinlock_release(&active_slab->lock);
-    }
-
-    return ret;
-}
-
-void *kmem_alloc(uint size)
-{
-    FOREACH(n, g_cache_list)
-    {
-        kmem_cache_t *cache = LIST_GET_CONTAINER(n, kmem_cache_t, list_elem);
-
-        if (cache->obj_size >= size)
-            return kmem_alloc_from(cache);
-    }
-    // This should simply not happen unless we try allocate an obj too big.
-    log("%llu", size);
-    ASSERT_C(false, "Invalid obj size provided for kmem_alloc.");
-    return NULL;
-}
-
-void kmem_free(void *obj)
-{
-    int curr_cpu_id = 0;
-    // Before SMP is initialized all allocations will be assigned to the active
-    // slab of CPU core 0.
-    if (g_smp_initialized)
-        curr_cpu_id = (int)((thread_t *)arch_cpu_read_thread_reg())->assigned_core->id;
-
-    kmem_slab_t *slab = (kmem_slab_t *)((uptr)obj & (~(SLAB_SIZE - 1)));
-
-    if (slab->assigned_cpu_id == -1) // Non-active slab.
-    {
-        spinlock_acquire(&slab->lock);
-
-        *(void **)obj = slab->freelist;
-        slab->freelist = obj;
-        slab->freelist_len++;
-
-        spinlock_acquire(&slab->parent_cache->slab_list_lock);
-        if (slab->freelist_len == 1) // The slab was previously full and now is partial.
-        {
-            list_remove(&slab->parent_cache->slabs_full, &slab->list_elem);
-            list_append(&slab->parent_cache->slabs_partial, &slab->list_elem);
-        } else if (slab->freelist_len == slab->obj_cnt) // The slab was previously
-                                                        // partial and now is empty.
-        {
-            list_remove(&slab->parent_cache->slabs_partial, &slab->list_elem);
-            pmm_free((void *)((uptr)slab - HHDM));
-        }
-        spinlock_release(&slab->parent_cache->slab_list_lock);
-
-        spinlock_release(&slab->lock);
-    } else if (slab->assigned_cpu_id == curr_cpu_id) // Active slab belonging to the current CPU.
-    {
-        *(void **)obj = slab->freelist;
-        slab->freelist = obj;
-        slab->freelist_len++;
-    } else // Active slab belonging to another CPU.
-    {
-        spinlock_acquire(&slab->lock);
-
-        *(void **)obj = slab->freelist_sec;
-        slab->freelist_sec = obj;
-        slab->freelist_sec_len++;
-
-        spinlock_release(&slab->lock);
-    }
-}
-
-void *kmem_realloc(void *obj, uint old_size, uint new_size)
-{
-    if (obj == NULL)
-        return kmem_alloc(new_size);
-
-    void *new_obj = kmem_alloc(new_size);
-    memcpy(new_obj, obj, old_size);
-    kmem_free(obj);
-
-    return new_obj;
-}
-
 void kmem_init()
 {
-    if (request_mp.response == NULL)
-        panic("Invalid SMP info provided by the bootloader");
-    g_cpu_count = request_mp.response->cpu_count;
+    ASSERT(sizeof(kmem_cache_t) <= ARCH_PAGE_GRAN);
 
-    for (uint i = 8; i <= 4096; i *= 2)
-    {
-        char name[32] = "cache-", buf[8];
-        sprintf(buf, "%u", i);
-        strcat(name, buf);
-
-        kmem_new_cache(name, i);
-    }
-
-    log("KMEM initialized.");
-}
-
-void kmem_debug()
-{
-    FOREACH(n, g_cache_list)
-    {
-        kmem_cache_t *cache = LIST_GET_CONTAINER(n, kmem_cache_t, list_elem);
-
-        log("%s - %u %u", cache->name, cache->slabs_partial.length, cache->slabs_full.length);
-    }
+    log("KMEM initialized");
 }

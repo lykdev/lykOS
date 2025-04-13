@@ -23,6 +23,7 @@ LD_FLAGS := 				\
 	-static 				\
 	-gc-sections 			\
 	-z max-page-size=0x1000 \
+	-g 						\
 	-T linker-$(ARCH).ld
 
 AS_FLAGS := 				\

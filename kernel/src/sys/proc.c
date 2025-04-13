@@ -4,7 +4,7 @@
 #include <common/hhdm.h>
 #include <common/log.h>
 #include <lib/string.h>
-#include <mm/kmem.h>
+#include <mm/heap.h>
 #include <mm/vmm.h>
 #include <sys/streams/streams.h>
 
@@ -14,7 +14,7 @@ list_t g_proc_list = LIST_INIT;
 
 proc_t *proc_new(proc_type_t type)
 {
-    proc_t *proc = kmem_alloc(sizeof(proc_t));
+    proc_t *proc = heap_alloc(sizeof(proc_t));
 
     *proc = (proc_t) {
         .id = g_last_id++,

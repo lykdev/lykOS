@@ -5,7 +5,7 @@
 #include <common/panic.h>
 #include <lib/path.h>
 #include <lib/string.h>
-#include <mm/kmem.h>
+#include <mm/heap.h>
 
 typedef struct trie_node_t trie_node_t;
 
@@ -66,7 +66,7 @@ int vfs_mount(const char *path, vfs_mountpoint_t *mp)
         trie_node_t *child = find_child(current, comp);
         if (child == NULL)
         {
-            child = kmem_alloc(sizeof(trie_node_t));
+            child = heap_alloc(sizeof(trie_node_t));
             strcpy(child->comp, comp);
             child->children_cnt = 0;
             current->children[current->children_cnt++] = child;

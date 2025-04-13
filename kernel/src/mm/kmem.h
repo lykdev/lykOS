@@ -1,56 +1,61 @@
 #pragma once
 
-#include <common/sync/slock.h>
+#include <common/sync/spinlock.h>
 #include <lib/def.h>
 #include <lib/list.h>
 
-typedef struct kmem_slab kmem_slab_t;
-typedef struct kmem_cache kmem_cache_t;
+#define MAG_SIZE 32
+#define SLAB_SIZE 0x1000
+#define MAX_CPUS 32
 
-struct kmem_slab
+typedef struct
 {
-    kmem_cache_t *parent_cache;
-    uint obj_cnt;
+    list_node_t list_node;
+
+    size_t count;
+    void *objects[MAG_SIZE];
+}
+kmem_magazine_t;
+
+typedef struct cpu_cache
+{
+    kmem_magazine_t *loaded;   // Currently loaded magazine.
+    kmem_magazine_t *previous; // Previously loaded magazine.
+}
+kmem_cpu_cache_t;
+
+typedef struct
+{
+    const char *name;
+    size_t object_size;
+
+    list_t slabs_full;      // List of full slabs.
+    list_t slabs_partial;   // List of partial slabs.
+    spinlock_t slabs_lock;
+
+    list_t magazines_full;  // List of full magazines.
+    list_t magazines_empty; // List of empty magazines.
+    spinlock_t magazines_lock;
+
+    kmem_cpu_cache_t cpu_cache[MAX_CPUS];
+}
+kmem_cache_t;
+
+typedef struct
+{
+    list_node_t list_node;
+
+    kmem_cache_t *cache;
     void *freelist;
-    uint freelist_len;
-    void *freelist_sec;
-    uint freelist_sec_len;
-    spinlock_t lock;
-    int assigned_cpu_id;
-    list_node_t list_elem;
-};
+}
+kmem_slab_t;
 
-struct kmem_cache
-{
-    char name[32];
-    uint obj_size;
-    list_t slabs_partial;
-    list_t slabs_full;
-    spinlock_t slab_list_lock;
-    list_node_t list_elem;
-    kmem_slab_t *per_cpu_active_slab[];
-};
+kmem_cache_t *kmem_new_cache(const char *name, size_t size);
 
-kmem_cache_t *kmem_new_cache(char *name, uint obj_size);
+void kmem_cache_intialize(kmem_cache_t *cache, const char *name, size_t size);
 
-void *kmem_alloc_from(kmem_cache_t *cache);
+void *kmem_alloc_cache(kmem_cache_t *cache);
 
-void *kmem_alloc(uint size);
-
-void kmem_free(void *obj);
-
-void *kmem_realloc(void *obj, uint old_size, uint new_size);
+void kmem_free_cache(kmem_cache_t *cache, void *obj);
 
 void kmem_init();
-
-void kmem_debug();
-
-__attribute__((unused))
-static void _cleanup_free(void *p)
-{
-    kmem_free(*(void**) p);
-}
-
-#define CLEANUP __attribute__((cleanup(_cleanup_free)))
-
-#define CLEANUP_FUNC(func) __attribute__((cleanup(func)))

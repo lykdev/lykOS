@@ -1,8 +1,7 @@
 #include "log.h"
 
 #include <arch/serial.h>
-
-#include <common/sync/slock.h>
+#include <common/sync/spinlock.h>
 #include <graphics/draw.h>
 #include <graphics/font_basic.h>
 #include <lib/printf.h>

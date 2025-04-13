@@ -1,12 +1,12 @@
-#include "common/sync/slock.h"
 #include <arch/cpu.h>
 #include <arch/init.h>
 
 #include <common/assert.h>
 #include <common/limine/requests.h>
 #include <common/log.h>
+#include <common/sync/spinlock.h>
 #include <common/panic.h>
-#include <mm/kmem.h>
+#include <mm/heap.h>
 #include <mm/pmm.h>
 #include <tasking/sched.h>
 #include <sys/smp.h>
@@ -32,7 +32,7 @@ static void core_init(struct limine_mp_info *mp_info)
     arch_cpu_core_init();
 
     thread_t *idle_thread = thread_new(g_idle_proc, (uptr)&thread_idle_func);
-    smp_cpu_core_t *cpu_core = kmem_alloc(sizeof(smp_cpu_core_t));
+    smp_cpu_core_t *cpu_core = heap_alloc(sizeof(smp_cpu_core_t));
     *cpu_core = (smp_cpu_core_t){.id = mp_info->extra_argument, .idle_thread = idle_thread};
     list_append(&g_smp_cpu_core_list, &cpu_core->list_elem);
 

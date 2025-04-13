@@ -1,9 +1,9 @@
 #include "resource.h"
-#include "common/sync/slock.h"
 
 #include <common/assert.h>
 #include <common/log.h>
-#include <mm/kmem.h>
+#include <common/sync/spinlock.h>
+#include <mm/heap.h>
 #include <lib/string.h>
 
 resource_table_t resource_table_new()
@@ -19,7 +19,7 @@ void resource_table_expand(resource_table_t *table, uint amount)
 {
     spinlock_acquire(&table->lock);
 
-    table->resources = kmem_realloc(table->resources, table->length, table->length + amount);
+    table->resources = heap_realloc(table->resources, table->length, table->length + amount);
     // memset(&table->resources[table->length], 0, amount * __POINTER_WIDTH__);
     table->length += amount;
 
@@ -33,7 +33,7 @@ resource_t *resource_create_at(resource_table_t *table, int id, vfs_node_t *node
     if (!lock_acq)
         spinlock_acquire(&table->lock);
 
-    resource_t *res = kmem_alloc(sizeof(resource_t));
+    resource_t *res = heap_alloc(sizeof(resource_t));
     *res = (resource_t) {
         .node = node,
         .offset = offset,

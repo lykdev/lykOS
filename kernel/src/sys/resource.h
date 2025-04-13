@@ -1,6 +1,6 @@
 #pragma once
 
-#include <common/sync/slock.h>
+#include <common/sync/spinlock.h>
 #include <fs/vfs.h>
 
 typedef enum

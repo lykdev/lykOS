@@ -4,7 +4,7 @@
 #include <common/panic.h>
 #include <fs/vfs.h>
 #include <lib/string.h>
-#include <mm/kmem.h>
+#include <mm/heap.h>
 
 static vfs_node_t *nodes[256];
 
@@ -16,7 +16,7 @@ static vfs_node_t *root_create(vfs_node_t*, vfs_node_type_t t, char *name)
     for (int i = 0; i < 256; i++)
         if (nodes[i] == NULL)
         {
-            nodes[i] = kmem_alloc(sizeof(vfs_node_t));
+            nodes[i] = heap_alloc(sizeof(vfs_node_t));
             nodes[i]->size = 0;
             strcpy(nodes[i]->name, name);
             return nodes[i];

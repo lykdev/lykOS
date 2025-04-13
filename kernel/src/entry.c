@@ -1,8 +1,8 @@
+
 #include <arch/cpu.h>
 #include <arch/int.h>
 #include <arch/syscall.h>
 #include <arch/init.h>
-
 #include <common/assert.h>
 #include <common/limine/requests.h>
 #include <common/log.h>
@@ -11,6 +11,7 @@
 #include <fs/vfs.h>
 #include <graphics/video.h>
 #include <lib/def.h>
+#include <mm/heap.h>
 #include <mm/kmem.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
@@ -34,6 +35,7 @@ void _entry()
 
     pmm_init();
     kmem_init();
+    heap_init();
     vmm_init();
 
     vfs_init();

@@ -5,7 +5,7 @@
 #include <common/limine/requests.h>
 #include <common/log.h>
 #include <common/panic.h>
-#include <common/sync/slock.h>
+#include <common/sync/spinlock.h>
 #include <sys/smp.h>
 
 extern __attribute__((naked)) void arch_sched_context_switch(thread_t *curr, thread_t *next);

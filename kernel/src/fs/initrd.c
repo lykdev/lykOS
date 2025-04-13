@@ -9,7 +9,7 @@
 #include <lib/list.h>
 #include <lib/path.h>
 #include <lib/string.h>
-#include <mm/kmem.h>
+#include <mm/heap.h>
 
 // USTAR
 
@@ -146,7 +146,7 @@ static void process_entry(ustar_hdr_t *hdr)
 {
     path_normalize(hdr->filename, hdr->filename);
 
-    initrd_entry_t *node = kmem_alloc(sizeof(initrd_entry_t));
+    initrd_entry_t *node = heap_alloc(sizeof(initrd_entry_t));
     node->ustar_data = hdr;
 
     node->vfs_node = (vfs_node_t) {

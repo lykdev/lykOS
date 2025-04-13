@@ -6,7 +6,7 @@
 #include <common/panic.h>
 #include <lib/def.h>
 #include <lib/string.h>
-#include <mm/kmem.h>
+#include <mm/heap.h>
 #include <sys/ksym.h>
 
 list_t g_mod_module_list = LIST_INIT;
@@ -30,8 +30,8 @@ module_t *module_load(vfs_node_t *file)
     }
 
     // Allocate memory for the sections and save the address.
-    CLEANUP Elf64_Shdr *shdr = kmem_alloc(ehdr.e_shnum * sizeof(Elf64_Shdr));
-    CLEANUP uptr *section_addr = kmem_alloc(ehdr.e_shnum * sizeof(uptr));
+    CLEANUP Elf64_Shdr *shdr = heap_alloc(ehdr.e_shnum * sizeof(Elf64_Shdr));
+    CLEANUP uptr *section_addr = heap_alloc(ehdr.e_shnum * sizeof(uptr));
 
     for(int i = 0; i < ehdr.e_shnum; i++)
     {
@@ -42,7 +42,7 @@ module_t *module_load(vfs_node_t *file)
         &&  section->sh_size != 0
         &&  section->sh_flags & SHF_ALLOC)
         {
-            void *mem = kmem_alloc(section->sh_size);
+            void *mem = heap_alloc(section->sh_size);
             file->ops->read(file, section->sh_offset, mem, section->sh_size);
             section_addr[i] = (uptr)mem;
         }
@@ -52,13 +52,13 @@ module_t *module_load(vfs_node_t *file)
     Elf64_Shdr *symtab_hdr = NULL;
     for (int i = 0; i < ehdr.e_shnum; i++)
         if (shdr[i].sh_type == SHT_SYMTAB)
-            symtab_hdr = &shdr[i];                 
+            symtab_hdr = &shdr[i];
     if (!symtab_hdr)
     {
         log("Missing symbol table!");
         return NULL;
     }
-    CLEANUP void *symtab = kmem_alloc(symtab_hdr->sh_size);
+    CLEANUP void *symtab = heap_alloc(symtab_hdr->sh_size);
     file->ops->read(file, symtab_hdr->sh_offset, symtab, symtab_hdr->sh_size);
 
     // String table.
@@ -68,7 +68,7 @@ module_t *module_load(vfs_node_t *file)
         log("Missing string table!");
         return NULL;
     }
-    CLEANUP char *strtab = kmem_alloc(strtab_hdr->sh_size);
+    CLEANUP char *strtab = heap_alloc(strtab_hdr->sh_size);
     file->ops->read(file, strtab_hdr->sh_offset, strtab, strtab_hdr->sh_size);
 
     // Resolve symbols.
@@ -85,7 +85,7 @@ module_t *module_load(vfs_node_t *file)
             if (sym->st_value == 0)
             {
                 log("Symbol `%s` could not be resolved!", name);
-                return NULL;   
+                return NULL;
             }
             break;
         case SHN_ABS:
@@ -122,7 +122,7 @@ module_t *module_load(vfs_node_t *file)
         {
             Elf64_Rela *rela = &rela_entries[j];
             Elf64_Sym  *sym  = (Elf64_Sym*)(symtab + (ELF64_R_SYM(rela->r_info) * symtab_hdr->sh_entsize));
-            
+
             void *addr = (void*)(section_addr[section->sh_info] + rela->r_offset);
             uptr value = sym->st_value + rela->r_addend;
             u64  reloc_size;
@@ -144,7 +144,7 @@ module_t *module_load(vfs_node_t *file)
                 case R_X86_64_PC64:
                     value -= (uptr)addr;
                     reloc_size = 8;
-                    break;                    
+                    break;
                 default:
                     log("Unsupported relocation type: 0x%x.", ELF64_R_TYPE(rela->r_info));
                     return NULL;
@@ -156,7 +156,7 @@ module_t *module_load(vfs_node_t *file)
 
     // TODO: clean the actual segments allocated for the module.
 
-    module_t *ret = kmem_alloc(sizeof(module_t));
+    module_t *ret = heap_alloc(sizeof(module_t));
     *ret = module;
 
     log("Kernel module loaded successfully.");

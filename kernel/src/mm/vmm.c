@@ -1,15 +1,15 @@
 #include "vmm.h"
-#include "common/sync/slock.h"
 
 #include <arch/ptm.h>
-
 #include <common/assert.h>
 #include <common/hhdm.h>
 #include <common/limine/requests.h>
 #include <common/log.h>
+#include <common/sync/spinlock.h>
 #include <lib/list.h>
 #include <lib/math.h>
 #include <mm/kmem.h>
+#include <mm/heap.h>
 #include <mm/pmm.h>
 
 #define SEG_INTERSECTS(BASE1, LENGTH1, BASE2, LENGTH2) ((BASE1) < ((BASE2) + (LENGTH2)) && (BASE2) < ((BASE1) + (LENGTH1)))
@@ -114,7 +114,7 @@ void vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t p
     (void)(prot);
     ASSERT(virt % ARCH_PAGE_GRAN == 0 && len % ARCH_PAGE_GRAN == 0);
 
-    vmm_seg_t *created_seg = kmem_alloc_from(g_segment_cache);
+    vmm_seg_t *created_seg = kmem_alloc_cache(g_segment_cache);
     *created_seg = (vmm_seg_t) {
         .addr_space = addr_space,
         .type = VMM_SEG_ANON,
@@ -139,7 +139,7 @@ void vmm_map_fixed(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t 
     (void)(prot);
     ASSERT(virt % ARCH_PAGE_GRAN == 0 && len % ARCH_PAGE_GRAN == 0);
 
-    vmm_seg_t *created_seg = kmem_alloc_from(g_segment_cache);
+    vmm_seg_t *created_seg = kmem_alloc_cache(g_segment_cache);
     *created_seg = (vmm_seg_t) {
         .addr_space = addr_space,
         .type = VMM_SEG_FIXED,
@@ -168,7 +168,7 @@ uptr vmm_virt_to_phys(vmm_addr_space_t *addr_space, uptr virt)
 
 vmm_addr_space_t *vmm_new_addr_space(uptr limit_low, uptr limit_high)
 {
-    vmm_addr_space_t *addr_space = kmem_alloc(sizeof(vmm_addr_space_t));
+    vmm_addr_space_t *addr_space = heap_alloc(sizeof(vmm_addr_space_t));
 
     *addr_space = (vmm_addr_space_t) {
         .slock = SPINLOCK_INIT,

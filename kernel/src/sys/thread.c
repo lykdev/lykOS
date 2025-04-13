@@ -6,7 +6,7 @@
 #include <common/hhdm.h>
 #include <common/log.h>
 #include <lib/string.h>
-#include <mm/kmem.h>
+#include <mm/heap.h>
 #include <mm/pmm.h>
 
 /// @brief Last ID assigned to a thread.
@@ -19,7 +19,7 @@ thread_t *thread_new(proc_t *parent_proc, uptr entry)
 {
     ASSERT(parent_proc != NULL);
 
-    thread_t *thread = kmem_alloc(sizeof(thread_t));
+    thread_t *thread = heap_alloc(sizeof(thread_t));
     *thread = (thread_t) {
 #if defined(__x86_64__)
         .self = thread,
