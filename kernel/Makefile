@@ -13,9 +13,9 @@ C_FLAGS := 					\
 	-ffreestanding 			\
 	-fno-stack-protector	\
 	-fno-stack-check		\
-	-fno-lto				\
+	-fno-lto   				\
 	-fPIE					\
-	-O2						\
+	-O3						\
 	-g						\
 
 LD_FLAGS := 				\
