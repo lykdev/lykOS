@@ -1,4 +1,5 @@
 #include "sched.h"
+#include "sys/thread.h"
 
 #include <arch/cpu.h>
 
@@ -27,9 +28,14 @@ static thread_t *sched_next()
     return ret;
 }
 
+thread_t *sched_get_curr_thread()
+{
+    return (thread_t *)arch_cpu_read_thread_reg();
+}
+
 void sched_drop(thread_t *thread)
 {
-    if (thread != ((thread_t *)arch_cpu_read_thread_reg())->assigned_core->idle_thread)
+    if (thread != sched_get_curr_thread()->assigned_core->idle_thread)
         sched_queue_add(thread);
 }
 
@@ -42,17 +48,19 @@ void sched_queue_add(thread_t *thread)
     spinlock_release(&slock);
 }
 
-void sched_yield()
+void sched_yield(thread_status_t status)
 {
     thread_t *curr = arch_cpu_read_thread_reg();
     thread_t *next = sched_next();
 
     if (next == NULL)
-        next = ((thread_t *)arch_cpu_read_thread_reg())->assigned_core->idle_thread;
+        next = sched_get_curr_thread()->assigned_core->idle_thread;
     if (curr != next)
     {
         next->assigned_core = curr->assigned_core;
         curr->assigned_core = NULL;
+        curr->status = status;
+        next->status = THREAD_STATE_RUNNING;
     }
 
     vmm_load_addr_space(next->parent_proc->addr_space);
