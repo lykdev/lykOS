@@ -1,13 +1,12 @@
 #include "sched.h"
-#include "sys/thread.h"
 
 #include <arch/cpu.h>
-
 #include <common/limine/requests.h>
 #include <common/log.h>
 #include <common/panic.h>
 #include <common/sync/spinlock.h>
 #include <sys/smp.h>
+#include <sys/thread.h>
 
 extern __attribute__((naked)) void arch_sched_context_switch(thread_t *curr, thread_t *next);
 
@@ -35,7 +34,8 @@ thread_t *sched_get_curr_thread()
 
 void sched_drop(thread_t *thread)
 {
-    if (thread != sched_get_curr_thread()->assigned_core->idle_thread)
+    if (thread != sched_get_curr_thread()->assigned_core->idle_thread
+    &&  thread->status == THREAD_STATE_READY)
         sched_queue_add(thread);
 }
 

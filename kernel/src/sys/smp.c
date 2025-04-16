@@ -10,6 +10,7 @@
 #include <mm/pmm.h>
 #include <tasking/sched.h>
 #include <sys/smp.h>
+#include <sys/thread.h>
 
 list_t g_smp_cpu_core_list = LIST_INIT;
 bool g_smp_initialized = false;
@@ -19,7 +20,7 @@ static proc_t *g_idle_proc;
 static void thread_idle_func()
 {
     while (true)
-        sched_yield();
+        sched_yield(THREAD_STATE_BLOCKED);
 }
 
 static void core_init(struct limine_mp_info *mp_info)
