@@ -6,6 +6,8 @@
 #include <common/assert.h>
 #include <common/limine/requests.h>
 #include <common/log.h>
+#include <dev/acpi/acpi.h>
+#include <dev/pci.h>
 #include <fs/devfs.h>
 #include <fs/initrd.h>
 #include <fs/vfs.h>
@@ -62,6 +64,9 @@ void _entry()
             mod->install();
         }
     }
+
+    acpi_init();
+    pci_list();
 
     dev_fb_init();
 
