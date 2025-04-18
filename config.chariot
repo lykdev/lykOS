@@ -1,0 +1,70 @@
+source/kernel {
+    url: "kernel"
+    type: "local"
+}
+
+source/tools {
+    url: "tools"
+    type: "local"
+}
+
+source/limine {
+    url: "https://github.com/limine-bootloader/limine.git"
+    type: "git"
+    ref: "aad3edd370955449717a334f0289dee10e2c5f01"
+}
+
+source/support {
+    url: "support"
+    type: "local"
+}
+
+bare/kernel {
+    dependencies: [source/kernel, image/make, image/nasm, image/clang, image/llvm, image/lld]
+    configure: <sh>
+        cp -r $SOURCES_DIR/kernel/* .
+    </sh>
+    build: <sh>
+        make ARCH=x86_64 -j$THREAD_COUNT
+    </sh>
+    install: <sh>
+        install bin/kernel.elf $INSTALL_DIR
+        install bin/kernel_symbols.txt $INSTALL_DIR
+    </sh>
+}
+
+tool/ksym {
+    dependencies: [source/tools, image/clang]
+    configure: <sh>
+        cp $SOURCES_DIR/tools/ksym.c .
+    </sh>
+    build: <sh>
+        clang ksym.c -O2 -o ksym
+    </sh>
+    install: <sh>
+        install -d $INSTALL_DIR$PREFIX/bin
+        install ksym $INSTALL_DIR$PREFIX/bin
+    </sh>
+}
+
+bare/image {
+    dependencies: [bare/kernel, tool/ksym, source/limine, source/support]
+    build: <sh>
+        mkdir -p iso_root/EFI/BOOT
+    	ksym $BARE_DIR/kernel/kernel_symbols.txt iso_root/kernel_symbols.bin
+    	tar -cvf iso_root/initrd.tar --format=ustar initrd/
+
+    	cp $BARE_DIR/kernel/kernel.elf $SOURCES_DIR/support/limine.conf $SOURCES_DIR/limine/limine-uefi-cd.bin ./iso_root/
+
+        cp -v $SOURCES_DIR/limine/BOOTX64.EFI ./iso_root/EFI/BOOT/
+
+    	xorriso -as mkisofs \
+    		-no-emul-boot -boot-load-size 4 -boot-info-table \
+    		--efi-boot limine-uefi-cd.bin \
+    		-efi-boot-part --efi-boot-image --protective-msdos-label \
+    		iso_root -o lykos.iso
+    </sh>
+    install: <sh>
+        install lykos.iso $INSTALL_DIR
+    </sh>
+}

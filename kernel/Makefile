@@ -89,7 +89,7 @@ endif
 # BUILDING
 
 .PHONY: build
-build: limine $(KERNEL_ELF)
+build: $(KERNEL_ELF)
 
 .PHONY: limine
 limine:
@@ -100,7 +100,7 @@ $(KERNEL_ELF): $(OBJ_FILES)
 	$(LD) $(LD_FLAGS) -o $@ $^
 		llvm-nm $@ -n -g > bin/kernel_symbols.txt
 
-obj/%.c.o: src/%.c
+obj/%.c.o: src/%.c limine
 	mkdir -p $(@D)
 	$(CC) $(C_FLAGS) -c -o $@ $<
 
