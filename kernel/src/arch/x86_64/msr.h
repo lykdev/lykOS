@@ -14,7 +14,8 @@ typedef enum
     X86_64_MSR_FS_BASE = 0xC0000100,
     X86_64_MSR_GS_BASE = 0xC0000101,
     X86_64_MSR_KERNEL_GS_BASE = 0xC0000102
-} x86_64_msr_t;
+}
+x86_64_msr_t;
 
 u64 x86_64_msr_read(u64 msr);
 

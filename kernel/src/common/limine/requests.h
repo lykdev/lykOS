@@ -13,3 +13,5 @@ extern volatile struct limine_memmap_request request_memmap;
 extern volatile struct limine_module_request request_module;
 
 extern volatile struct limine_mp_request request_mp;
+
+extern volatile struct limine_rsdp_request request_rsdp;

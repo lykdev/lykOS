@@ -1,4 +1,5 @@
 #include "requests.h"
+#include "common/limine/limine.h"
 
 __attribute__((used, section(".requests"))) static volatile LIMINE_BASE_REVISION(2);
 
@@ -20,3 +21,5 @@ __attribute__((used, section(".requests"))) volatile struct limine_memmap_reques
 __attribute__((used, section(".requests"))) volatile struct limine_module_request request_module = {.id = LIMINE_MODULE_REQUEST, .revision = 0};
 
 __attribute__((used, section(".requests"))) volatile struct limine_mp_request request_mp = {.id = LIMINE_MP_REQUEST, .revision = 0};
+
+__attribute__((used, section(".requests"))) volatile struct limine_rsdp_request request_rsdp = {.id = LIMINE_RSDP_REQUEST, .revision = 0};

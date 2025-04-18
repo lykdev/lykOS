@@ -36,3 +36,10 @@ void arch_cpu_int_mask()
 {
     asm volatile("cli");
 }
+
+bool arch_cpu_int_enabled()
+{
+    u64 flags;
+    asm volatile ("pushfq; popq %0" : "=r"(flags));
+    return (flags & (1 << 9)) != 0;
+}
