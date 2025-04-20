@@ -1,6 +1,19 @@
 source/kernel {
     url: "kernel"
     type: "local"
+    regenerate: <sh>
+        make limine
+    </sh>
+}
+
+source/initrd {
+    url: "initrd"
+    type: "local"
+}
+
+source/modules {
+    url: "modules"
+    type: "local"
 }
 
 source/tools {
@@ -11,7 +24,7 @@ source/tools {
 source/limine {
     url: "https://github.com/limine-bootloader/limine.git"
     type: "git"
-    ref: "aad3edd370955449717a334f0289dee10e2c5f01"
+    revision: "aad3edd370955449717a334f0289dee10e2c5f01"
 }
 
 source/support {
@@ -19,22 +32,13 @@ source/support {
     type: "local"
 }
 
-source/initrd {
-    url: "initrd"
-    type: "local"
-}
-
-bare/kernel {
+custom/kernel {
     dependencies: [source/kernel, image/make, image/nasm, image/clang, image/llvm, image/lld]
-    configure: <sh>
-        cp -r $SOURCES_DIR/kernel/* .
-    </sh>
     build: <sh>
-        make ARCH=x86_64 -j$THREAD_COUNT
+        make -C $SOURCES_DIR/kernel ARCH=x86_64 BUILD_DIR=$BUILD_DIR
     </sh>
     install: <sh>
-        install bin/kernel.elf $INSTALL_DIR
-        install bin/kernel_symbols.txt $INSTALL_DIR
+        make -C $SOURCES_DIR/kernel ARCH=x86_64 BUILD_DIR=$BUILD_DIR INSTALL_DIR=$INSTALL_DIR install
     </sh>
 }
 
@@ -52,14 +56,38 @@ tool/ksym {
     </sh>
 }
 
-bare/image {
-    dependencies: [bare/kernel, tool/ksym, source/initrd, source/limine, source/support image/xorriso]
+custom/modules {
+    dependencies: [source/kernel, source/initrd, source/modules, image/python3, image/clang]
+    build: <sh>
+        $SOURCES_DIR/modules/build.py x86_64 $SOURCES_DIR/kernel/src $BUILD_DIR
+    </sh>
+    install: <sh>
+        install ./* $INSTALL_DIR
+    </sh>
+}
+
+custom/initrd {
+    dependencies: [source/initrd, custom/modules]
+    build: <sh>
+        cp -r $SOURCES_DIR/initrd .
+        cp $CUSTOMS_DIR/modules/* ./initrd/modules
+        tar -cvf initrd.tar --format=ustar ./initrd
+    </sh>
+    install: <sh>
+        install initrd.tar $INSTALL_DIR
+    </sh>
+}
+
+custom/image {
+    dependencies: [custom/kernel, tool/ksym, custom/initrd, source/limine, source/support image/xorriso]
     build: <sh>
         mkdir -p iso_root/EFI/BOOT
-    	ksym $BARE_DIR/kernel/kernel_symbols.txt iso_root/kernel_symbols.bin
-    	tar -cvf iso_root/initrd.tar --format=ustar $SOURCES_DIR/initrd/
+    	ksym $CUSTOMS_DIR/kernel/kernel_symbols.txt iso_root/kernel_symbols.bin
+        cp $CUSTOMS_DIR/initrd/initrd.tar iso_root
 
-    	cp $BARE_DIR/kernel/kernel.elf $SOURCES_DIR/support/limine.conf $SOURCES_DIR/limine/limine-uefi-cd.bin ./iso_root/
+    	cp $CUSTOMS_DIR/kernel/kernel.elf ./iso_root/
+        cp $SOURCES_DIR/support/limine.conf ./iso_root/
+        cp $SOURCES_DIR/limine/limine-uefi-cd.bin ./iso_root/
 
         cp -v $SOURCES_DIR/limine/BOOTX64.EFI ./iso_root/EFI/BOOT/
 
