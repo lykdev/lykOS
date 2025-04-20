@@ -1,10 +1,8 @@
-
 #include <arch/cpu.h>
 #include <arch/int.h>
 #include <arch/syscall.h>
 #include <arch/init.h>
 #include <common/assert.h>
-#include <common/limine/requests.h>
 #include <common/log.h>
 #include <dev/acpi/acpi.h>
 #include <dev/pci.h>

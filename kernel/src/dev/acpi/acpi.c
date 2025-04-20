@@ -26,7 +26,7 @@ static bool extended;
 
 void acpi_init()
 {
-    if (request_rsdp.response->address == NULL)
+    if (request_rsdp.response->address == 0)
     {
         log("ACPI: No RSDP found");
         return;

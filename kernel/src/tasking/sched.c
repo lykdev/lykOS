@@ -1,7 +1,6 @@
 #include "sched.h"
 
 #include <arch/cpu.h>
-#include <common/limine/requests.h>
 #include <common/log.h>
 #include <common/panic.h>
 #include <common/sync/spinlock.h>
