@@ -19,6 +19,11 @@ source/support {
     type: "local"
 }
 
+source/initrd {
+    url: "initrd"
+    type: "local"
+}
+
 bare/kernel {
     dependencies: [source/kernel, image/make, image/nasm, image/clang, image/llvm, image/lld]
     configure: <sh>
@@ -48,11 +53,11 @@ tool/ksym {
 }
 
 bare/image {
-    dependencies: [bare/kernel, tool/ksym, source/limine, source/support]
+    dependencies: [bare/kernel, tool/ksym, source/initrd, source/limine, source/support image/xorriso]
     build: <sh>
         mkdir -p iso_root/EFI/BOOT
     	ksym $BARE_DIR/kernel/kernel_symbols.txt iso_root/kernel_symbols.bin
-    	tar -cvf iso_root/initrd.tar --format=ustar initrd/
+    	tar -cvf iso_root/initrd.tar --format=ustar $SOURCES_DIR/initrd/
 
     	cp $BARE_DIR/kernel/kernel.elf $SOURCES_DIR/support/limine.conf $SOURCES_DIR/limine/limine-uefi-cd.bin ./iso_root/
 

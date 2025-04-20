@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-LYKOS_ISO="lykos.iso"
-ARCH="${ARCH:-x86_64}"
+LYKOS_ISO=".chariot-cache/recipes/bare/image/install/lykos.iso"
+ARCH="${1:-x86_64}"      # Fallback to x86_64 if no arch is provided.
 OVMF="qemu/ovmf-${ARCH}"
 
 QEMU_FLAGS=(
@@ -16,6 +16,7 @@ QEMU_FLAGS=(
     -D qemu/log.txt
     -serial file:/dev/stdout
     -monitor stdio
+    -bios "$OVMF"
 )
 
 # Fetch OVMF if missing
@@ -33,7 +34,7 @@ fi
 
 # Run QEMU
 if [ "$ARCH" = "x86_64" ]; then
-    qemu-system-x86_64 -M q35 -bios "$OVMF" "${QEMU_FLAGS[@]}"
+    qemu-system-x86_64 -M q35 "${QEMU_FLAGS[@]}"
 elif [ "$ARCH" = "aarch64" ]; then
-    qemu-system-aarch64 -M virt -cpu cortex-a72 -device ramfb -device qemu-xhci -device usb-kbd -device usb-mouse -bios "$OVMF" "${QEMU_FLAGS[@]}"
+    qemu-system-aarch64 -M virt -cpu cortex-a72 -device ramfb -device qemu-xhci -device usb-kbd -device usb-mouse "${QEMU_FLAGS[@]}"
 fi

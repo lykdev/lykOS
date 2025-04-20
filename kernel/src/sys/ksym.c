@@ -24,7 +24,7 @@ uptr ksym_resolve_symbol(const char *name)
 
         if (strcmp(name, (const char *)&sym->name) == 0)
             return sym->addr;
-        
+
         p += sizeof(sym->addr) + strlen(sym->name) + 1;
     }
 
@@ -34,12 +34,12 @@ uptr ksym_resolve_symbol(const char *name)
 void ksym_load_symbols()
 {
     for (uint i = 0; i < request_module.response->module_count; i++)
-    if (strcmp(request_module.response->modules[i]->path, "/kernel_symbols.bin") == 0)
-    {
-        ksym_data = (void*)request_module.response->modules[i]->address;
-        ksym_size = request_module.response->modules[i]->size;
-        break;
-    }
+        if (strcmp(request_module.response->modules[i]->path, "/kernel_symbols.bin") == 0)
+        {
+            ksym_data = (void*)request_module.response->modules[i]->address;
+            ksym_size = request_module.response->modules[i]->size;
+            break;
+        }
 
     if (ksym_data == NULL)
         panic("\"kernel_symbols.bin\" bootloader module not found!");
