@@ -41,7 +41,7 @@ void pci_list()
             for (u64 dev = 0; dev < 32; dev++)
                 for (u64 func = 0; func < 8; func++)
                 {
-                    pci_header_common *pci_hdr = (pci_header_common*)(HHDM + base + ((bus << 20) | (dev << 15) | (func << 12)));
+                    pci_header_common_t *pci_hdr = (pci_header_common_t*)(HHDM + base + ((bus << 20) | (dev << 15) | (func << 12)));
                     if (pci_hdr->vendor_id == 0xFFFF)
                         continue;
 

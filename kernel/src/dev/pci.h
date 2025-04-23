@@ -18,11 +18,11 @@ typedef struct
     u8  bist;
 }
 __attribute__((packed))
-pci_header_common;
+pci_header_common_t;
 
 typedef struct
 {
-    pci_header_common common;
+    pci_header_common_t common;
     u32 bar[6];
     u32 cardbus_cis_ptr;
     u16 subsystem_vendor_id;
@@ -36,11 +36,11 @@ typedef struct
     u8  max_latency;
 }
 __attribute__((packed))
-pci_header_type0;
+pci_header_type0_t;
 
 typedef struct
 {
-    pci_header_common common;
+    pci_header_common_t common;
     u32 bar[2];
     u8  primary_bus;
     u8  secondary_bus;
@@ -65,11 +65,11 @@ typedef struct
     u16 bridge_control;
 }
 __attribute__((packed))
-pci_header_type1;
+pci_header_type1_t;
 
 typedef struct
 {
-    pci_header_common common;
+    pci_header_common_t common;
     u32 bar[1];
     u8  capabilities_ptr;
     u8  _rsv1[3];
@@ -83,6 +83,6 @@ typedef struct
     u32 legacy_mode_base;
 }
 __attribute__((packed))
-pci_header_type2;
+pci_header_type2_t;
 
 void pci_list();

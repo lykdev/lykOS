@@ -15,6 +15,7 @@
 #include <mm/kmem.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
+#include <sys/exec.h>
 #include <sys/ksym.h>
 #include <sys/module.h>
 #include <sys/smp.h>
@@ -43,21 +44,18 @@ void _entry()
     devfs_init();
 
     // Load kernel modules.
-
-    ksym_load_symbols();
-
-    vfs_node_t *module_dir = vfs_lookup("/initrd/modules");
-    if (module_dir == NULL || module_dir->type != VFS_NODE_DIR)
-        panic("Could not find directory `/initrd/modules`.");
-    uint idx = 0;
-    const char *name;
-    while ((name = module_dir->ops->list(module_dir, &idx)))
     {
-        log("Loading module `%s`.", name);
-        if (name[0] != '\0')
-        {
-            vfs_node_t *file = module_dir->ops->lookup(module_dir, name);
+        ksym_load_symbols();
 
+        vfs_node_t *module_dir = vfs_lookup("/initrd/modules");
+        if (module_dir == NULL || module_dir->type != VFS_NODE_DIR)
+            panic("Could not find directory `/initrd/modules`.");
+        uint idx = 0;
+        const char *name;
+        while ((name = module_dir->ops->list(module_dir, &idx)))
+        {
+            log("Loading module `%s`.", name);
+            vfs_node_t *file = module_dir->ops->lookup(module_dir, name);
             module_t *mod = module_load(file);
             mod->install();
         }
@@ -78,8 +76,22 @@ void _entry()
     ASSERT(fb != NULL);
     fb->ops->write(fb, 0, pix, 100 * 4);
 
+    // Load initial executables.
+    {
+        vfs_node_t *init_dir = vfs_lookup("/initrd/init");
+        if (init_dir == NULL || init_dir->type != VFS_NODE_DIR)
+            panic("Could not find directory `/initrd/init`.");
+        uint idx = 0;
+        const char *name;
+        while ((name = init_dir->ops->list(init_dir, &idx)))
+        {
+            log("Loading executable `%s`.", name);
+            vfs_node_t *file = init_dir->ops->lookup(init_dir, name);
+            exec_load(file);
+        }
+    }
 
-    //smp_init();
+    smp_init();
 
     log("Kernel end.");
 

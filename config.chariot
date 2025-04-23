@@ -1,3 +1,10 @@
+@import "toolchain.chariot"
+
+source/support {
+    url: "support"
+    type: "local"
+}
+
 source/kernel {
     url: "kernel"
     type: "local"
@@ -25,11 +32,6 @@ source/limine {
     url: "https://github.com/limine-bootloader/limine.git"
     type: "git"
     revision: "aad3edd370955449717a334f0289dee10e2c5f01"
-}
-
-source/support {
-    url: "support"
-    type: "local"
 }
 
 custom/kernel {
