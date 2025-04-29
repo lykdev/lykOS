@@ -1,4 +1,5 @@
 #include "heap.h"
+#include "common/assert.h"
 
 #include <common/log.h>
 #include <lib/printf.h>
@@ -11,6 +12,8 @@ static const char *g_cache_names[] = {"heap-8", "heap-16", "heap-32", "heap-64",
 
 void *heap_alloc(size_t size)
 {
+    ASSERT(size <= 1024);
+
     int order;
     if (size <= 8)
         order = 0;
@@ -49,7 +52,7 @@ void *heap_realloc(void *obj, size_t old_size, size_t new_size)
 
 void heap_init()
 {
-    for (size_t size = 8, i = 0; size < 1024; size *= 2, i++)
+    for (int i = 0; i < 8; i++)
         kmem_cache_intialize(&g_caches[i], g_cache_names[i], g_cache_sizes[i]);
 
     log("Heap initialized");

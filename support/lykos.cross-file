@@ -1,0 +1,13 @@
+[binaries]
+c = 'clang'
+cpp = 'clang'
+ld = 'ld.lld'
+ar = 'llvm-ar'
+strip = 'llvm-strip'
+pkgconfig = 'pkgconf'
+
+[host_machine]
+system = 'lykos'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'

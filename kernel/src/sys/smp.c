@@ -1,5 +1,7 @@
 #include <arch/cpu.h>
 #include <arch/init.h>
+#include <arch/thread.h>
+#include <arch/x86_64/fpu.h>
 
 #include <common/assert.h>
 #include <common/limine/requests.h>
@@ -15,6 +17,8 @@
 list_t g_smp_cpu_core_list = LIST_INIT;
 bool g_smp_initialized = false;
 
+extern __attribute__((naked)) void arch_sched_context_switch(thread_t *curr, thread_t *next);
+
 static proc_t *g_idle_proc;
 
 static void thread_idle_func()
@@ -23,9 +27,11 @@ static void thread_idle_func()
         sched_yield(THREAD_STATE_BLOCKED);
 }
 
+static u64 g_cores_initialized = 0;
+
 static void core_init(struct limine_mp_info *mp_info)
 {
-    static spinlock_t slock = SPINLOCK_INIT;
+    static volatile spinlock_t slock = SPINLOCK_INIT;
     spinlock_acquire(&slock); // Assure CPU cores are initialized sequentially.
 
     log("NEW CORE %u", mp_info->extra_argument);
@@ -34,14 +40,20 @@ static void core_init(struct limine_mp_info *mp_info)
 
     thread_t *idle_thread = thread_new(g_idle_proc, (uptr)&thread_idle_func);
     smp_cpu_core_t *cpu_core = heap_alloc(sizeof(smp_cpu_core_t));
-    *cpu_core = (smp_cpu_core_t){.id = mp_info->extra_argument, .idle_thread = idle_thread};
+    *cpu_core = (smp_cpu_core_t) {
+        .id = mp_info->extra_argument,
+        .idle_thread = idle_thread
+    };
     list_append(&g_smp_cpu_core_list, &cpu_core->list_elem);
-
     idle_thread->assigned_core = cpu_core;
-    arch_cpu_write_thread_reg(idle_thread);
+
+    g_cores_initialized++;
+    if (g_cores_initialized == request_mp.response->cpu_count)
+        g_smp_initialized = true;
 
     spinlock_release(&slock);
 
+    arch_cpu_write_thread_reg(idle_thread);
     thread_idle_func();
 }
 
@@ -63,9 +75,12 @@ void smp_init()
 #elif defined(__aarch64__)
         if (mp_info->mpidr == request_mp.response->bsp_mpidr)
 #endif
+        {
             bsp_mp_info = mp_info;
+            continue;
+        }
 
-        __atomic_store_n(&mp_info->goto_address, (limine_goto_address)&core_init, __ATOMIC_SEQ_CST);
+        // __atomic_store_n(&mp_info->goto_address, (limine_goto_address)&core_init, __ATOMIC_SEQ_CST);
     }
 
     // Also initialize the bootstrap processor.

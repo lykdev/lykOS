@@ -1,11 +1,10 @@
 #include "syscall.h"
 
 #include <common/log.h>
-#include <fs/vfs.h>
 
-int syscall_write(int fd, void *buf, u64 count)
+int syscall_lseek(int fd, u64 offset, int whence)
 {
-    log("WRITE");
+    log("LSEEK");
     proc_t *proc = syscall_get_proc();
 
     resource_t *res  = resource_get(&proc->resource_table, fd);
@@ -16,5 +15,12 @@ int syscall_write(int fd, void *buf, u64 count)
     if (node == NULL)
         return -1;
 
-    return node->ops->write(node, res->offset, buf, count);
+    switch (whence)
+    {
+    default:
+        return -1;
+        break;
+    }
+
+    return offset;
 }

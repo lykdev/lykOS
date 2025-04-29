@@ -187,7 +187,7 @@ void initrd_init()
     }
 
     g_mountpoint.root_node = &LIST_GET_CONTAINER(g_entry_list.head, initrd_entry_t, list_elem)->vfs_node;
-    vfs_mount("initrd", &g_mountpoint);
+    vfs_mount("", &g_mountpoint);
 
     log("Mounted initrd at `/initrd`.");
 }

@@ -116,4 +116,7 @@ static void _vfs_debug(trie_node_t *node, uint depth)
         _vfs_debug(node->children[i], depth + 4);
 }
 
-void vfs_debug() { _vfs_debug(&g_trie_root, 0); }
+void vfs_debug()
+{
+    _vfs_debug(&g_trie_root, 0);
+}

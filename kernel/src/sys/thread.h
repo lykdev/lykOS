@@ -22,6 +22,7 @@ struct thread
 // DO NOT TOUCH THIS PART
 #if defined(__x86_64__)
     thread_t *self;
+    void *fpu_area;
 #endif
     uptr kernel_stack;
     uptr syscall_stack;

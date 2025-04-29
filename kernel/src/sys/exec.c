@@ -1,9 +1,12 @@
 #include "exec.h"
 
+#include <arch/types.h>
 #include <common/elf.h>
 #include <common/hhdm.h>
 #include <common/log.h>
+#include <lib/math.h>
 #include <mm/heap.h>
+#include <mm/pmm.h>
 #include <sys/proc.h>
 #include <sys/thread.h>
 #include <tasking/sched.h>
@@ -35,9 +38,16 @@ proc_t *exec_load(vfs_node_t *file)
 
         if (ph->p_type == PT_LOAD && ph->p_memsz != 0)
         {
-            vmm_map_anon(proc->addr_space, ph->p_vaddr, ph->p_memsz, VMM_FULL);
-            // TODO: the following line is bad. vmm_virt_to_phys should be called for every 0x1000 into memory
-            file->ops->read(file, ph->p_offset, (void *)(vmm_virt_to_phys(proc->addr_space, ph->p_vaddr) + HHDM), ph->p_memsz);
+            uptr start = FLOOR(ph->p_vaddr, ARCH_PAGE_GRAN);
+            uptr end   = CEIL(ph->p_vaddr + ph->p_memsz, ARCH_PAGE_GRAN);
+            u64  diff  = end - start;
+
+            vmm_map_anon(proc->addr_space, start, diff, VMM_FULL);
+            // TODO: fix this
+            void *buf = pmm_alloc(7);
+            file->ops->read(file, ph->p_offset, (void*)((uptr)buf + HHDM), ph->p_memsz);
+            vmm_copy_to(proc->addr_space, ph->p_vaddr, (void*)((uptr)buf + HHDM), ph->p_memsz);
+            pmm_free(buf);
         }
     }
 

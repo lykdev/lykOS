@@ -1,6 +1,7 @@
 #include <arch/syscall.h>
 #include <arch/x86_64/msr.h>
 #include <arch/x86_64/tables/gdt.h>
+#include <common/log.h>
 
 extern void arch_syscall_entry();
 
@@ -19,4 +20,10 @@ void arch_syscall_init()
     // Set up SFMASK (RFLAGS bits that should be cleared during SYSCALL).
     // Disable interrupts (IF=0).
     x86_64_msr_write(X86_64_MSR_SFMASK, x86_64_msr_read(X86_64_MSR_SFMASK) | (1 << 9));
+}
+
+void arch_syscall_tcb_set(void *ptr)
+{
+    x86_64_msr_write(X86_64_MSR_FS_BASE, (u64)ptr);
+    log("SYSCALL: fs_set(ptr: %#lx)", (u64)ptr);
 }

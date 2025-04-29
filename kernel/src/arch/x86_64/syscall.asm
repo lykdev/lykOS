@@ -1,25 +1,29 @@
 global arch_syscall_entry
 
-%define KERNEL_STACK_OFFSET 8
-%define USER_STACK_OFFSET 16
+%define KERNEL_STACK_OFFSET 16
+%define USER_STACK_OFFSET 24
 
-extern syscall_exit
-extern syscall_debug_log
-extern syscall_open
 extern syscall_close
+extern syscall_debug_log
+extern syscall_exit
+extern syscall_lseek
+extern syscall_mmap
+extern syscall_open
 extern syscall_read
 extern syscall_write
-extern syscall_mmap
+extern syscall_tcb
 
 section .data
 syscall_table:
-    dq syscall_exit      ; 0
-    dq syscall_debug_log ; 1
-    dq syscall_open      ; 2
-    dq syscall_close     ; 3
-    dq syscall_read      ; 4
-    dq syscall_write     ; 5
-    dq syscall_mmap      ; 6
+    dq syscall_close      ; 0
+    dq syscall_debug_log  ; 1
+    dq syscall_exit       ; 2
+    dq syscall_lseek      ; 3
+    dq syscall_mmap       ; 4
+    dq syscall_open       ; 5
+    dq syscall_read       ; 6
+    dq syscall_write      ; 7
+    dq syscall_tcb        ; 8
 .length: dq ($ - syscall_table) / 8
 
 section .text
@@ -27,7 +31,7 @@ arch_syscall_entry:
     swapgs
     mov qword [gs:USER_STACK_OFFSET], rsp
     mov rsp, qword [gs:KERNEL_STACK_OFFSET]
-    
+
     push rbx
     push rcx
     push rdx

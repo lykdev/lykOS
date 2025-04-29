@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 
 int main(int argc, char **argv)
 {
@@ -20,13 +19,10 @@ int main(int argc, char **argv)
     char name[256];
     while (fscanf(in, "%llx %c %s", &addr, &type, &name) == 3)
     {
-        if (islower(type)) // Skip local symbol.
-            continue;
-
         fwrite(&addr, sizeof(addr), 1, out);
         fwrite(&name, 1, strlen(name) + 1, out);
     }
-        
+
     fclose(in);
     fclose(out);
 

@@ -1,3 +1,6 @@
+#include <arch/x86_64/fpu.h>
+#include <lib/list.h>
+#include <sys/proc.h>
 #include <arch/cpu.h>
 #include <arch/int.h>
 #include <arch/syscall.h>
@@ -18,6 +21,7 @@
 #include <sys/exec.h>
 #include <sys/ksym.h>
 #include <sys/module.h>
+#include <sys/thread.h>
 #include <sys/smp.h>
 #include <tasking/sched.h>
 
@@ -32,6 +36,8 @@ void _entry()
     log("Kernel compiled on %s at %s.", __DATE__, __TIME__);
 
     arch_int_init();
+    x86_64_fpu_init();
+
     arch_cpu_core_init();
 
     pmm_init();
@@ -41,15 +47,16 @@ void _entry()
 
     vfs_init();
     initrd_init();
+    vfs_debug();
     devfs_init();
 
     // Load kernel modules.
     {
         ksym_load_symbols();
 
-        vfs_node_t *module_dir = vfs_lookup("/initrd/modules");
+        vfs_node_t *module_dir = vfs_lookup("/modules");
         if (module_dir == NULL || module_dir->type != VFS_NODE_DIR)
-            panic("Could not find directory `/initrd/modules`.");
+            panic("Could not find directory `/modules`.");
         uint idx = 0;
         const char *name;
         while ((name = module_dir->ops->list(module_dir, &idx)))
@@ -76,18 +83,21 @@ void _entry()
     ASSERT(fb != NULL);
     fb->ops->write(fb, 0, pix, 100 * 4);
 
+    arch_syscall_init();
+
     // Load initial executables.
     {
-        vfs_node_t *init_dir = vfs_lookup("/initrd/init");
+        vfs_node_t *init_dir = vfs_lookup("/usr/bin");
         if (init_dir == NULL || init_dir->type != VFS_NODE_DIR)
-            panic("Could not find directory `/initrd/init`.");
+            panic("Could not find directory `/usr/bin`.");
         uint idx = 0;
         const char *name;
         while ((name = init_dir->ops->list(init_dir, &idx)))
         {
             log("Loading executable `%s`.", name);
             vfs_node_t *file = init_dir->ops->lookup(init_dir, name);
-            exec_load(file);
+            proc_t *proc = exec_load(file);
+            sched_queue_add(LIST_GET_CONTAINER(proc->threads.head, thread_t, list_elem_inside_proc));
         }
     }
 

@@ -1,4 +1,5 @@
 #include "vmm.h"
+#include "arch/types.h"
 
 #include <arch/ptm.h>
 #include <common/assert.h>
@@ -8,6 +9,7 @@
 #include <common/sync/spinlock.h>
 #include <lib/list.h>
 #include <lib/math.h>
+#include <lib/string.h>
 #include <mm/kmem.h>
 #include <mm/heap.h>
 #include <mm/pmm.h>
@@ -77,6 +79,11 @@ vmm_seg_t *vmm_addr_to_seg(vmm_addr_space_t *addr_space, uptr addr)
 bool vmm_pagefault_handler(vmm_addr_space_t *addr_space, uptr addr)
 {
     vmm_seg_t *seg = vmm_addr_to_seg(addr_space, addr);
+    if (seg == NULL)
+    {
+        log("VMM: bruh");
+        return false;
+    }
 
     switch (seg->type)
     {
@@ -214,4 +221,20 @@ void vmm_init()
     vmm_load_addr_space(g_vmm_kernel_addr_space);
 
     log("VMM initialized.");
+}
+
+u64 vmm_copy_to(vmm_addr_space_t *dest_as, uptr dest_addr, void *src, u64 count)
+{
+    u64 i = 0;
+    while(i < count)
+    {
+        u64 offset = (dest_addr + i) % ARCH_PAGE_GRAN;
+        uptr phys = vmm_virt_to_phys(dest_as, dest_addr + i); // TODO: vmm_virt_to_phys can fail but it will still return 0 as if it was valid (WHICH IS WRONG)
+
+        u64 len = MIN(count - i, ARCH_PAGE_GRAN - offset);
+        memcpy((void*)(phys + offset + HHDM), src, len);
+        i += len;
+        src += len;
+    }
+    return i;
 }

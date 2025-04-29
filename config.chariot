@@ -1,5 +1,3 @@
-@import "toolchain.chariot"
-
 source/support {
     url: "support"
     type: "local"
@@ -15,11 +13,6 @@ source/kernel {
 
 source/initrd {
     url: "initrd"
-    type: "local"
-}
-
-source/modules {
-    url: "modules"
     type: "local"
 }
 
@@ -58,21 +51,49 @@ tool/ksym {
     </sh>
 }
 
-custom/modules {
-    dependencies: [source/kernel, source/initrd, source/modules, image/python3, image/clang]
+// Modules
+
+source/modules {
+    url: "modules"
+    type: "local"
+}
+
+package/modules {
+    dependencies: [source/kernel, source/modules, image/python3, image/clang]
     build: <sh>
         $SOURCES_DIR/modules/build.py x86_64 $SOURCES_DIR/kernel/src $BUILD_DIR
     </sh>
     install: <sh>
-        install ./* $INSTALL_DIR
+        install -d $INSTALL_DIR/modules
+        install ./* $INSTALL_DIR/modules
     </sh>
 }
 
+// Apps
+
+source/apps {
+    url: "apps"
+    type: "local"
+}
+
+package/apps {
+    dependencies: [source/apps, package/mlibc, image/clang, image/gcc]
+    build: <sh>
+        $SOURCES_DIR/apps/build.py "clang --target=x86_64-elf -isysroot $SYSROOT_DIR" $BUILD_DIR
+    </sh>
+    install: <sh>
+        install -d $INSTALL_DIR$PREFIX/bin
+        install ./* $INSTALL_DIR$PREFIX/bin
+    </sh>
+}
+
+// Initrd
+
 custom/initrd {
-    dependencies: [source/initrd, custom/modules]
+    dependencies: [source/initrd, package/modules, package/apps, package/mlibc]
     build: <sh>
         cp -r $SOURCES_DIR/initrd .
-        cp $CUSTOMS_DIR/modules/* ./initrd/modules
+        cp -r $SYSROOT_DIR/* ./initrd
         tar -cvf initrd.tar --format=ustar ./initrd
     </sh>
     install: <sh>
@@ -84,10 +105,10 @@ custom/image {
     dependencies: [custom/kernel, tool/ksym, custom/initrd, source/limine, source/support image/xorriso]
     build: <sh>
         mkdir -p iso_root/EFI/BOOT
-    	ksym $CUSTOMS_DIR/kernel/kernel_symbols.txt iso_root/kernel_symbols.bin
-        cp $CUSTOMS_DIR/initrd/initrd.tar iso_root
+    	ksym $CUSTOM_DIR/kernel/kernel_symbols.txt iso_root/kernel_symbols.bin
+        cp $CUSTOM_DIR/initrd/initrd.tar iso_root
 
-    	cp $CUSTOMS_DIR/kernel/kernel.elf ./iso_root/
+    	cp $CUSTOM_DIR/kernel/kernel.elf ./iso_root/
         cp $SOURCES_DIR/support/limine.conf ./iso_root/
         cp $SOURCES_DIR/limine/limine-uefi-cd.bin ./iso_root/
 
@@ -101,5 +122,30 @@ custom/image {
     </sh>
     install: <sh>
         install lykos.iso $INSTALL_DIR
+    </sh>
+}
+
+// Mlibc
+
+source/mlibc {
+    url: "mlibc"
+    type: "local"
+}
+
+package/mlibc {
+    dependencies: [source/support, source/mlibc, image/clang, image/build-essential, image/llvm, image/meson]
+    configure: <sh>
+        meson setup \
+            --cross-file $SOURCES_DIR/support/lykos.cross-file \
+            --buildtype=debug \
+            -Ddefault_library=both \
+            -Dlinux_option=disabled \
+            $SOURCES_DIR/mlibc
+    </sh>
+    build: <sh>
+        ninja -j$PARALLELISM
+    </sh>
+    install: <sh>
+        DESTDIR=$INSTALL_DIR ninja install
     </sh>
 }

@@ -1,6 +1,7 @@
 #include "sched.h"
 
 #include <arch/cpu.h>
+#include <arch/x86_64/fpu.h>
 #include <common/log.h>
 #include <common/panic.h>
 #include <common/sync/spinlock.h>
@@ -56,13 +57,20 @@ void sched_yield(thread_status_t status)
         next = sched_get_curr_thread()->assigned_core->idle_thread;
     if (curr != next)
     {
+        log("ok so");
         next->assigned_core = curr->assigned_core;
         curr->assigned_core = NULL;
         curr->status = status;
         next->status = THREAD_STATE_RUNNING;
+
+        vmm_load_addr_space(next->parent_proc->addr_space);
+        log("1");
+        g_x86_64_fpu_save(curr->fpu_area);
+        log("2");
+        g_x86_64_fpu_restore(next->fpu_area);
+        log("3");
     }
 
-    vmm_load_addr_space(next->parent_proc->addr_space);
     arch_cpu_write_thread_reg(next);
     arch_sched_context_switch(curr, next); // This function calls `sched_drop` for `curr` too.
 }
