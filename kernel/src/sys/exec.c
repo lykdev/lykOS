@@ -43,10 +43,11 @@ proc_t *exec_load(vfs_node_t *file)
             u64  diff  = end - start;
 
             vmm_map_anon(proc->addr_space, start, diff, VMM_FULL);
+            vmm_zero_out(proc->addr_space, start, diff);
             // TODO: fix this
             void *buf = pmm_alloc(7);
-            file->ops->read(file, ph->p_offset, (void*)((uptr)buf + HHDM), ph->p_memsz);
-            vmm_copy_to(proc->addr_space, ph->p_vaddr, (void*)((uptr)buf + HHDM), ph->p_memsz);
+            file->ops->read(file, ph->p_offset, (void*)((uptr)buf + HHDM), ph->p_filesz);
+            vmm_copy_to(proc->addr_space, ph->p_vaddr, (void*)((uptr)buf + HHDM), ph->p_filesz);
             pmm_free(buf);
         }
     }

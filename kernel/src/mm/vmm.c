@@ -238,3 +238,18 @@ u64 vmm_copy_to(vmm_addr_space_t *dest_as, uptr dest_addr, void *src, u64 count)
     }
     return i;
 }
+
+u64 vmm_zero_out(vmm_addr_space_t *dest_as, uptr dest_addr, u64 count)
+{
+    u64 i = 0;
+    while(i < count)
+    {
+        u64 offset = (dest_addr + i) % ARCH_PAGE_GRAN;
+        uptr phys = vmm_virt_to_phys(dest_as, dest_addr + i); // TODO: vmm_virt_to_phys can fail but it will still return 0 as if it was valid (WHICH IS WRONG)
+
+        u64 len = MIN(count - i, ARCH_PAGE_GRAN - offset);
+        memset((void*)(phys + offset + HHDM), 0, len);
+        i += len;
+    }
+    return i;
+}

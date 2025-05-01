@@ -20,6 +20,8 @@ list_t g_thread_list = LIST_INIT;
 
 extern void x86_64_thread_userspace_init();
 
+extern uptr x86_64_abi_stack_setup(vmm_addr_space_t *as, size_t stack_size, char **argv, char **envp);
+
 thread_t *thread_new(proc_t *parent_proc, uptr entry)
 {
     ASSERT(parent_proc != NULL);
@@ -30,6 +32,7 @@ thread_t *thread_new(proc_t *parent_proc, uptr entry)
         .self = thread,
         .fpu_area = (void*)((uptr)pmm_alloc(2) + HHDM),
 #endif
+        .fs = 0, .gs = 0,
         .id = g_last_id++,
         .parent_proc = parent_proc,
         .assigned_core = NULL,
@@ -51,9 +54,13 @@ thread_t *thread_new(proc_t *parent_proc, uptr entry)
         ((arch_thread_init_stack_user_t *)thread->kernel_stack)->userspace_init = x86_64_thread_userspace_init;
         ((arch_thread_init_stack_user_t *)thread->kernel_stack)->entry = entry;
 
-        uptr user_stack = vmm_find_space(parent_proc->addr_space, 16 * KIB);
-        vmm_map_anon(parent_proc->addr_space, user_stack, 16 * KIB, VMM_FULL);
-        ((arch_thread_init_stack_user_t *)thread->kernel_stack)->user_stack = user_stack + 15 * KIB; // Leave 1KiB padding.
+        // uptr user_stack = vmm_find_space(parent_proc->addr_space, 16 * KIB);
+        // vmm_map_anon(parent_proc->addr_space, user_stack, 16 * KIB, VMM_FULL);
+        // ((arch_thread_init_stack_user_t *)thread->kernel_stack)->user_stack = user_stack + 15 * KIB; // Leave 1KiB padding.
+
+        char *argv[] = { "/usr/bin/init", NULL };
+        char *envp[] = { NULL };
+        ((arch_thread_init_stack_user_t *)thread->kernel_stack)->user_stack = x86_64_abi_stack_setup(parent_proc->addr_space, ARCH_PAGE_GRAN * 8, argv, envp);
     }
 
     //TODO: mask ints here

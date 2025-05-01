@@ -1,10 +1,10 @@
 [binaries]
-c = 'clang'
-cpp = 'clang'
-ld = 'ld.lld'
-ar = 'llvm-ar'
-strip = 'llvm-strip'
-pkgconfig = 'pkgconf'
+c = 'x86_64-lykos-gcc'
+cpp = 'x86_64-lykos-g++'
+ld = 'x86_64-lykos-ld'
+ar = 'x86_64-lykos-ar'
+strip = 'x86_64-lykos-strip'
+pkg-config = 'x86_64-lykos-pkg-config'
 
 [host_machine]
 system = 'lykos'

@@ -1,3 +1,10 @@
+@import "host-recipes/autotools.chariot"
+@import "host-recipes/binutils.chariot"
+@import "host-recipes/gcc.chariot"
+@import "host-recipes/mlibc.chariot"
+@import "host-recipes/pkgconf.chariot"
+@import "host-recipes/reconfigure.chariot"
+
 source/support {
     url: "support"
     type: "local"
@@ -77,9 +84,9 @@ source/apps {
 }
 
 package/apps {
-    dependencies: [source/apps, package/mlibc, image/clang, image/gcc]
+    dependencies: [source/apps, tool/gcc]
     build: <sh>
-        $SOURCES_DIR/apps/build.py "clang --target=x86_64-elf -isysroot $SYSROOT_DIR" $BUILD_DIR
+        $SOURCES_DIR/apps/build.py "x86_64-lykos-gcc" $BUILD_DIR
     </sh>
     install: <sh>
         install -d $INSTALL_DIR$PREFIX/bin
@@ -122,30 +129,5 @@ custom/image {
     </sh>
     install: <sh>
         install lykos.iso $INSTALL_DIR
-    </sh>
-}
-
-// Mlibc
-
-source/mlibc {
-    url: "mlibc"
-    type: "local"
-}
-
-package/mlibc {
-    dependencies: [source/support, source/mlibc, image/clang, image/build-essential, image/llvm, image/meson]
-    configure: <sh>
-        meson setup \
-            --cross-file $SOURCES_DIR/support/lykos.cross-file \
-            --buildtype=debug \
-            -Ddefault_library=both \
-            -Dlinux_option=disabled \
-            $SOURCES_DIR/mlibc
-    </sh>
-    build: <sh>
-        ninja -j$PARALLELISM
-    </sh>
-    install: <sh>
-        DESTDIR=$INSTALL_DIR ninja install
     </sh>
 }

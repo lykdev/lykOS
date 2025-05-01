@@ -23,12 +23,14 @@ void *syscall_mmap(void *addr, u64 len, int prot, int flags, int fd, u64 off)
     proc_t *proc = syscall_get_proc();
     vmm_addr_space_t *as = proc->addr_space;
 
+    len = CEIL(len, 4096);
+
     uptr _addr = vmm_find_space(as, len);
 
     prot &= 0b111; // Sanitize protection flags.
 
     if (flags & MAP_ANON)
-        vmm_map_anon(as, _addr, FLOOR(len, 4096), prot);
+        vmm_map_anon(as, _addr, len, prot);
     else
         return MAP_FAILED;
 

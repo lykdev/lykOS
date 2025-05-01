@@ -70,4 +70,6 @@ void vmm_load_addr_space(vmm_addr_space_t *addr_space);
 
 u64 vmm_copy_to(vmm_addr_space_t *dest_as, uptr dest_addr, void *src, u64 count);
 
+u64 vmm_zero_out(vmm_addr_space_t *dest_as, uptr dest_addr, u64 count);
+
 void vmm_init();

@@ -1,0 +1,54 @@
+source/mlibc {
+    url: "mlibc"
+    type: "local"
+    dependencies: [ image/meson ]
+    regenerate: <sh>
+        meson subprojects download
+    </sh>
+}
+
+package/mlibc_headers {
+    dependencies: [ source/mlibc tool/pkgconf image/meson ]
+    configure: <sh>
+        meson setup \
+            --prefix=$PREFIX \
+            --buildtype=release \
+            -Dheaders_only=true \
+            -Dlinux_option=disabled \
+            $SOURCES_DIR/mlibc
+    </sh>
+    build: <sh>
+        ninja -j$PARALLELISM
+    </sh>
+    install: <sh>
+        DESTDIR=$INSTALL_DIR ninja install
+    </sh>
+}
+
+package/mlibc {
+    dependencies: [
+        source/mlibc
+        source/support
+        tool/gcc_bootstrap
+        tool/pkgconf
+        package/mlibc_headers
+        image/meson
+    ]
+    configure: <sh>
+        meson setup \
+            --cross-file $SOURCES_DIR/support/lykos.cross-file \
+            --prefix=$PREFIX \
+            --libdir=lib \
+            --buildtype=debug \
+            -Dno_headers=true \
+            -Ddefault_library=both \
+            -Dlinux_option=disabled \
+            $SOURCES_DIR/mlibc
+    </sh>
+    build: <sh>
+        ninja -j$PARALLELISM
+    </sh>
+    install: <sh>
+        DESTDIR=$INSTALL_DIR ninja install
+    </sh>
+}

@@ -26,6 +26,7 @@ struct thread
 #endif
     uptr kernel_stack;
     uptr syscall_stack;
+    u64 fs, gs;
 //
     uint id;
     thread_status_t status;

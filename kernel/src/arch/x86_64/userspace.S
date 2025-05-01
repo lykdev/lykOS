@@ -1,12 +1,12 @@
 .global x86_64_thread_userspace_init
 
 x86_64_thread_userspace_init:
-    pop %rcx
+    pop %rcx # sysret return address, basically program entry point
 
     cli
     swapgs
 
-    pop %rax
+    pop %rax # userspace stack pointer
     mov %rax, %rsp
 
     xor %rbp, %rbp

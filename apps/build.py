@@ -16,7 +16,8 @@ CFLAGS = [
     "-static",
     "-std=gnu23",
     "-O2",
-    "-g"
+    "-g",
+    "-v"
 ]
 
 for app in os.listdir(os.path.dirname(__file__)):
@@ -35,4 +36,5 @@ for app in os.listdir(os.path.dirname(__file__)):
 
     output = os.path.join(BUILD_DIR, app + ".elf")
     cmd = CC + CFLAGS + sources + ["-o", output]
+    print(cmd)
     subprocess.run(cmd, check=True, stderr=subprocess.STDOUT)
