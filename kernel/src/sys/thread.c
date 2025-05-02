@@ -54,13 +54,10 @@ thread_t *thread_new(proc_t *parent_proc, uptr entry)
         ((arch_thread_init_stack_user_t *)thread->kernel_stack)->userspace_init = x86_64_thread_userspace_init;
         ((arch_thread_init_stack_user_t *)thread->kernel_stack)->entry = entry;
 
-        // uptr user_stack = vmm_find_space(parent_proc->addr_space, 16 * KIB);
-        // vmm_map_anon(parent_proc->addr_space, user_stack, 16 * KIB, VMM_FULL);
-        // ((arch_thread_init_stack_user_t *)thread->kernel_stack)->user_stack = user_stack + 15 * KIB; // Leave 1KiB padding.
-
         char *argv[] = { "/usr/bin/init", NULL };
         char *envp[] = { NULL };
-        ((arch_thread_init_stack_user_t *)thread->kernel_stack)->user_stack = x86_64_abi_stack_setup(parent_proc->addr_space, ARCH_PAGE_GRAN * 8, argv, envp);
+        ((arch_thread_init_stack_user_t *)thread->kernel_stack)->user_stack =
+            x86_64_abi_stack_setup(parent_proc->addr_space, ARCH_PAGE_GRAN * 8, argv, envp);
     }
 
     //TODO: mask ints here

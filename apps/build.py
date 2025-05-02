@@ -15,7 +15,6 @@ BUILD_DIR = sys.argv[2]
 CFLAGS = [
     "-static",
     "-std=gnu23",
-    "-O2",
     "-g",
     "-v"
 ]

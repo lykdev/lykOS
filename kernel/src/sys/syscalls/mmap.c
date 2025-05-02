@@ -30,7 +30,10 @@ void *syscall_mmap(void *addr, u64 len, int prot, int flags, int fd, u64 off)
     prot &= 0b111; // Sanitize protection flags.
 
     if (flags & MAP_ANON)
+    {
         vmm_map_anon(as, _addr, len, prot);
+        vmm_zero_out(as, _addr, len);
+    }
     else
         return MAP_FAILED;
 

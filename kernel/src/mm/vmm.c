@@ -65,7 +65,7 @@ uptr vmm_find_space(vmm_addr_space_t *addr_space, u64 len)
 
 vmm_seg_t *vmm_addr_to_seg(vmm_addr_space_t *addr_space, uptr addr)
 {
-    FOREACH(n, addr_space->segments)
+    FOREACH (n, addr_space->segments)
     {
         vmm_seg_t *seg = LIST_GET_CONTAINER(n, vmm_seg_t, list_elem);
 
@@ -226,7 +226,7 @@ void vmm_init()
 u64 vmm_copy_to(vmm_addr_space_t *dest_as, uptr dest_addr, void *src, u64 count)
 {
     u64 i = 0;
-    while(i < count)
+    while (i < count)
     {
         u64 offset = (dest_addr + i) % ARCH_PAGE_GRAN;
         uptr phys = vmm_virt_to_phys(dest_as, dest_addr + i); // TODO: vmm_virt_to_phys can fail but it will still return 0 as if it was valid (WHICH IS WRONG)
@@ -242,7 +242,7 @@ u64 vmm_copy_to(vmm_addr_space_t *dest_as, uptr dest_addr, void *src, u64 count)
 u64 vmm_zero_out(vmm_addr_space_t *dest_as, uptr dest_addr, u64 count)
 {
     u64 i = 0;
-    while(i < count)
+    while (i < count)
     {
         u64 offset = (dest_addr + i) % ARCH_PAGE_GRAN;
         uptr phys = vmm_virt_to_phys(dest_as, dest_addr + i); // TODO: vmm_virt_to_phys can fail but it will still return 0 as if it was valid (WHICH IS WRONG)
