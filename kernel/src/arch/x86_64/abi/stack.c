@@ -4,22 +4,6 @@
 #include <lib/string.h>
 #include <mm/vmm.h>
 
-#define AT_NULL     0
-#define AT_IGNORE   1
-#define AT_EXECFD   2
-#define AT_PHDR     3
-#define AT_PHENT    4
-#define AT_PHNUM    5
-#define AT_PAGESZ   6
-#define AT_BASE     7
-#define AT_FLAGS    8
-#define AT_ENTRY    9
-#define AT_NOTELF  10
-#define AT_UID     11
-#define AT_EUID    12
-#define AT_GID     13
-#define AT_EGID    14
-
 #define WRITE_QWORD(VALUE)                                               \
     {                                                                    \
         stack -= sizeof(u64);                                            \
@@ -34,7 +18,7 @@
         WRITE_QWORD(ID);     \
     }
 
-uptr x86_64_abi_stack_setup(vmm_addr_space_t *as, size_t stack_size, char **argv, char **envp)
+uptr x86_64_abi_stack_setup(vmm_addr_space_t *as, size_t stack_size, char **argv, char **envp, x86_64_auxv_t *auxv)
 {
     ASSERT(stack_size % ARCH_PAGE_GRAN == 0);
 

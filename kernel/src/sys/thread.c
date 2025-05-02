@@ -20,7 +20,9 @@ list_t g_thread_list = LIST_INIT;
 
 extern void x86_64_thread_userspace_init();
 
-extern uptr x86_64_abi_stack_setup(vmm_addr_space_t *as, size_t stack_size, char **argv, char **envp);
+#include <arch/x86_64/abi/auxv.h>
+
+extern uptr x86_64_abi_stack_setup(vmm_addr_space_t *as, size_t stack_size, char **argv, char **envp, x86_64_auxv_t *auxv);
 
 thread_t *thread_new(proc_t *parent_proc, uptr entry)
 {

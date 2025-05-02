@@ -1,6 +1,7 @@
 #include "exec.h"
 
 #include <arch/types.h>
+#include <common/assert.h>
 #include <common/elf.h>
 #include <common/hhdm.h>
 #include <common/log.h>
@@ -45,7 +46,8 @@ proc_t *exec_load(vfs_node_t *file)
             vmm_map_anon(proc->addr_space, start, diff, VMM_FULL);
             vmm_zero_out(proc->addr_space, ph->p_vaddr, ph->p_memsz);
             // TODO: stop using pmm
-            void *buf = pmm_alloc(7);
+            ASSERT(pmm_order_to_pagecount(10) * ARCH_PAGE_GRAN >= ph->p_filesz);
+            void *buf = pmm_alloc(10);
             file->ops->read(file, ph->p_offset, (void*)((uptr)buf + HHDM), ph->p_filesz);
             vmm_copy_to(proc->addr_space, ph->p_vaddr, (void*)((uptr)buf + HHDM), ph->p_filesz);
             pmm_free(buf);
