@@ -18,7 +18,7 @@
         WRITE_QWORD(ID);     \
     }
 
-uptr x86_64_abi_stack_setup(vmm_addr_space_t *as, size_t stack_size, char **argv, char **envp, x86_64_auxv_t *auxv)
+uptr x86_64_abi_stack_setup(vmm_addr_space_t *as, size_t stack_size, char **argv, char **envp)
 {
     ASSERT(stack_size % ARCH_PAGE_GRAN == 0);
 

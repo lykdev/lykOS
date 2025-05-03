@@ -22,7 +22,7 @@ extern void x86_64_thread_userspace_init();
 
 #include <arch/x86_64/abi/auxv.h>
 
-extern uptr x86_64_abi_stack_setup(vmm_addr_space_t *as, size_t stack_size, char **argv, char **envp, x86_64_auxv_t *auxv);
+extern uptr x86_64_abi_stack_setup(vmm_addr_space_t *as, size_t stack_size, char **argv, char **envp);
 
 thread_t *thread_new(proc_t *parent_proc, uptr entry)
 {

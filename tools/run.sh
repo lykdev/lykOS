@@ -6,7 +6,6 @@ ARCH="${1:-x86_64}"      # Fallback to x86_64 if no arch is provided.
 OVMF="qemu/ovmf-${ARCH}"
 
 QEMU_FLAGS=(
-    -s -S
     -m 2G
     -smp 1
     -no-shutdown
