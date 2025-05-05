@@ -19,7 +19,6 @@
 
 void *syscall_mmap(void *addr, u64 len, int prot, int flags, int fd, u64 off)
 {
-    log("MMAP");
     proc_t *proc = syscall_get_proc();
     vmm_addr_space_t *as = proc->addr_space;
 

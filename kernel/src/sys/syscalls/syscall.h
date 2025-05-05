@@ -1,7 +1,7 @@
 #pragma once
 
 #include <arch/cpu.h>
-
+#include <lib/def.h>
 #include <sys/proc.h>
 #include <sys/thread.h>
 
@@ -18,7 +18,7 @@ static inline proc_t *syscall_get_proc()
 int   syscall_close(int fd);
 u64   syscall_debug_log(const char *str);
 void  syscall_exit(int code);
-int   syscall_lseek(int fd, u64 offset, int whence);
+int   syscall_seek(int fd, u64 offset, int whence);
 void *syscall_mmap(void *addr, u64 len, int prot, int flags, int fd, u64 off);
 int   syscall_open(const char *path, int flags, int mode);
 int   syscall_read(int fd, void *buf, u64 count);

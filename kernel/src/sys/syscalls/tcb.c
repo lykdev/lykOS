@@ -5,6 +5,5 @@
 
 void syscall_tcb(void *ptr)
 {
-    log("TCB");
     arch_syscall_tcb_set(ptr);
 }

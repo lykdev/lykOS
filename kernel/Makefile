@@ -18,7 +18,7 @@ C_FLAGS := 					\
 	-fno-stack-check		\
 	-fno-lto   				\
 	-fPIE					\
-	-O3						\
+	-O2						\
 	-g						\
 
 LD_FLAGS := 				\

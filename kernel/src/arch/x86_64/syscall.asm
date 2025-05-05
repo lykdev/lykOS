@@ -6,7 +6,7 @@ global arch_syscall_entry
 extern syscall_close
 extern syscall_debug_log
 extern syscall_exit
-extern syscall_lseek
+extern syscall_seek
 extern syscall_mmap
 extern syscall_open
 extern syscall_read
@@ -18,7 +18,7 @@ syscall_table:
     dq syscall_close      ; 0
     dq syscall_debug_log  ; 1
     dq syscall_exit       ; 2
-    dq syscall_lseek      ; 3
+    dq syscall_seek       ; 3
     dq syscall_mmap       ; 4
     dq syscall_open       ; 5
     dq syscall_read       ; 6

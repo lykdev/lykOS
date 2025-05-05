@@ -6,7 +6,6 @@
 
 int syscall_read(int fd, void *buf, u64 count)
 {
-    log("READ");
     proc_t *proc = syscall_get_proc();
 
     resource_t *res = resource_get(&proc->resource_table, fd);

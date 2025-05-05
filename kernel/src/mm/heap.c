@@ -1,6 +1,6 @@
 #include "heap.h"
-#include "common/assert.h"
 
+#include <common/assert.h>
 #include <common/log.h>
 #include <lib/printf.h>
 #include <lib/string.h>
@@ -29,7 +29,7 @@ void heap_free_size(void *obj, size_t size)
     if (size <= 8)
         order = 0;
     else
-        order = 60 - __builtin_clzll(size - 1);
+        order = 61 - __builtin_clzll(size - 1);
 
     kmem_free_cache(&g_caches[order], obj);
 }
@@ -42,10 +42,17 @@ void heap_free(void *obj)
     heap_free_size(obj, size);
 }
 
+#include <common/hhdm.h>
+#include <mm/pmm.h>
+
 void *heap_realloc(void *obj, size_t old_size, size_t new_size)
 {
     void *new_obj = heap_alloc(new_size);
-    memcpy(new_obj, obj, old_size);
+    if (obj != NULL)
+    {
+        memcpy(new_obj, obj, old_size);
+        heap_free_size(obj, old_size);
+    }
 
     return new_obj;
 }

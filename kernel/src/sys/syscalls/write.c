@@ -5,7 +5,6 @@
 
 int syscall_write(int fd, void *buf, u64 count)
 {
-    log("WRITE");
     proc_t *proc = syscall_get_proc();
 
     resource_t *res  = resource_get(&proc->resource_table, fd);

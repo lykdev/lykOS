@@ -19,8 +19,8 @@ void resource_table_expand(resource_table_t *table, uint amount)
 {
     spinlock_acquire(&table->lock);
 
-    table->resources = heap_realloc(table->resources, table->length, table->length + amount);
-    // memset(&table->resources[table->length], 0, amount * __POINTER_WIDTH__);
+    table->resources = heap_realloc(table->resources, table->length * sizeof(void*), (table->length + amount) * sizeof(void*));
+    memset(&table->resources[table->length], 0, amount * sizeof(void*));
     table->length += amount;
 
     spinlock_release(&table->lock);
@@ -43,6 +43,7 @@ resource_t *resource_create_at(resource_table_t *table, int id, vfs_node_t *node
 
     if (!lock_acq)
         spinlock_release(&table->lock);
+
     return res;
 }
 

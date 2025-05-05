@@ -25,5 +25,4 @@ void arch_syscall_init()
 void arch_syscall_tcb_set(void *ptr)
 {
     x86_64_msr_write(X86_64_MSR_FS_BASE, (u64)ptr);
-    log("SYSCALL: fs_set(ptr: %#lx)", (u64)ptr);
 }
