@@ -1,4 +1,3 @@
-#include <arch/x86_64/fpu.h>
 #include <lib/list.h>
 #include <sys/proc.h>
 #include <arch/cpu.h>
@@ -9,9 +8,9 @@
 #include <common/log.h>
 #include <dev/acpi/acpi.h>
 #include <dev/pci.h>
-#include <fs/devfs.h>
 #include <fs/initrd.h>
 #include <fs/vfs.h>
+#include <fs/pfs.h>
 #include <graphics/video.h>
 #include <lib/def.h>
 #include <mm/heap.h>
@@ -49,8 +48,9 @@ void _entry()
 
     vfs_init();
     initrd_init();
-    vfs_debug();
-    devfs_init();
+
+    vfs_mount("/dev", pfs_new_mp("dev"));
+    vfs_mount("/mod", pfs_new_mp("mod"));
 
     // Load kernel modules.
     {
@@ -103,6 +103,5 @@ void _entry()
     smp_init();
 
     log("Kernel end.");
-
     arch_cpu_halt();
 }
