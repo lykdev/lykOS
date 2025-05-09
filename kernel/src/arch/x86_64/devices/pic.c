@@ -7,7 +7,7 @@
 #define PIC_CMD_SLAVE 0xA0
 #define PIC_DATA_SLAVE 0xA1
 
-void pic_disable()
+void x86_64_pic_disable()
 {
     // Mask all interrupts.
     x86_64_io_outb(PIC_DATA_MASTER, 0xFF);

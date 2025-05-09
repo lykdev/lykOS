@@ -62,8 +62,9 @@ void x86_64_gdt_load()
 {
     gdt_descriptor_t gdtr = (gdt_descriptor_t){.limit = sizeof(g_gdt) - 1, .base = (u64)&g_gdt};
 
-    log("Loading GDT(%#lx, %#lx)", gdtr.base, (u64)gdtr.limit);
     gdt_load(&gdtr, X86_64_GDT_SELECTOR_CODE64_RING0, X86_64_GDT_SELECTOR_DATA64_RING0);
+
+    log("GDT loaded");
 }
 
 void x86_64_gdt_load_tss(x86_64_tss_t *tss)

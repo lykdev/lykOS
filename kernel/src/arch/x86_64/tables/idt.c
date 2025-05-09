@@ -26,14 +26,14 @@ typedef struct
 __attribute__((aligned(0x10))) static idt_entry_t idt[256];
 extern uptr arch_int_stub_table[256];
 
-void arch_int_init()
+void x86_64_idt_make()
 {
     for (int i = 0; i < 256; i++)
     {
         u64 isr = (u64)arch_int_stub_table[i];
 
         idt[i] = (idt_entry_t) {
-            .isr_low = isr & 0xFFFF, 
+            .isr_low = isr & 0xFFFF,
             .kernel_cs = X86_64_GDT_SELECTOR_CODE64_RING0,
             .ist = 0,
             .flags = 0x8E,

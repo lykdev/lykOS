@@ -35,15 +35,17 @@ void _entry()
     log("Kernel start.");
     log("Kernel compiled on %s at %s.", __DATE__, __TIME__);
 
-    arch_int_init();
-    x86_64_fpu_init();
+    acpi_init();
 
+    arch_init();
     arch_cpu_core_init();
 
     pmm_init();
     kmem_init();
     heap_init();
     vmm_init();
+
+    pci_list();
 
     vfs_init();
     initrd_init();
@@ -67,9 +69,6 @@ void _entry()
             mod->install();
         }
     }
-
-    acpi_init();
-    pci_list();
 
     dev_fb_init();
 

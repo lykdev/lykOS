@@ -42,9 +42,6 @@ void heap_free(void *obj)
     heap_free_size(obj, size);
 }
 
-#include <common/hhdm.h>
-#include <mm/pmm.h>
-
 void *heap_realloc(void *obj, size_t old_size, size_t new_size)
 {
     void *new_obj = heap_alloc(new_size);

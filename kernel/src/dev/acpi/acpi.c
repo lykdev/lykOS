@@ -47,6 +47,8 @@ acpi_sdt_t *acpi_lookup(const char *signature)
     u32 *pointers32 = (u32*)((uptr)root_sdt + sizeof(acpi_sdt_t));
     u64 *pointers64 = (u64*)((uptr)root_sdt + sizeof(acpi_sdt_t));
 
+    log("%d %llx %llx", entries, pointers32, pointers64);
+
     for (int i = 0; i < entries; i++)
     {
         acpi_sdt_t *sdt = (acpi_sdt_t*)((uptr)(extended ? pointers64[i] : pointers32[i]) + HHDM);
