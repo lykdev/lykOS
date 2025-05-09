@@ -2,6 +2,7 @@
 This is the main repository of LykOS, an open source hobbyist operating system targeting 64-bit architectures.
 
 ### Implemented and Planned Features
+A feature is considered implemented if it exists in any working form, even if rudimentary or incomplete.
 #### General
 - [x] Virtual Memory
 - [x] Slab allocator
@@ -9,7 +10,7 @@ This is the main repository of LykOS, an open source hobbyist operating system t
 - [ ] Userspace
   - [x] Ring 3
   - [x] ELF loading
-  - [ ] Basic system calls
+  - [x] Basic system calls
   - [ ] ...
 - [ ] ACPI support
 - [ ] Basic graphical environment
