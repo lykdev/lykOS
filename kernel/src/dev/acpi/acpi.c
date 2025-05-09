@@ -1,5 +1,6 @@
 #include "acpi.h"
 
+#include <common/assert.h>
 #include <common/hhdm.h>
 #include <common/limine/requests.h>
 #include <common/log.h>
@@ -43,11 +44,11 @@ void acpi_init()
 
 acpi_sdt_t *acpi_lookup(const char *signature)
 {
+    ASSERT_C(root_sdt, "Tried using ACPI before initialization of it.");
+
     int entries = (root_sdt->length - sizeof(acpi_sdt_t)) / (extended ? 8 : 4);
     u32 *pointers32 = (u32*)((uptr)root_sdt + sizeof(acpi_sdt_t));
     u64 *pointers64 = (u64*)((uptr)root_sdt + sizeof(acpi_sdt_t));
-
-    log("%d %llx %llx", entries, pointers32, pointers64);
 
     for (int i = 0; i < entries; i++)
     {
