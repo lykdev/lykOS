@@ -14,6 +14,7 @@ struct smp_cpu_core
     uint id;
     thread_t *curr_thread;
     thread_t *idle_thread;
+    u8 lapic_id;
     list_node_t list_elem;
 };
 

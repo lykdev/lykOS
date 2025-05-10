@@ -21,6 +21,8 @@ extern __attribute__((naked)) void arch_sched_context_switch(thread_t *curr, thr
 
 static proc_t *g_idle_proc;
 
+#include <arch/x86_64/io.h>
+
 static void thread_idle_func()
 {
     while (true)
@@ -42,7 +44,8 @@ static void core_init(struct limine_mp_info *mp_info)
     smp_cpu_core_t *cpu_core = heap_alloc(sizeof(smp_cpu_core_t));
     *cpu_core = (smp_cpu_core_t) {
         .id = mp_info->extra_argument,
-        .idle_thread = idle_thread
+        .idle_thread = idle_thread,
+        .lapic_id = mp_info->lapic_id
     };
     list_append(&g_smp_cpu_core_list, &cpu_core->list_elem);
     idle_thread->assigned_core = cpu_core;

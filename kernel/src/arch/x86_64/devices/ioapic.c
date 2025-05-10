@@ -1,6 +1,8 @@
 #include "ioapic.h"
 
 #include <arch/x86_64/devices/pic.h>
+#include <common/hhdm.h>
+#include <common/log.h>
 #include <common/panic.h>
 #include <dev/acpi/acpi.h>
 #include <lib/def.h>
@@ -126,7 +128,7 @@ void x86_64_ioapic_init()
         switch (type)
         {
         case MADT_TYPE_IOAPIC:
-            g_ioapic_base = ((madt_ioapic_t*)ptr)->ioapic_addr;
+            g_ioapic_base = ((madt_ioapic_t*)ptr)->ioapic_addr + HHDM;
         break;
         case MADT_TYPE_SOURCE_OVERRIDE:
             madt_int_source_override_t *so = (madt_int_source_override_t*)ptr;
@@ -169,7 +171,7 @@ void x86_64_ioapic_map_legacy_irq(u8 irq, u8 lapic_id, bool fallback_low_polarit
     if(irq < 16)
     {
         // Polarity.
-        switch(g_irq_redirection_table[irq].flags & 0b11)
+        switch(g_irq_redirection_table[irq].flags & 0b0011)
         {
             case SO_FLAG_POLARITY_LOW:
                 fallback_low_polarity = true;
@@ -179,7 +181,7 @@ void x86_64_ioapic_map_legacy_irq(u8 irq, u8 lapic_id, bool fallback_low_polarit
                 break;
         }
         // Trigger mode.
-        switch((g_irq_redirection_table[irq].flags >> 2) & 0b11)
+        switch(g_irq_redirection_table[irq].flags & 0b1100)
         {
             case SO_TRIGGER_EDGE:
                 fallback_trigger_mode = false;

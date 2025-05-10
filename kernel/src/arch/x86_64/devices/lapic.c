@@ -1,9 +1,9 @@
+#include "lapic.h"
+
 #include <arch/timer.h>
 #include <arch/x86_64/msr.h>
 #include <common/hhdm.h>
 #include <common/log.h>
-
-#define LAPIC_BASE ((x86_64_msr_read(X86_64_MSR_APIC_BASE) & 0xFFFFFFFFFF000) + HHDM)
 
 #define REG_ID 0x20
 #define REG_SPURIOUS 0xF0
@@ -21,14 +21,16 @@
 #define TSC_DEADLINE (2 << 17)
 #define MASK         (1 << 16)
 
+static u64 g_lapic_base;
+
 static inline void lapic_write(u32 reg, u32 data)
 {
-    *(volatile u32*)(LAPIC_BASE + reg) = data;
+    *(volatile u32*)(g_lapic_base + reg) = data;
 }
 
 static inline u32 lapic_read(uint32_t reg)
 {
-    return *(volatile u32*)(LAPIC_BASE + reg);
+    return *(volatile u32*)(g_lapic_base + reg);
 }
 
 void arch_timer_stop()
@@ -45,10 +47,11 @@ void arch_timer_oneshoot(u8 vector, u8 ms)
     // lapic_write(REG_TIMER_INITIAL_COUNT, ms * (X86_64_CPU_CURRENT.lapic_timer_frequency / 1'000'000));
 }
 
-void arch_timer_init()
+void x86_64_lapic_init()
 {
-    // Enable the local APIC.
+    g_lapic_base = (x86_64_msr_read(X86_64_MSR_APIC_BASE) & 0xFFFFFFFFFF000) + HHDM;
+
     lapic_write(REG_SPURIOUS, (1 << 8) | 0xFF);
 
-    log("lAPIC timer initialized.");
+    log("LAPIC initialized.");
 }
