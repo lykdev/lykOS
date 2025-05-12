@@ -12,6 +12,7 @@
 extern __attribute__((naked)) void arch_sched_context_switch(thread_t *curr, thread_t *next);
 
 static spinlock_t slock = SPINLOCK_INIT;
+static list_t g_thread_list = LIST_INIT;
 
 static thread_t *sched_next()
 {

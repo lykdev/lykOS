@@ -64,7 +64,7 @@ static u64 read(vfs_node_t *self, u64 offset, void *buffer, u64 size)
     if (self->type != VFS_NODE_FILE)
         return -1;
 
-    initrd_entry_t *entry = self->mp_node;
+    initrd_entry_t *entry = self->mp_data;
     uint file_content_size = ustar_read_field(entry->ustar_data->size, 12);
 
     if (offset >= file_content_size)
@@ -90,7 +90,7 @@ static vfs_node_t *lookup(vfs_node_t *self, const char *name)
 
     // Maybe optimise this later... if you care enough.
     char path[100] = "";
-    strcat(path, ((initrd_entry_t *)self->mp_node)->ustar_data->filename);
+    strcat(path, ((initrd_entry_t *)self->mp_data)->ustar_data->filename);
     strcat(path, "/");
     strcat(path, name);
 
@@ -104,14 +104,14 @@ static vfs_node_t *lookup(vfs_node_t *self, const char *name)
     return NULL;
 }
 
-const char *list(vfs_node_t *self, uint *index)
+const char *list(vfs_node_t *self, u64 *hint)
 {
     if (self->type != VFS_NODE_DIR)
         return NULL;
 
     // Maybe optimise this later... if you care enough.
     char path[100] = "";
-    strcat(path, ((initrd_entry_t *)self->mp_node)->ustar_data->filename);
+    strcat(path, ((initrd_entry_t *)self->mp_data)->ustar_data->filename);
     strcat(path, "/");
 
     uint l_index = 0;
@@ -120,9 +120,9 @@ const char *list(vfs_node_t *self, uint *index)
         initrd_entry_t *node = LIST_GET_CONTAINER(n, initrd_entry_t, list_elem);
         if (strncmp(path, node->ustar_data->filename, strlen(path)) == 0)
         {
-            if (l_index == *index)
+            if (l_index == *hint)
             {
-                (*index)++;
+                (*hint)++;
                 return (const char *)&node->ustar_data->filename[strlen(path)];
             }
             else
@@ -151,7 +151,7 @@ static void process_entry(ustar_hdr_t *hdr)
 
     node->vfs_node = (vfs_node_t) {
         .type = hdr->type == '5' ? VFS_NODE_DIR : VFS_NODE_FILE,
-        .mp_node = node,
+        .mp_data = node,
         .ops = &g_node_ops
     };
 

@@ -17,9 +17,7 @@
 list_t g_smp_cpu_core_list = LIST_INIT;
 bool g_smp_initialized = false;
 
-extern __attribute__((naked)) void arch_sched_context_switch(thread_t *curr, thread_t *next);
-
-static proc_t *g_idle_proc;
+static proc_t *g_idle_proc = NULL;
 
 #include <arch/x86_64/io.h>
 
@@ -53,10 +51,10 @@ static void core_init(struct limine_mp_info *mp_info)
     g_cores_initialized++;
     if (g_cores_initialized == request_mp.response->cpu_count)
         g_smp_initialized = true;
+    arch_cpu_write_thread_reg(idle_thread);
 
     spinlock_release(&slock);
 
-    arch_cpu_write_thread_reg(idle_thread);
     thread_idle_func();
 }
 

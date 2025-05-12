@@ -16,7 +16,6 @@
 
 /// @brief Last ID assigned to a thread.
 static u64 g_last_id = 0;
-list_t g_thread_list = LIST_INIT;
 
 extern void x86_64_thread_userspace_init();
 

@@ -20,7 +20,7 @@ void spinlock_acquire(volatile spinlock_t *slock)
         {
             arch_cpu_relax();
 
-            if (deadlock_cnt++ >= 100'000'000)
+            if (deadlock_cnt++ >= 3'000'000)
                 panic("Deadlock occured. Return addr: %llx", __builtin_return_address(0));
         }
     }

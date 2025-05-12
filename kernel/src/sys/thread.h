@@ -38,6 +38,4 @@ struct thread
     list_node_t mutex_wait_queue_node;
 };
 
-extern list_t g_thread_list;
-
 thread_t *thread_new(proc_t *parent_proc, uptr entry);
