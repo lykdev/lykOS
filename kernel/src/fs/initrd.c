@@ -104,7 +104,7 @@ static vfs_node_t *lookup(vfs_node_t *self, const char *name)
     return NULL;
 }
 
-const char *list(vfs_node_t *self, uint *index)
+const char *list(vfs_node_t *self, u64 *hint)
 {
     if (self->type != VFS_NODE_DIR)
         return NULL;
@@ -120,9 +120,9 @@ const char *list(vfs_node_t *self, uint *index)
         initrd_entry_t *node = LIST_GET_CONTAINER(n, initrd_entry_t, list_elem);
         if (strncmp(path, node->ustar_data->filename, strlen(path)) == 0)
         {
-            if (l_index == *index)
+            if (l_index == *hint)
             {
-                (*index)++;
+                (*hint)++;
                 return (const char *)&node->ustar_data->filename[strlen(path)];
             }
             else

@@ -17,13 +17,12 @@
 list_t g_smp_cpu_core_list = LIST_INIT;
 bool g_smp_initialized = false;
 
-static proc_t *g_idle_proc;
+static proc_t *g_idle_proc = NULL;
 
 #include <arch/x86_64/io.h>
 
 static void thread_idle_func()
 {
-    log("idle %llx", arch_cpu_read_thread_reg());
     while (true)
         sched_yield(THREAD_STATE_BLOCKED);
 }
@@ -49,11 +48,10 @@ static void core_init(struct limine_mp_info *mp_info)
     list_append(&g_smp_cpu_core_list, &cpu_core->list_elem);
     idle_thread->assigned_core = cpu_core;
 
-    arch_cpu_write_thread_reg(idle_thread);
-    // CPU thread register must be set before g_smp_initialized is set to true.
     g_cores_initialized++;
     if (g_cores_initialized == request_mp.response->cpu_count)
         g_smp_initialized = true;
+    arch_cpu_write_thread_reg(idle_thread);
 
     spinlock_release(&slock);
 

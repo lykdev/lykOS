@@ -26,7 +26,6 @@ thread_t *thread_new(proc_t *parent_proc, uptr entry)
     ASSERT(parent_proc != NULL);
 
     thread_t *thread = heap_alloc(sizeof(thread_t));
-    log("thread: %llx", thread);
     *thread = (thread_t) {
 #if defined(__x86_64__)
         .self = thread,

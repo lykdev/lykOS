@@ -54,17 +54,14 @@ static void *cache_alloc_from_slabs(kmem_cache_t *cache)
 static kmem_magazine_t *cache_make_magazine(kmem_cache_t *cache, bool populate)
 {
     kmem_magazine_t *mag = (kmem_magazine_t*)((uptr)pmm_alloc(0) + HHDM);
-    mag->count = 0;
-
-    if (!populate)
-        return mag;
 
     spinlock_acquire(&cache->slabs_lock);
-
-    while (mag->count < MAG_SIZE)
-        mag->objects[mag->count++] = cache_alloc_from_slabs(cache);
-
+    for (size_t i = 0; i < MAG_SIZE; i++)
+        mag->objects[i] = populate ? cache_alloc_from_slabs(cache) : NULL;
     spinlock_release(&cache->slabs_lock);
+
+    mag->count = populate ? MAG_SIZE : 0;
+    mag->list_node = LIST_NODE_INIT;
 
     return mag;
 }
@@ -140,9 +137,12 @@ void kmem_free_cache(kmem_cache_t *cache, void *obj)
 
     kmem_magazine_t *mag = cpu_cache->loaded;
     if (mag->count < MAG_SIZE)
+    {
         mag->objects[mag->count++] = obj;
+        return;
+    }
 
-    if (cpu_cache->previous && cpu_cache->previous->count < MAG_SIZE)
+    if (cpu_cache->previous->count == 0)
     {
         cpu_cache->loaded = cpu_cache->previous;
         cpu_cache->previous = mag;

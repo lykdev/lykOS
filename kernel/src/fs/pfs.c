@@ -1,10 +1,12 @@
 #include "pfs.h"
 
+#include <common/log.h>
 #include <mm/heap.h>
 #include <lib/list.h>
 #include <lib/string.h>
 
 static vfs_node_t* lookup(vfs_node_t *self, const char *name);
+static const char* list(vfs_node_t *self, u64 *hint);
 static vfs_node_t* create(vfs_node_t *self, vfs_node_type_t t, char *name);
 
 typedef struct
@@ -18,6 +20,7 @@ node_t;
 
 static vfs_node_ops_t g_node_dir_ops = (vfs_node_ops_t) {
     .lookup = lookup,
+    .list = list,
     .create = create
 };
 
@@ -33,6 +36,25 @@ static vfs_node_t* lookup(vfs_node_t *self, const char *name)
     }
 
     return NULL;
+}
+
+static const char* list(vfs_node_t *self, u64 *hint)
+{
+    node_t *parent_node = (node_t*)(self);
+
+    if (*hint == 0)
+    {
+        node_t *entry = (node_t*)(*hint);
+        *hint = (u64)entry;
+        return entry->vfs_node.name;
+    }
+    if (*hint == 0xFFFF)
+    {
+
+        return NULL;
+    }
+
+    *hint = (u64)entry->list_node.next;
 }
 
 static vfs_node_t* create(vfs_node_t *self, vfs_node_type_t type, char *name)

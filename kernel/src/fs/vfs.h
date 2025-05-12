@@ -45,7 +45,7 @@ struct vfs_node_ops
     u64 (*read)(vfs_node_t *self, u64 offset, void *buffer, u64 count);
     u64 (*write)(vfs_node_t *self, u64 offset, void *buffer, u64 count);
     vfs_node_t* (*lookup)(vfs_node_t *self, const char *name);
-    const char* (*list)(vfs_node_t *self, uint *index);
+    const char* (*list)(vfs_node_t *self, u64 *hint);
     vfs_node_t* (*create)(vfs_node_t *self, vfs_node_type_t t, char *name);
 };
 
