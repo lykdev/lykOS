@@ -66,7 +66,7 @@ source/modules {
 }
 
 package/modules {
-    dependencies: [source/kernel, source/modules, image/python3, image/clang]
+    dependencies: [source/kernel, source/modules, image/python3, image/clang, image/gcc]
     build: <sh>
         $SOURCES_DIR/modules/build.py x86_64 $SOURCES_DIR/kernel/src $BUILD_DIR
     </sh>

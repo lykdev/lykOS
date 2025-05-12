@@ -16,7 +16,7 @@ typedef struct
 }
 node_t;
 
-static vfs_node_ops_t g_node_ops = (vfs_node_ops_t) {
+static vfs_node_ops_t g_node_dir_ops = (vfs_node_ops_t) {
     .lookup = lookup,
     .create = create
 };
@@ -35,16 +35,17 @@ static vfs_node_t* lookup(vfs_node_t *self, const char *name)
     return NULL;
 }
 
-static vfs_node_t* create(vfs_node_t *self, vfs_node_type_t t, char *name)
+static vfs_node_t* create(vfs_node_t *self, vfs_node_type_t type, char *name)
 {
     node_t *parent_node = (node_t*)(self);
+
     spinlock_acquire(&parent_node->spinlock);
 
     node_t *new_node = heap_alloc(sizeof(node_t));
     *new_node = (node_t) {
         .vfs_node = (vfs_node_t) {
-            .type = t,
-            .ops = &g_node_ops
+            .type = type,
+            .ops = type == VFS_NODE_DIR ? &g_node_dir_ops : NULL
         },
         .children = LIST_INIT,
         .spinlock = SPINLOCK_INIT,
@@ -61,12 +62,12 @@ static vfs_node_t* create(vfs_node_t *self, vfs_node_type_t t, char *name)
 vfs_mountpoint_t *pfs_new_mp(const char *name)
 {
     vfs_mountpoint_t *mp = heap_alloc(sizeof(vfs_mountpoint_t));
-    node_t *root_node = heap_alloc(sizeof(vfs_node_t));
+    node_t *root_node = heap_alloc(sizeof(node_t));
 
     *root_node = (node_t) {
         .vfs_node = (vfs_node_t) {
             .type = VFS_NODE_DIR,
-            .ops = &g_node_ops
+            .ops = &g_node_dir_ops
         },
         .children = LIST_INIT,
         .spinlock = SPINLOCK_INIT,

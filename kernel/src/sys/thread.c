@@ -16,7 +16,6 @@
 
 /// @brief Last ID assigned to a thread.
 static u64 g_last_id = 0;
-list_t g_thread_list = LIST_INIT;
 
 extern void x86_64_thread_userspace_init();
 
@@ -27,6 +26,7 @@ thread_t *thread_new(proc_t *parent_proc, uptr entry)
     ASSERT(parent_proc != NULL);
 
     thread_t *thread = heap_alloc(sizeof(thread_t));
+    log("thread: %llx", thread);
     *thread = (thread_t) {
 #if defined(__x86_64__)
         .self = thread,

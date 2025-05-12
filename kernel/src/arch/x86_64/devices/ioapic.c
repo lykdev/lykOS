@@ -40,13 +40,6 @@ typedef struct
 __attribute__((packed))
 madt_int_source_override_t;
 
-typedef struct
-{
-    u8  dest;
-    u16 flags;
-}
-irq_redirect_t;
-
 #define IOREGSEL  0x00
 #define IOWIN     0x10
 
@@ -81,7 +74,12 @@ ioapic_redirect_t;
 
 static uptr g_ioapic_base;
 
-static irq_redirect_t g_irq_redirection_table[16] = {
+static struct
+{
+    u8  dest;
+    u16 flags;
+}
+g_irq_redirection_table[16] = {
     {  0, 0 },
     {  1, 0 },
     {  2, 0 },

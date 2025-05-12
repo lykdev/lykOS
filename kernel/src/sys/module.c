@@ -107,6 +107,14 @@ module_t *module_load(vfs_node_t *file)
         }
     }
 
+    if (module.install == NULL
+    ||  module.destroy == NULL
+    ||  module.probe == NULL)
+    {
+        log("Module `%s` does not implement required functions.", file->name);
+        return NULL;
+    }
+
     // Load relocation sections.
     for (size_t i = 0; i < ehdr.e_shnum; i++)
     {

@@ -44,31 +44,31 @@ void _entry()
     heap_init();
     vmm_init();
 
-    pci_list();
-
     vfs_init();
     initrd_init();
 
+    vfs_mount("/sys", pfs_new_mp("sys"));
     vfs_mount("/dev", pfs_new_mp("dev"));
-    vfs_mount("/mod", pfs_new_mp("mod"));
+
+    pci_list();
 
     // Load kernel modules.
-    {
-        ksym_load_symbols();
+    // {
+    //     ksym_load_symbols();
 
-        vfs_node_t *module_dir = vfs_lookup("/modules");
-        if (module_dir == NULL || module_dir->type != VFS_NODE_DIR)
-            panic("Could not find directory `/modules`.");
-        uint idx = 0;
-        const char *name;
-        while ((name = module_dir->ops->list(module_dir, &idx)))
-        {
-            log("Loading module `%s`.", name);
-            vfs_node_t *file = module_dir->ops->lookup(module_dir, name);
-            module_t *mod = module_load(file);
-            mod->install();
-        }
-    }
+    //     vfs_node_t *module_dir = vfs_lookup("/modules");
+    //     if (module_dir == NULL || module_dir->type != VFS_NODE_DIR)
+    //         panic("Could not find directory `/modules`.");
+    //     uint idx = 0;
+    //     const char *name;
+    //     while ((name = module_dir->ops->list(module_dir, &idx)))
+    //     {
+    //         log("Loading module `%s`.", name);
+    //         vfs_node_t *file = module_dir->ops->lookup(module_dir, name);
+    //         module_t *mod = module_load(file);
+    //         mod->install();
+    //     }
+    // }
 
     dev_fb_init();
 
@@ -96,6 +96,7 @@ void _entry()
             log("Loading executable `%s`.", name);
             vfs_node_t *file = init_dir->ops->lookup(init_dir, name);
             proc_t *proc = exec_load(file);
+            log("so %llx", LIST_GET_CONTAINER(proc->threads.head, thread_t, list_elem_inside_proc));
             sched_queue_add(LIST_GET_CONTAINER(proc->threads.head, thread_t, list_elem_inside_proc));
         }
     }

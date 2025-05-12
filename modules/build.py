@@ -27,6 +27,7 @@ CFLAGS = [
     "-Wall",
     "-Wextra",
     "-mcmodel=large",
+    "-mgeneral-regs-only",
     "-O2",
     f"-I{INCLUDE_DIR}"
 ]

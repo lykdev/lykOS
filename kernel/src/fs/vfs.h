@@ -37,7 +37,7 @@ struct vfs_node
 
     vfs_node_ops_t *ops;
 
-    void *mp_node;
+    void *mp_data;
 };
 
 struct vfs_node_ops

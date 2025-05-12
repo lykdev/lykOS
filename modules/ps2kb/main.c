@@ -35,18 +35,18 @@ void keyboard_irq_handler()
     }
 }
 
+void __module_probe()
+{
+
+}
+
 void __module_install()
 {
     x86_64_ioapic_map_legacy_irq(1, 0, 0, 0, 1);
     arch_int_irq_register_handler(1, keyboard_irq_handler);
 }
 
-void __module_destroy()
-{
-
-}
-
-void __module_probe()
+void __module_destroy(void *hint)
 {
 
 }
