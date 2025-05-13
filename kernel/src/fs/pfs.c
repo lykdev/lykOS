@@ -1,6 +1,8 @@
 #include "pfs.h"
 
+#include <common/assert.h>
 #include <common/log.h>
+#include <common/hhdm.h>
 #include <mm/heap.h>
 #include <lib/list.h>
 #include <lib/string.h>
@@ -16,7 +18,7 @@ typedef struct
     spinlock_t spinlock;
     list_node_t list_node;
 }
-node_t;
+pfs_node_t;
 
 static vfs_node_ops_t g_node_dir_ops = (vfs_node_ops_t) {
     .lookup = lookup,
@@ -26,11 +28,11 @@ static vfs_node_ops_t g_node_dir_ops = (vfs_node_ops_t) {
 
 static vfs_node_t* lookup(vfs_node_t *self, const char *name)
 {
-    node_t *parent_node = (node_t*)(self);
+    pfs_node_t *parent_node = (pfs_node_t*)(self);
 
     FOREACH(n, parent_node->children)
     {
-        node_t *child = LIST_GET_CONTAINER(n, node_t, list_node);
+        pfs_node_t *child = LIST_GET_CONTAINER(n, pfs_node_t, list_node);
         if (strcmp(child->vfs_node.name, name) == 0)
             return &child->vfs_node;
     }
@@ -40,31 +42,41 @@ static vfs_node_t* lookup(vfs_node_t *self, const char *name)
 
 static const char* list(vfs_node_t *self, u64 *hint)
 {
-    node_t *parent_node = (node_t*)(self);
+    pfs_node_t *parent = (pfs_node_t*)(self);
 
-    if (*hint == 0)
-    {
-        node_t *entry = (node_t*)(*hint);
-        *hint = (u64)entry;
-        return entry->vfs_node.name;
-    }
     if (*hint == 0xFFFF)
-    {
+        return NULL;
 
+    list_node_t *next;
+    if (*hint == 0)
+        next = parent->children.head;
+    else
+    {
+        // The hint points to a data structure that should be located in the higher half.
+        ASSERT(*hint > HHDM);
+        next = ((list_node_t*)*hint)->next;
+    }
+
+    if (next)
+    {
+        *hint = (u64)next;
+        return LIST_GET_CONTAINER(next, pfs_node_t, list_node)->vfs_node.name;
+    }
+    else
+    {
+        *hint = 0xFFFF;
         return NULL;
     }
-
-    *hint = (u64)entry->list_node.next;
 }
 
 static vfs_node_t* create(vfs_node_t *self, vfs_node_type_t type, char *name)
 {
-    node_t *parent_node = (node_t*)(self);
+    pfs_node_t *parent_node = (pfs_node_t*)(self);
 
     spinlock_acquire(&parent_node->spinlock);
 
-    node_t *new_node = heap_alloc(sizeof(node_t));
-    *new_node = (node_t) {
+    pfs_node_t *new_node = heap_alloc(sizeof(pfs_node_t));
+    *new_node = (pfs_node_t) {
         .vfs_node = (vfs_node_t) {
             .type = type,
             .ops = type == VFS_NODE_DIR ? &g_node_dir_ops : NULL
@@ -84,9 +96,9 @@ static vfs_node_t* create(vfs_node_t *self, vfs_node_type_t type, char *name)
 vfs_mountpoint_t *pfs_new_mp(const char *name)
 {
     vfs_mountpoint_t *mp = heap_alloc(sizeof(vfs_mountpoint_t));
-    node_t *root_node = heap_alloc(sizeof(node_t));
+    pfs_node_t *root_node = heap_alloc(sizeof(pfs_node_t));
 
-    *root_node = (node_t) {
+    *root_node = (pfs_node_t) {
         .vfs_node = (vfs_node_t) {
             .type = VFS_NODE_DIR,
             .ops = &g_node_dir_ops

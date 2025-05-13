@@ -100,14 +100,6 @@ void _entry()
         }
     }
 
-    vfs_node_t *init_dir = vfs_lookup("/sys/pci");
-    if (init_dir == NULL || init_dir->type != VFS_NODE_DIR)
-        panic("Could not find directory `/sys/pci`.");
-    u64 idx = 0;
-    const char *name;
-    while ((name = init_dir->ops->list(init_dir, &idx)))
-        log("%s", name);
-
     smp_init();
 
     log("Kernel end.");
