@@ -85,6 +85,7 @@ void pci_list()
                         continue;
 
                     // Create FS entry.
+                    // CC:SS:PP
                     char name[16];
                     sprintf(name, "%02X:%02X:%02X", pci_hdr->class, pci_hdr->subclass, pci_hdr->prog_if);
                     vfs_node_t *file = pci_dir->ops->create(pci_dir, VFS_NODE_FILE, name);

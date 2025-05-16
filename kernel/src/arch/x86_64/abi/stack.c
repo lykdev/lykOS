@@ -22,6 +22,7 @@ uptr x86_64_abi_stack_setup(vmm_addr_space_t *as, size_t stack_size, char **argv
 {
     ASSERT(stack_size % ARCH_PAGE_GRAN == 0);
 
+    // TODO: use vmm_alloc
     uptr stack_ptr = vmm_find_space(as, stack_size);
     vmm_map_anon(as, stack_ptr, stack_size, VMM_FULL);
     uptr stack = (uptr) stack_ptr + stack_size - 1;
@@ -38,7 +39,6 @@ uptr x86_64_abi_stack_setup(vmm_addr_space_t *as, size_t stack_size, char **argv
     uptr env_data = stack;
 
     stack -= (stack - (12 + 1 + envc + 1 + argc + 1) * sizeof(u64)) % 0x10;
-
 
     // Null auxiliary vector entry.
     WRITE_AUX(0, 0);
