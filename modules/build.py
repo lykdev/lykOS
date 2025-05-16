@@ -46,5 +46,14 @@ for module in os.listdir(os.path.dirname(__file__)):
     if not sources:
         continue
 
+    object_files = []
+    for src in sources:
+        obj = os.path.join(BUILD_DIR, os.path.basename(src).replace(".c", ".o"))
+        subprocess.run(["clang", *CFLAGS, "-c", src, "-o", obj], check=True)
+        object_files.append(obj)
+
     output = os.path.join(BUILD_DIR, module + ".elf")
-    subprocess.run(["clang", *CFLAGS, "-c", *sources, "-o", output], check=True)
+    subprocess.run(["ld.lld", "-r", "-o", output, *object_files], check=True)
+
+    for obj in object_files:
+        os.remove(obj)
