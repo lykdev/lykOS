@@ -7,7 +7,7 @@ typedef struct
 {
     void (*install)();
     void (*destroy)();
-    void (*probe)();
+    bool (*probe)();
 
     vfs_node_t *mod_fs_node;
 }

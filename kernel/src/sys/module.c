@@ -5,8 +5,10 @@
 #include <common/log.h>
 #include <common/panic.h>
 #include <lib/def.h>
+#include <lib/math.h>
 #include <lib/string.h>
 #include <mm/heap.h>
+#include <mm/vmm.h>
 #include <sys/ksym.h>
 
 list_t g_mod_module_list = LIST_INIT;
@@ -42,9 +44,12 @@ module_t *module_load(vfs_node_t *file)
         &&  section->sh_size != 0
         &&  section->sh_flags & SHF_ALLOC)
         {
-            void *mem = heap_alloc(section->sh_size);
-            file->ops->read(file, section->sh_offset, mem, section->sh_size);
-            section_addr[i] = (uptr)mem;
+            // TODO: use vmm_alloc
+            u64 size = CEIL(section->sh_size, ARCH_PAGE_GRAN);
+            uptr mem = vmm_find_space(g_vmm_kernel_addr_space, size);
+            vmm_map_anon(g_vmm_kernel_addr_space, mem, size, VMM_FULL);
+            file->ops->read(file, section->sh_offset, (void*)mem, section->sh_size);
+            section_addr[i] = mem;
         }
     }
 
@@ -101,7 +106,7 @@ module_t *module_load(vfs_node_t *file)
             else if (strcmp(name, "__module_destroy") == 0)
                 module.destroy = (void(*)())sym->st_value;
             else if (strcmp(name, "__module_probe") == 0)
-                module.probe   = (void(*)())sym->st_value;
+                module.probe   = (bool(*)())sym->st_value;
 
             break;
         }

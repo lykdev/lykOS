@@ -66,7 +66,9 @@ void _entry()
             log("Loading module `%s`.", name);
             vfs_node_t *file = module_dir->ops->lookup(module_dir, name);
             module_t *mod = module_load(file);
-            mod->install();
+
+            if (mod->probe())
+                mod->install();
         }
     }
 
