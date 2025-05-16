@@ -31,8 +31,14 @@ static void vmm_insert_seg(vmm_addr_space_t *addr_space, vmm_seg_t *seg)
 
         if (i->base < seg->base)
             pos = n;
+        else
+            break; // Given that the list is sorted, an earlier position must have been found.
     }
-    list_insert_after(&addr_space->segments, pos, &seg->list_elem);
+
+    if (pos)
+        list_insert_after(&addr_space->segments, pos, &seg->list_elem);
+    else
+        list_prepend(&addr_space->segments, &seg->list_elem);
 
     spinlock_release(&addr_space->slock);
 }
@@ -42,21 +48,18 @@ uptr vmm_find_space(vmm_addr_space_t *addr_space, u64 len)
     if (list_is_empty(&addr_space->segments))
         return addr_space->limit_low;
 
-    uptr start;
+    uptr start = addr_space->limit_low;
     FOREACH(n, addr_space->segments)
     {
-        vmm_seg_t *seg1 = LIST_GET_CONTAINER(n, vmm_seg_t, list_elem);
-        start = seg1->base + seg1->len;
-
-        if (n->next != NULL)
-        {
-            vmm_seg_t *seg2 = LIST_GET_CONTAINER(n->next, vmm_seg_t, list_elem);
-
-            if (start + len < seg2->base)
-                break;
-        }
+        vmm_seg_t *seg = LIST_GET_CONTAINER(n, vmm_seg_t, list_elem);
+        // If there's enough space between current start and this segment.
+        if (start + len < seg->base)
+            break;
+        // Update start to point to the end of this segment.
+        start = seg->base + seg->len;
     }
 
+    // Check if there us space after the last segment.
     if (start + len - 1 <= addr_space->limit_high)
         return start;
 
@@ -196,7 +199,7 @@ void vmm_init()
 {
     arch_ptm_init();
 
-    g_vmm_kernel_addr_space = vmm_new_addr_space(ARCH_HIGHER_HALF_START, ARCH_MAX_VIRT_ADDR);
+    g_vmm_kernel_addr_space = vmm_new_addr_space(ARCH_KERNEL_MIN_VIRT, ARCH_KERNEL_MAX_VIRT);
 
     g_segment_cache = kmem_new_cache("VMM Segment Cache", sizeof(vmm_seg_t));
 

@@ -1,5 +1,6 @@
 #include "proc.h"
 
+#include <arch/types.h>
 #include <common/assert.h>
 #include <common/hhdm.h>
 #include <common/log.h>
@@ -19,7 +20,7 @@ proc_t *proc_new(proc_type_t type)
     *proc = (proc_t) {
         .id = g_last_id++,
         .type = type,
-        .addr_space = (type == PROC_KERNEL) ? g_vmm_kernel_addr_space : vmm_new_addr_space(0, HHDM - 1),
+        .addr_space = (type == PROC_KERNEL) ? g_vmm_kernel_addr_space : vmm_new_addr_space(ARCH_USER_MIN_VIRT, ARCH_USER_MAX_VIRT),
         .threads = LIST_INIT,
         .resource_table = resource_table_new()
     };
