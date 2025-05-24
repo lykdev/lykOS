@@ -133,9 +133,11 @@ const char *list(vfs_node_t *self, u64 *hint)
     return NULL;
 }
 
-static vfs_node_ops_t g_node_ops = (vfs_node_ops_t) {
+static vfs_node_ops_file_t g_file_ops = (vfs_node_ops_file_t) {
     .read = read,
-    .write = NULL,
+};
+
+static vfs_node_ops_dir_t g_dir_ops = (vfs_node_ops_dir_t) {
     .lookup = lookup,
     .list = list
 };
@@ -152,8 +154,13 @@ static void process_entry(ustar_hdr_t *hdr)
     node->vfs_node = (vfs_node_t) {
         .type = hdr->type == '5' ? VFS_NODE_DIR : VFS_NODE_FILE,
         .mp_data = node,
-        .ops = &g_node_ops
+        .ops = hdr->type == '5' ? (void*)&g_dir_ops : (void*)&g_file_ops
     };
+    char *p = strrchr(hdr->filename, '/');
+    if (p)
+        strcpy(node->vfs_node.name, p + 1);
+    else
+        strcpy(node->vfs_node.name, hdr->filename);
 
     list_append(&g_entry_list, &node->list_elem);
 }

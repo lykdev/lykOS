@@ -15,7 +15,7 @@ bool __module_probe()
 
     u64 idx = 0;
     const char *name;
-    while ((name = dir->ops->list(dir, &idx)))
+    while ((name = dir->dir_ops->list(dir, &idx)))
         // Mass Storage Controller - Serial ATA Controller - AHCI
         if (strcmp(name, "01:06:01"))
             return true;
@@ -29,7 +29,7 @@ void __module_install()
 {
     pci_header_type0_t pci_hdr;
     vfs_node_t *file = vfs_lookup("/sys/pci/01:06:01");
-    file->ops->read(file, 0, &pci_hdr, sizeof(pci_header_type0_t));
+    file->file_ops->read(file, 0, &pci_hdr, sizeof(pci_header_type0_t));
 
     ahci_setup(pci_hdr.bar[5]);
 

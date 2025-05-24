@@ -15,5 +15,5 @@ int syscall_write(int fd, void *buf, u64 count)
     if (node == NULL)
         return -1;
 
-    return node->ops->write(node, res->offset, buf, count);
+    return node->file_ops->write(node, res->offset, buf, count);
 }

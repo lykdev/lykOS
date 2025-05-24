@@ -59,12 +59,11 @@ void _entry()
         vfs_node_t *module_dir = vfs_lookup("/modules");
         if (module_dir == NULL || module_dir->type != VFS_NODE_DIR)
             panic("Could not find directory `/modules`.");
-        uint idx = 0;
+        u64 idx = 0;
         const char *name;
-        while ((name = module_dir->ops->list(module_dir, &idx)))
+        while ((name = module_dir->dir_ops->list(module_dir, &idx)))
         {
-            log("Loading module `%s`.", name);
-            vfs_node_t *file = module_dir->ops->lookup(module_dir, name);
+            vfs_node_t *file = module_dir->dir_ops->lookup(module_dir, name);
             module_t *mod = module_load(file);
 
             if (mod->probe())
@@ -82,7 +81,7 @@ void _entry()
 
     vfs_node_t *fb = vfs_lookup("/dev/fb");
     ASSERT(fb != NULL);
-    fb->ops->write(fb, 0, pix, 100 * 4);
+    fb->file_ops->write(fb, 0, pix, 100 * 4);
 
     arch_syscall_init();
 
@@ -91,12 +90,11 @@ void _entry()
         vfs_node_t *init_dir = vfs_lookup("/usr/bin");
         if (init_dir == NULL || init_dir->type != VFS_NODE_DIR)
             panic("Could not find directory `/usr/bin`.");
-        uint idx = 0;
+        u64 idx = 0;
         const char *name;
-        while ((name = init_dir->ops->list(init_dir, &idx)))
+        while ((name = init_dir->dir_ops->list(init_dir, &idx)))
         {
-            log("Loading executable `%s`.", name);
-            vfs_node_t *file = init_dir->ops->lookup(init_dir, name);
+            vfs_node_t *file = init_dir->dir_ops->lookup(init_dir, name);
             proc_t *proc = exec_load(file);
             sched_queue_add(LIST_GET_CONTAINER(proc->threads.head, thread_t, list_elem_inside_proc));
         }

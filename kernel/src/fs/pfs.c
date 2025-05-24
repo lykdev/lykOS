@@ -20,7 +20,7 @@ typedef struct
 }
 pfs_node_t;
 
-static vfs_node_ops_t g_node_dir_ops = (vfs_node_ops_t) {
+static vfs_node_ops_dir_t g_node_dir_ops = (vfs_node_ops_dir_t) {
     .lookup = lookup,
     .list = list,
     .create = create
@@ -79,7 +79,7 @@ static vfs_node_t* create(vfs_node_t *self, vfs_node_type_t type, char *name)
     *new_node = (pfs_node_t) {
         .vfs_node = (vfs_node_t) {
             .type = type,
-            .ops = type == VFS_NODE_DIR ? &g_node_dir_ops : NULL
+            .dir_ops = type == VFS_NODE_DIR ? &g_node_dir_ops : NULL
         },
         .children = LIST_INIT,
         .spinlock = SPINLOCK_INIT,
@@ -101,7 +101,7 @@ vfs_mountpoint_t *pfs_new_mp(const char *name)
     *root_node = (pfs_node_t) {
         .vfs_node = (vfs_node_t) {
             .type = VFS_NODE_DIR,
-            .ops = &g_node_dir_ops
+            .dir_ops = &g_node_dir_ops
         },
         .children = LIST_INIT,
         .spinlock = SPINLOCK_INIT,

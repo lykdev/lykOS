@@ -7,7 +7,6 @@
 #include <lib/string.h>
 #include <mm/heap.h>
 #include <mm/vmm.h>
-#include <sys/streams/streams.h>
 
 /// @brief Last ID assigned to a process.
 static u64 g_last_id = 0;
@@ -25,8 +24,8 @@ proc_t *proc_new(proc_type_t type)
         .resource_table = resource_table_new()
     };
 
-    resource_table_expand(&proc->resource_table, 3);
-    resource_create_at(&proc->resource_table, 1, stdout_new(), 0, RESOURCE_WRITE, false);
+    // resource_table_expand(&proc->resource_table, 3);
+    // resource_create_at(&proc->resource_table, 1, stdout_new(), 0, RESOURCE_WRITE, false);
 
     list_append(&g_proc_list, &proc->list_elem);
     return proc;

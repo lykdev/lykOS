@@ -6,13 +6,6 @@
 #define VFS_MAX_NAME_LEN 64
 
 typedef struct vfs_node vfs_node_t;
-typedef struct vfs_mountpoint vfs_mountpoint_t;
-typedef struct vfs_node_ops vfs_node_ops_t;
-
-struct vfs_mountpoint
-{
-    vfs_node_t *root_node;
-};
 
 typedef enum
 {
@@ -22,6 +15,40 @@ typedef enum
     VFS_NODE_BLOCK
 }
 vfs_node_type_t;
+
+typedef struct
+{
+    u64 (*read) (vfs_node_t *self, u64 offset, void *buffer, u64 count);
+    u64 (*write)(vfs_node_t *self, u64 offset, void *buffer, u64 count);
+}
+vfs_node_ops_file_t;
+
+typedef struct
+{
+    vfs_node_t* (*lookup)(vfs_node_t *self, const char *name);
+    const char* (*list)  (vfs_node_t *self, u64 *hint);
+    vfs_node_t* (*create)(vfs_node_t *self, vfs_node_type_t t, char *name);
+}
+vfs_node_ops_dir_t;
+
+typedef struct
+{
+    u64 (*read) (vfs_node_t *self, u64 offset, void *buffer, u64 count);
+    u64 (*write)(vfs_node_t *self, u64 offset, void *buffer, u64 count);
+    int (*poll) (vfs_node_t *self, int events);
+}
+vfs_node_ops_fifo_t;
+
+typedef struct
+{
+    u64 (*send)   (vfs_node_t *self, const void *buffer, u64 count);
+    u64 (*recv)   (vfs_node_t *self, void *buffer, u64 count);
+    int (*connect)(vfs_node_t *self, const char *address);
+    int (*bind)   (vfs_node_t *self, const char *address);
+    int (*listen) (vfs_node_t *self, int backlog);
+    vfs_node_t* (*accept)(vfs_node_t *self);
+}
+vfs_node_ops_socket;
 
 struct vfs_node
 {
@@ -35,19 +62,23 @@ struct vfs_node
     u64 mtime; // Time modified.
     u64 atime; // Time accessed.
 
-    vfs_node_ops_t *ops;
+    union
+    {
+        void *ops;
+        vfs_node_ops_file_t *file_ops;
+        vfs_node_ops_dir_t  *dir_ops;
+        vfs_node_ops_fifo_t *fifo_ops;
+        vfs_node_ops_socket *socket_ops;
+    };
 
     void *mp_data;
 };
 
-struct vfs_node_ops
+typedef struct
 {
-    u64 (*read)(vfs_node_t *self, u64 offset, void *buffer, u64 count);
-    u64 (*write)(vfs_node_t *self, u64 offset, void *buffer, u64 count);
-    vfs_node_t* (*lookup)(vfs_node_t *self, const char *name);
-    const char* (*list)(vfs_node_t *self, u64 *hint);
-    vfs_node_t* (*create)(vfs_node_t *self, vfs_node_type_t t, char *name);
-};
+    vfs_node_t *root_node;
+}
+vfs_mountpoint_t;
 
 int vfs_mount(const char *path, vfs_mountpoint_t *mp);
 

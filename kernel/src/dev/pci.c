@@ -28,7 +28,7 @@ acpi_mcfg_t;
 
 static u64 read(vfs_node_t *self, u64 offset, void *buffer, u64 count)
 {
-    u64 hdr_len;
+    u64 hdr_len = 0;
     pci_header_common_t *hdr = (pci_header_common_t*)self->mp_data;
     switch ((hdr->header_type) & 0b11)
     {
@@ -53,7 +53,7 @@ static u64 read(vfs_node_t *self, u64 offset, void *buffer, u64 count)
     return count;
 }
 
-static vfs_node_ops_t g_node_ops = (vfs_node_ops_t) {
+static vfs_node_ops_file_t g_node_ops = (vfs_node_ops_file_t) {
     .read = read
 };
 
@@ -68,7 +68,7 @@ void pci_list()
 
     // Create /sys/pci
     vfs_node_t *sys_dir = vfs_lookup("/sys");
-    vfs_node_t *pci_dir = sys_dir->ops->create(sys_dir, VFS_NODE_DIR, "pci");
+    vfs_node_t *pci_dir = sys_dir->dir_ops->create(sys_dir, VFS_NODE_DIR, "pci");
 
     for (u64 i = 0; i < (mcfg->sdt.length - sizeof(acpi_mcfg_t)) / 16; i++)
     {
@@ -88,8 +88,8 @@ void pci_list()
                     // CC:SS:PP
                     char name[16];
                     sprintf(name, "%02X:%02X:%02X", pci_hdr->class, pci_hdr->subclass, pci_hdr->prog_if);
-                    vfs_node_t *file = pci_dir->ops->create(pci_dir, VFS_NODE_FILE, name);
-                    file->ops = &g_node_ops;
+                    vfs_node_t *file = pci_dir->dir_ops->create(pci_dir, VFS_NODE_FILE, name);
+                    file->file_ops = &g_node_ops;
                     file->mp_data = pci_hdr;
 
                     log("PCI: %X %X %02X:%02X:%02X", pci_hdr->vendor_id, pci_hdr->device_id, pci_hdr->class, pci_hdr->subclass, pci_hdr->prog_if);

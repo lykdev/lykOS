@@ -15,10 +15,15 @@ list_t g_mod_module_list = LIST_INIT;
 
 module_t *module_load(vfs_node_t *file)
 {
+    log("Loading module `%s`.", file->name);
     module_t module;
 
     Elf64_Ehdr ehdr;
-    file->ops->read(file, 0, &ehdr, sizeof(Elf64_Ehdr));
+    if (file->file_ops->read(file, 0, &ehdr, sizeof(Elf64_Ehdr)) != sizeof(Elf64_Ehdr))
+    {
+        log("Could not read file header!");
+        return NULL;
+    };
 
     if (!elf_check_compatibility(&ehdr))
     {
@@ -37,7 +42,7 @@ module_t *module_load(vfs_node_t *file)
 
     for(int i = 0; i < ehdr.e_shnum; i++)
     {
-        file->ops->read(file, ehdr.e_shoff + (ehdr.e_shentsize * i), &shdr[i], sizeof(Elf64_Shdr));
+        file->file_ops->read(file, ehdr.e_shoff + (ehdr.e_shentsize * i), &shdr[i], sizeof(Elf64_Shdr));
         Elf64_Shdr *section = &shdr[i];
 
         if (section->sh_type == SHT_PROGBITS
@@ -48,7 +53,7 @@ module_t *module_load(vfs_node_t *file)
             u64 size = CEIL(section->sh_size, ARCH_PAGE_GRAN);
             uptr mem = vmm_find_space(g_vmm_kernel_addr_space, size);
             vmm_map_anon(g_vmm_kernel_addr_space, mem, size, VMM_FULL);
-            file->ops->read(file, section->sh_offset, (void*)mem, section->sh_size);
+            file->file_ops->read(file, section->sh_offset, (void*)mem, section->sh_size);
             section_addr[i] = mem;
         }
     }
@@ -64,7 +69,7 @@ module_t *module_load(vfs_node_t *file)
         return NULL;
     }
     CLEANUP void *symtab = heap_alloc(symtab_hdr->sh_size);
-    file->ops->read(file, symtab_hdr->sh_offset, symtab, symtab_hdr->sh_size);
+    file->file_ops->read(file, symtab_hdr->sh_offset, symtab, symtab_hdr->sh_size);
 
     // String table.
     Elf64_Shdr *strtab_hdr = &shdr[symtab_hdr->sh_link];
@@ -74,7 +79,7 @@ module_t *module_load(vfs_node_t *file)
         return NULL;
     }
     CLEANUP char *strtab = heap_alloc(strtab_hdr->sh_size);
-    file->ops->read(file, strtab_hdr->sh_offset, strtab, strtab_hdr->sh_size);
+    file->file_ops->read(file, strtab_hdr->sh_offset, strtab, strtab_hdr->sh_size);
 
     // Resolve symbols.
     size_t sym_count = symtab_hdr->sh_size / symtab_hdr->sh_entsize;
@@ -129,7 +134,7 @@ module_t *module_load(vfs_node_t *file)
             continue;
 
         Elf64_Rela rela_entries[section->sh_size / section->sh_entsize];
-        file->ops->read(file, section->sh_offset, rela_entries, section->sh_size);
+        file->file_ops->read(file, section->sh_offset, rela_entries, section->sh_size);
 
         for (uint j = 0; j < section->sh_size / section->sh_entsize; j++)
         {

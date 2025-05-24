@@ -104,10 +104,6 @@ void ahci_setup(uptr abar)
         }
 
         port_start(port);
-
-        u8 buf[1024];
-        ahci_read(port, 0, buf, 1);
-        log("%s", (const char*)buf);
     }
 }
 
