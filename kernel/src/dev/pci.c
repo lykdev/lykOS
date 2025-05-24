@@ -26,36 +26,20 @@ typedef struct
 __attribute__((packed))
 acpi_mcfg_t;
 
-static u64 read(vfs_node_t *self, u64 offset, void *buffer, u64 count)
+static u64 get_hdr_size(u8 header_type)
 {
-    u64 hdr_len = 0;
-    pci_header_common_t *hdr = (pci_header_common_t*)self->mp_data;
-    switch ((hdr->header_type) & 0b11)
+    switch (header_type & 0b11)
     {
     case 0x0:
-        hdr_len = sizeof(pci_header_type0_t);
-        break;
+        return sizeof(pci_header_type0_t);
     case 0x1:
-        hdr_len = sizeof(pci_header_type1_t);
-        break;
+        return sizeof(pci_header_type1_t);
     case 0x2:
-        hdr_len = sizeof(pci_header_type2_t);
-        break;
+        return sizeof(pci_header_type2_t);
     default:
         panic("PCI: What header type is this lol?");
-        break;
     }
-
-    if (count > hdr_len)
-        count = hdr_len;
-
-    memcpy(buffer, hdr, count);
-    return count;
 }
-
-static vfs_node_ops_file_t g_node_ops = (vfs_node_ops_file_t) {
-    .read = read
-};
 
 void pci_list()
 {
@@ -84,13 +68,13 @@ void pci_list()
                     if (pci_hdr->vendor_id == 0xFFFF)
                         continue;
 
-                    // Create FS entry.
-                    // CC:SS:PP
+                    // Create file.
+                    // Name format: CC:SS:PP
                     char name[16];
                     sprintf(name, "%02X:%02X:%02X", pci_hdr->class, pci_hdr->subclass, pci_hdr->prog_if);
                     vfs_node_t *file = pci_dir->dir_ops->create(pci_dir, VFS_NODE_FILE, name);
-                    file->file_ops = &g_node_ops;
                     file->mp_data = pci_hdr;
+                    file->size = get_hdr_size(pci_dir->type);
 
                     log("PCI: %X %X %02X:%02X:%02X", pci_hdr->vendor_id, pci_hdr->device_id, pci_hdr->class, pci_hdr->subclass, pci_hdr->prog_if);
                 }

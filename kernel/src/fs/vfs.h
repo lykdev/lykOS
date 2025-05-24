@@ -11,8 +11,10 @@ typedef enum
 {
     VFS_NODE_FILE,
     VFS_NODE_DIR,
+    VFS_NODE_FIFO,
     VFS_NODE_CHAR,
-    VFS_NODE_BLOCK
+    VFS_NODE_BLOCK,
+    VFS_NODE_SOCKET
 }
 vfs_node_type_t;
 
@@ -35,6 +37,22 @@ typedef struct
 {
     u64 (*read) (vfs_node_t *self, u64 offset, void *buffer, u64 count);
     u64 (*write)(vfs_node_t *self, u64 offset, void *buffer, u64 count);
+    int (*ioctl)(vfs_node_t *self, u64 request, void *args);
+}
+vfs_node_ops_char_t;
+
+typedef struct
+{
+    int (*read_block) (vfs_node_t *self, u64 lba, void *buffer);
+    int (*write_block)(vfs_node_t *self, u64 lba, const void *buffer);
+    int (*ioctl)      (vfs_node_t *self, u64 request, void *args);
+}
+vfs_node_ops_block_t;
+
+typedef struct
+{
+    u64 (*read) (vfs_node_t *self, u64 offset, void *buffer, u64 count);
+    u64 (*write)(vfs_node_t *self, u64 offset, void *buffer, u64 count);
     int (*poll) (vfs_node_t *self, int events);
 }
 vfs_node_ops_fifo_t;
@@ -48,7 +66,7 @@ typedef struct
     int (*listen) (vfs_node_t *self, int backlog);
     vfs_node_t* (*accept)(vfs_node_t *self);
 }
-vfs_node_ops_socket;
+vfs_node_ops_socket_t;
 
 struct vfs_node
 {
@@ -65,10 +83,12 @@ struct vfs_node
     union
     {
         void *ops;
-        vfs_node_ops_file_t *file_ops;
-        vfs_node_ops_dir_t  *dir_ops;
-        vfs_node_ops_fifo_t *fifo_ops;
-        vfs_node_ops_socket *socket_ops;
+        vfs_node_ops_file_t   *file_ops;
+        vfs_node_ops_dir_t    *dir_ops;
+        vfs_node_ops_char_t   *char_ops;
+        vfs_node_ops_block_t  *block_ops;
+        vfs_node_ops_fifo_t   *fifo_ops;
+        vfs_node_ops_socket_t *socket_ops;
     };
 
     void *mp_data;
