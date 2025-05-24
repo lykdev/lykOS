@@ -12,4 +12,5 @@ void video_init()
     video_fb.width = b->width;
     video_fb.height = b->height;
     video_fb.pitch = b->pitch;
+    video_fb.size = (b->height * b->pitch) * b->bpp / 8;
 }

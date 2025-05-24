@@ -2,4 +2,4 @@
 
 #include <lib/def.h>
 
-void panic(const char *format, ...);
+[[noreturn]] void panic(const char *format, ...);
