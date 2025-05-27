@@ -72,8 +72,6 @@ void (*handlers[256])() = { NULL };
 
 void arch_int_handler(cpu_state_t *cpu_state)
 {
-    log("CPU INT: %llu %#llx", cpu_state->int_no, cpu_state->err_code);
-
     if (cpu_state->int_no < 32)
     {
         if (cpu_state->int_no == 14) // PF
@@ -86,14 +84,20 @@ void arch_int_handler(cpu_state_t *cpu_state)
 
         arch_cpu_halt();
     }
-    else if (handlers[cpu_state->int_no - 32] != NULL)
+    else if (handlers[cpu_state->int_no] != NULL)
     {
-        handlers[cpu_state->int_no - 32]();
+        handlers[cpu_state->int_no]();
     }
 
+    x86_64_lapic_send_eoi();
 }
 
-void arch_int_register_handler(uint irq, void (*handler)())
+void arch_int_register_exception_handler(uint exception, void (*handler)())
 {
-    handlers[irq] = handler;
+    handlers[exception] = handler;
+}
+
+void arch_int_register_irq_handler(uint irq, void (*handler)())
+{
+    handlers[32 + irq] = handler;
 }

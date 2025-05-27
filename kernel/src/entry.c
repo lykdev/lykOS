@@ -74,9 +74,6 @@ void _entry()
 
     dev_fb_init();
 
-    #include <arch/x86_64/syscall.h>
-    x86_64_syscall_init();
-
     // Load initial executables.
     {
         vfs_node_t *init_dir = vfs_lookup("/usr/bin");
@@ -92,7 +89,8 @@ void _entry()
         }
     }
 
-    smp_init();
+    arch_cpu_int_unmask();
+    //smp_init();
 
     log("Kernel end.");
     while (true)

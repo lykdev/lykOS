@@ -1,5 +1,6 @@
 #pragma once
 
+#include <sys/proc.h>
 #include <lib/def.h>
 
 typedef struct
@@ -55,7 +56,8 @@ typedef struct
 #endif
     uptr entry;
 }
-__attribute__((packed)) arch_thread_init_stack_kernel_t;
+__attribute__((packed))
+arch_thread_init_stack_kernel_t;
 
 typedef struct
 {
@@ -112,4 +114,24 @@ typedef struct
     uptr entry;
     u64 user_stack;
 }
-__attribute__((packed)) arch_thread_init_stack_user_t;
+__attribute__((packed))
+arch_thread_init_stack_user_t;
+
+typedef struct
+{
+#if defined(__x86_64__)
+    void *self;
+    void *fpu_area;
+    uptr kernel_stack;
+    uptr syscall_stack;
+    u64 fs, gs;
+#elif defined(__aarch64__)
+    #error Undefined.
+#endif
+}
+__attribute__((packed))
+arch_thread_context_t;
+
+void arch_thread_context_init(arch_thread_context_t *context, proc_t *parent_proc, bool user, uptr entry);
+
+void arch_thread_context_switch(arch_thread_context_t *curr, arch_thread_context_t *next);

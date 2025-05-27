@@ -1,15 +1,13 @@
 #include "sched.h"
 
 #include <arch/cpu.h>
-#include <arch/x86_64/fpu.h>
-#include <arch/x86_64/msr.h>
+#include <arch/thread.h>
 #include <common/log.h>
 #include <common/panic.h>
 #include <common/sync/spinlock.h>
 #include <sys/smp.h>
 #include <sys/thread.h>
 
-extern __attribute__((naked)) void arch_sched_context_switch(thread_t *curr, thread_t *next);
 
 static spinlock_t slock = SPINLOCK_INIT;
 static list_t g_thread_list = LIST_INIT;
@@ -66,12 +64,7 @@ void sched_yield(thread_status_t status)
 
         vmm_load_addr_space(next->parent_proc->addr_space);
     }
-    g_x86_64_fpu_save(curr->fpu_area);
-    g_x86_64_fpu_restore(next->fpu_area);
-    curr->gs = x86_64_msr_read(X86_64_MSR_KERNEL_GS_BASE);
-    curr->fs = x86_64_msr_read(X86_64_MSR_FS_BASE);
-    x86_64_msr_write(X86_64_MSR_KERNEL_GS_BASE, next->gs);
-    x86_64_msr_write(X86_64_MSR_FS_BASE, next->fs);
+
     arch_cpu_write_thread_reg(next);
-    arch_sched_context_switch(curr, next); // This function calls `sched_drop` for `curr` too.
+    arch_thread_context_switch(curr, next); // This function calls `sched_drop` for `curr` too.
 }

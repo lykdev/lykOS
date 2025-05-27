@@ -18,6 +18,7 @@ INCLUDE_DIR = sys.argv[2]
 BUILD_DIR = sys.argv[3]
 
 CFLAGS = [
+    "-Ikernel/include/uapi/dev",
     "-target", TARGET,
     "-ffreestanding",
     "-fno-pic",

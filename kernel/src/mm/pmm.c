@@ -54,6 +54,8 @@ void pmm_debug_info()
 
 void *pmm_alloc(u8 order)
 {
+    ASSERT(order <= PMM_MAX_ORDER);
+
     int i = order;
     while (list_is_empty(&levels[i]))
     {

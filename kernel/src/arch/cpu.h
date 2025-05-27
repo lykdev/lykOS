@@ -2,6 +2,12 @@
 
 #include <lib/def.h>
 
+typedef struct
+{
+
+}
+arch_cpu_info_t;
+
 void *arch_cpu_read_thread_reg();
 
 void arch_cpu_write_thread_reg(void *t);

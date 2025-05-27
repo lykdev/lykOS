@@ -3,6 +3,7 @@
 #include <arch/x86_64/devices/pic.h>
 #include <arch/x86_64/tables/gdt.h>
 #include <arch/x86_64/tables/idt.h>
+#include <arch/x86_64/tables/tss.h>
 #include <arch/x86_64/fpu.h>
 #include <arch/x86_64/syscall.h>
 
@@ -12,7 +13,7 @@ void arch_init()
     x86_64_pic_disable();
     x86_64_ioapic_init();
     x86_64_fpu_init();
-    x86_64_syscall_init();
+
 }
 
 void arch_cpu_core_init()
@@ -21,4 +22,5 @@ void arch_cpu_core_init()
     x86_64_idt_load();
     x86_64_fpu_init_cpu();
     x86_64_lapic_init();
+    x86_64_syscall_init();
 }

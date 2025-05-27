@@ -24,43 +24,78 @@ typedef struct
     u8 access;
     u8 flags;
     u8 base_high;
-} __attribute__((packed)) gdt_entry_t;
+}
+__attribute__((packed))
+gdt_entry_t;
 
 typedef struct
 {
-    gdt_entry_t entry;
+    gdt_entry_t gdt_entry;
     u32 base_ext;
-    u8 _rsv0;
-    u8 _rsv1_zero;
-    u16 _rsv2;
-} __attribute__((packed)) gdt_system_entry_t;
+    u32 _rsv;
+}
+__attribute__((packed))
+gdt_system_entry_t;
 
 typedef struct
 {
     u16 limit;
     u64 base;
-} __attribute__((packed)) gdt_descriptor_t;
+}
+__attribute__((packed))
+gdtr_t;
 
-extern void gdt_load(gdt_descriptor_t *gdtr, u64 selector_code, u64 selector_data);
+extern void gdt_load(gdtr_t *gdtr, u64 selector_code, u64 selector_data);
 
 static gdt_entry_t g_gdt[] = {
     // Null descriptor.
     {},
     // Kernel code.
-    {.limit = 0, .base_low = 0, .base_mid = 0, .access = ACCESS_PRESENT | ACCESS_DPL(0) | ACCESS_TYPE_CODE(0, 1), .flags = FLAG_LONG, .base_high = 0},
+    {
+        .limit = 0,
+        .base_low = 0,
+        .base_mid = 0,
+        .access = ACCESS_PRESENT | ACCESS_DPL(0) | ACCESS_TYPE_CODE(0, 1),
+        .flags = FLAG_LONG,
+        .base_high = 0
+    },
     // Kernel data.
-    {.limit = 0, .base_low = 0, .base_mid = 0, .access = ACCESS_PRESENT | ACCESS_DPL(0) | ACCESS_TYPE_DATA(0, 1), .flags = 0, .base_high = 0},
+    {
+        .limit = 0,
+        .base_low = 0,
+        .base_mid = 0,
+        .access = ACCESS_PRESENT | ACCESS_DPL(0) | ACCESS_TYPE_DATA(0, 1),
+        .flags = 0,
+        .base_high = 0
+    },
     // User data.
-    {.limit = 0, .base_low = 0, .base_mid = 0, .access = ACCESS_PRESENT | ACCESS_DPL(3) | ACCESS_TYPE_DATA(0, 1), .flags = 0, .base_high = 0},
+    {
+        .limit = 0,
+        .base_low = 0,
+        .base_mid = 0,
+        .access = ACCESS_PRESENT | ACCESS_DPL(3) | ACCESS_TYPE_DATA(0, 1),
+        .flags = 0,
+        .base_high = 0
+    },
     // User code.
-    {.limit = 0, .base_low = 0, .base_mid = 0, .access = ACCESS_PRESENT | ACCESS_DPL(3) | ACCESS_TYPE_CODE(0, 1), .flags = FLAG_LONG, .base_high = 0},
+    {
+        .limit = 0,
+        .base_low = 0,
+        .base_mid = 0,
+        .access = ACCESS_PRESENT | ACCESS_DPL(3) | ACCESS_TYPE_CODE(0, 1),
+        .flags = FLAG_LONG,
+        .base_high = 0},
     // TSS.
     {},
-    {}};
+    {}
+};
 
 void x86_64_gdt_load()
 {
-    gdt_descriptor_t gdtr = (gdt_descriptor_t){.limit = sizeof(g_gdt) - 1, .base = (u64)&g_gdt};
+    gdtr_t gdtr = (gdtr_t){
+        .limit = sizeof(g_gdt) - 1,
+        .base = (u64)&g_gdt
+    };
 
     gdt_load(&gdtr, X86_64_GDT_SELECTOR_CODE64_RING0, X86_64_GDT_SELECTOR_DATA64_RING0);
 
@@ -71,14 +106,18 @@ void x86_64_gdt_load_tss(x86_64_tss_t *tss)
 {
     u16 tss_segment = sizeof(g_gdt) - 16;
 
-    gdt_system_entry_t *entry = (gdt_system_entry_t *)((uptr)g_gdt + tss_segment);
-    entry->entry.access = ACCESS_PRESENT | ACCESS_TYPE_TSS;
-    entry->entry.flags = FLAG_SYSTEM_AVL | ((sizeof(x86_64_tss_t) >> 16) & 0b1111);
-    entry->entry.limit = (u16)sizeof(x86_64_tss_t);
-    entry->entry.base_low = (u16)(u64)tss;
-    entry->entry.base_mid = (u8)((u64)tss >> 16);
-    entry->entry.base_high = (u8)((u64)tss >> 24);
-    entry->base_ext = (u32)((u64)tss >> 32);
+    gdt_system_entry_t *sys_entry = (gdt_system_entry_t *)((uptr)g_gdt + tss_segment);
+    *sys_entry = (gdt_system_entry_t) {
+        .gdt_entry = (gdt_entry_t) {
+            .access    = ACCESS_PRESENT | ACCESS_TYPE_TSS,
+            .flags     = FLAG_SYSTEM_AVL | ((sizeof(x86_64_tss_t) >> 16) & 0b1111),
+            .limit     = (u16)sizeof(x86_64_tss_t),
+            .base_low  = (u16)(u64)tss,
+            .base_mid  = (u8)((u64)tss >> 16),
+            .base_high = (u8)((u64)tss >> 24),
+        },
+        .base_ext = (u32)((u64)tss >> 32)
+    };
 
     asm volatile("ltr %0" : : "m"(tss_segment));
 }

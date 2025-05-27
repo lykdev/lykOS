@@ -13,14 +13,16 @@ typedef struct
 #elif defined(__aarch64__)
     pte_t *pml4[2];
 #endif
-} arch_ptm_map_t;
+}
+arch_ptm_map_t;
 
 typedef enum
 {
     ARCH_PTM_WRITE = 1 << 0,
     ARCH_PTM_USER = 1 << 1,
     ARCH_PTM_EXECUTE = 1 << 2
-} arch_ptm_flags_t;
+}
+arch_ptm_flags_t;
 
 void arch_ptm_map(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size);
 

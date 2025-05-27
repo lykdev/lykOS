@@ -1,8 +1,9 @@
 #pragma once
 
-#include <sys/proc.h>
+#include <arch/thread.h>
 #include <lib/def.h>
 #include <lib/list.h>
+#include <sys/proc.h>
 
 typedef enum proc_type proc_type_t;
 typedef struct smp_cpu_core smp_cpu_core_t;
@@ -19,15 +20,7 @@ thread_status_t;
 
 struct thread
 {
-// DO NOT TOUCH THIS PART
-#if defined(__x86_64__)
-    thread_t *self;
-    void *fpu_area;
-#endif
-    uptr kernel_stack;
-    uptr syscall_stack;
-    u64 fs, gs;
-//
+    arch_thread_context_t context;
     uint id;
     thread_status_t status;
     proc_t *parent_proc;
