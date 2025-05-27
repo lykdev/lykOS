@@ -4,7 +4,7 @@
 #include <common/log.h>
 #include <common/panic.h>
 #include <dev/acpi/acpi.h>
-#include <fs/pfs.h>
+#include <fs/sysfs.h>
 #include <lib/printf.h>
 #include <lib/string.h>
 

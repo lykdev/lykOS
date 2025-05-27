@@ -1,6 +1,8 @@
 #include <arch/cpu.h>
 #include <arch/int.h>
 
+#include <arch/x86_64/devices/lapic.h>
+
 #include <common/log.h>
 #include <lib/def.h>
 #include <mm/vmm.h>
@@ -70,6 +72,8 @@ void (*handlers[256])() = { NULL };
 
 void arch_int_handler(cpu_state_t *cpu_state)
 {
+    log("CPU INT: %llu %#llx", cpu_state->int_no, cpu_state->err_code);
+
     if (cpu_state->int_no < 32)
     {
         if (cpu_state->int_no == 14) // PF
@@ -83,10 +87,13 @@ void arch_int_handler(cpu_state_t *cpu_state)
         arch_cpu_halt();
     }
     else if (handlers[cpu_state->int_no - 32] != NULL)
+    {
         handlers[cpu_state->int_no - 32]();
+    }
+
 }
 
-void arch_int_irq_register_handler(uint irq, void (*handler)())
+void arch_int_register_handler(uint irq, void (*handler)())
 {
     handlers[irq] = handler;
 }

@@ -45,8 +45,7 @@ madt_int_source_override_t;
 
 #define IOAPICID  0x00
 #define IOAPICVER 0x01
-#define IOAPICARB 0x02
-#define IOREDTBL(N) (0x10 + 2 * N)
+#define IOREDTBL(N) (0x10 + 2 * (N))
 
 #define SO_FLAG_POLARITY_LOW  0b0011
 #define SO_FLAG_POLARITY_HIGH 0b0001
@@ -72,11 +71,11 @@ typedef struct
 __attribute__((packed))
 ioapic_redirect_t;
 
-static uptr g_ioapic_base;
+static uptr g_ioapic_base = 0;
 
 static struct
 {
-    u8  dest;
+    u16 dest;
     u16 flags;
 }
 g_irq_redirection_table[16] = {
@@ -100,14 +99,14 @@ g_irq_redirection_table[16] = {
 
 static void ioapic_write(u32 reg, u32 data)
 {
-    *(u32*)(g_ioapic_base + IOREGSEL) = reg; // IOREGSEL
-    *(u32*)(g_ioapic_base + IOWIN) = data;   // IOWIN
+    *(volatile u32*)(g_ioapic_base + IOREGSEL) = reg; // IOREGSEL
+    *(volatile u32*)(g_ioapic_base + IOWIN) = data;   // IOWIN
 }
 
 static u32 ioapic_read(u32 reg)
 {
-    *(u32*)(g_ioapic_base + IOREGSEL) = reg; // IOREGSEL
-    return *(u32*)(g_ioapic_base + IOWIN);   // IOWIN
+    *(volatile u32*)(g_ioapic_base + IOREGSEL) = reg; // IOREGSEL
+    return *(volatile u32*)(g_ioapic_base + IOWIN);   // IOWIN
 }
 
 void x86_64_ioapic_init()
@@ -116,8 +115,8 @@ void x86_64_ioapic_init()
     if (!madt)
         panic("MADT not found!");
 
-    u8 *end = (u8*)madt + madt->sdt.length;
     u8 *ptr = (u8*)madt + sizeof(madt_t);
+    u8 *end = (u8*)madt + madt->sdt.length;
     while (ptr < end)
     {
         u8 type = ptr[0];
@@ -125,14 +124,14 @@ void x86_64_ioapic_init()
 
         switch (type)
         {
-        case MADT_TYPE_IOAPIC:
-            g_ioapic_base = ((madt_ioapic_t*)ptr)->ioapic_addr + HHDM;
-        break;
-        case MADT_TYPE_SOURCE_OVERRIDE:
-            madt_int_source_override_t *so = (madt_int_source_override_t*)ptr;
-            g_irq_redirection_table[so->source].dest  = so->gsi;
-            g_irq_redirection_table[so->source].flags = so->flags;
-        break;
+            case MADT_TYPE_IOAPIC:
+                g_ioapic_base = ((madt_ioapic_t*)ptr)->ioapic_addr + HHDM;
+            break;
+            case MADT_TYPE_SOURCE_OVERRIDE:
+                madt_int_source_override_t *so = (madt_int_source_override_t*)ptr;
+                g_irq_redirection_table[so->source].dest  = so->gsi;
+                g_irq_redirection_table[so->source].flags = so->flags;
+            break;
         }
 
         ptr += length;

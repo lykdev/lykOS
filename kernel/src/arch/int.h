@@ -2,4 +2,8 @@
 
 #include <lib/def.h>
 
-void arch_int_irq_register_handler(uint irq, void (*handler)());
+void arch_int_register_exception_handler(uint irq, void (*handler)());
+
+uint arch_int_request_irq();
+
+void arch_int_register_irq_handler(uint irq, void (*handler)());

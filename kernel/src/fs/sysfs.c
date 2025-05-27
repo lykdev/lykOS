@@ -1,4 +1,4 @@
-#include "pfs.h"
+#include "sysfs.h"
 
 #include <common/assert.h>
 #include <common/log.h>
@@ -44,15 +44,6 @@ static vfs_node_ops_fifo_t g_node_fifo_ops = {
     .read = file_read,
     .write = file_write,
     .poll = NULL,
-};
-
-static vfs_node_ops_socket_t g_node_socket_ops = {
-    .send = (void*)file_write,
-    .recv = (void*)file_read,
-    .connect = NULL,
-    .bind = NULL,
-    .listen = NULL,
-    .accept = NULL
 };
 
 //
@@ -158,31 +149,21 @@ static vfs_node_t* dir_create(vfs_node_t *self, vfs_node_type_t type, char *name
     {
         case VFS_NODE_FILE:
             vn->file_ops = &g_node_file_ops;
-            vn->mp_data = NULL;
-            vn->size = 0;
             break;
         case VFS_NODE_DIR:
             vn->dir_ops = &g_node_dir_ops;
             break;
         case VFS_NODE_FIFO:
             vn->fifo_ops = &g_node_fifo_ops;
-            vn->mp_data = NULL;
-            vn->size = 0;
             break;
         case VFS_NODE_SOCKET:
-            vn->socket_ops = &g_node_socket_ops;
-            vn->mp_data = NULL;
-            vn->size = 0;
-            break;
         case VFS_NODE_CHAR:
         case VFS_NODE_BLOCK:
             vn->ops = NULL;
-            vn->size = 0;
             break;
         default:
             panic("Unknown VFS node type: %d!", type);
     }
-
 
     list_append(&parent_node->children, &new_node->list_node);
 
@@ -192,7 +173,7 @@ static vfs_node_t* dir_create(vfs_node_t *self, vfs_node_type_t type, char *name
 
 //
 
-vfs_mountpoint_t *pfs_new_mp(const char *name)
+vfs_mountpoint_t *sysfs_new_mp(const char *name)
 {
     vfs_mountpoint_t *mp = heap_alloc(sizeof(vfs_mountpoint_t));
     inode_t *root_node = heap_alloc(sizeof(inode_t));

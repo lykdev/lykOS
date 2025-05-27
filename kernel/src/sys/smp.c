@@ -21,8 +21,10 @@ static proc_t *g_idle_proc = NULL;
 
 #include <arch/x86_64/io.h>
 
-static void thread_idle_func()
+[[gnu::noinline]] static void thread_idle_func()
 {
+
+
     while (true)
         sched_yield(THREAD_STATE_BLOCKED);
 }
@@ -51,9 +53,11 @@ static void core_init(struct limine_mp_info *mp_info)
     g_cores_initialized++;
     if (g_cores_initialized == request_mp.response->cpu_count)
         g_smp_initialized = true;
-    arch_cpu_write_thread_reg(idle_thread);
 
     spinlock_release(&slock);
+
+    arch_cpu_write_thread_reg(idle_thread);
+    arch_cpu_int_unmask();
 
     thread_idle_func();
 }

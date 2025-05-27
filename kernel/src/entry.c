@@ -10,7 +10,7 @@
 #include <dev/pci.h>
 #include <fs/initrd.h>
 #include <fs/vfs.h>
-#include <fs/pfs.h>
+#include <fs/sysfs.h>
 #include <graphics/video.h>
 #include <lib/def.h>
 #include <mm/heap.h>
@@ -47,9 +47,10 @@ void _entry()
     vfs_init();
     initrd_init();
 
-    vfs_mount("/sys", pfs_new_mp("sys"));
-    vfs_mount("/dev", pfs_new_mp("dev"));
+    vfs_mount("/sys", sysfs_new_mp("sys"));
+    vfs_mount("/dev", sysfs_new_mp("dev"));
 
+    // List PCI devices. Required for loading device drivers.
     pci_list();
 
     // Load kernel modules.
@@ -73,17 +74,8 @@ void _entry()
 
     dev_fb_init();
 
-    u32 pix[100];
-    for (size_t i = 0; i < 50; i++)
-        pix[i] = 0xFF0000;
-    for (size_t i = 50; i < 100; i++)
-        pix[i] = 0x00FF00;
-
-    vfs_node_t *fb = vfs_lookup("/dev/fb");
-    ASSERT(fb != NULL);
-    fb->file_ops->write(fb, 0, pix, 100 * 4);
-
-    arch_syscall_init();
+    #include <arch/x86_64/syscall.h>
+    x86_64_syscall_init();
 
     // Load initial executables.
     {
@@ -103,5 +95,6 @@ void _entry()
     smp_init();
 
     log("Kernel end.");
-    arch_cpu_halt();
+    while (true)
+        arch_cpu_halt();
 }

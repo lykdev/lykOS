@@ -47,6 +47,17 @@ void arch_timer_oneshoot(u8 vector, u8 ms)
     // lapic_write(REG_TIMER_INITIAL_COUNT, ms * (X86_64_CPU_CURRENT.lapic_timer_frequency / 1'000'000));
 }
 
+void x86_64_lapic_send_eoi()
+{
+    lapic_write(REG_EOI, 0);
+}
+
+void x86_64_lapic_ipi(u32 lapic_id, u32 vec)
+{
+    lapic_write(REG_ICR1, lapic_id << 24);
+    lapic_write(REG_ICR0, vec);
+}
+
 void x86_64_lapic_init()
 {
     g_lapic_base = (x86_64_msr_read(X86_64_MSR_APIC_BASE) & 0xFFFFFFFFFF000) + HHDM;

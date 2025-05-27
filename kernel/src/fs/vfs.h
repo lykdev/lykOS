@@ -80,6 +80,9 @@ struct vfs_node
     u64 mtime; // Time modified.
     u64 atime; // Time accessed.
 
+    spinlock_t lock;
+    u16 ref_count;
+
     union
     {
         void *ops;
