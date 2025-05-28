@@ -121,9 +121,10 @@ typedef struct
 {
 #if defined(__x86_64__)
     void *self;
+    uptr rsp; // Saved RSP between context switches.
+    uptr kernel_stack;  // The base of thread's stack. RSP points somewhere in here.
+    uptr syscall_stack; // User stack gets saved here when is a syscall in handled.
     void *fpu_area;
-    uptr kernel_stack;
-    uptr syscall_stack;
     u64 fs, gs;
 #elif defined(__aarch64__)
     #error Undefined.

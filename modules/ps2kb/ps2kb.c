@@ -56,7 +56,7 @@ void ps2kb_setup()
         ;
     x86_64_io_outb(0x64, 0xAE);
 
-    arch_int_register_irq_handler(1, ps2kb_irq_handler);
+    arch_int_register_irq_handler(KB_IRQ, ps2kb_irq_handler);
     x86_64_ioapic_map_legacy_irq(KB_IRQ, 0, false, false, 33);
 
     vfs_node_t *dev_dir = vfs_lookup("/dev");

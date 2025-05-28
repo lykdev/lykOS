@@ -7,7 +7,7 @@
 #include <sys/proc.h>
 #include <sys/smp.h>
 
-#include "tables/gdt.h"
+#include "tables/tss.h"
 #include "fpu.h"
 #include "msr.h"
 
@@ -24,20 +24,23 @@ void arch_thread_context_init(arch_thread_context_t *context, proc_t *parent_pro
 
     if (!user)
     {
-        context->kernel_stack = (uptr)pmm_alloc(0) + HHDM + ARCH_PAGE_GRAN - sizeof(arch_thread_init_stack_kernel_t);
-        memset((void *)context->kernel_stack, 0, sizeof(arch_thread_init_stack_kernel_t));
-        ((arch_thread_init_stack_kernel_t *)context->kernel_stack)->entry = entry;
+        context->kernel_stack = (uptr)pmm_alloc(0) + HHDM + ARCH_PAGE_GRAN;
+        context->rsp = context->kernel_stack - sizeof(arch_thread_init_stack_kernel_t);
+        memset((void *)context->rsp, 0, sizeof(arch_thread_init_stack_kernel_t));
+        ((arch_thread_init_stack_kernel_t *)context->rsp)->entry = entry;
     }
     else
     {
-        context->kernel_stack = (uptr)pmm_alloc(0) + HHDM + ARCH_PAGE_GRAN - sizeof(arch_thread_init_stack_user_t);
-        memset((void *)context->kernel_stack, 0, sizeof(arch_thread_init_stack_user_t));
-        ((arch_thread_init_stack_user_t *)context->kernel_stack)->userspace_init = x86_64_thread_userspace_init;
-        ((arch_thread_init_stack_user_t *)context->kernel_stack)->entry = entry;
+        context->kernel_stack = (uptr)pmm_alloc(0) + HHDM + ARCH_PAGE_GRAN;
+        context->rsp = context->kernel_stack - sizeof(arch_thread_init_stack_kernel_t);
+
+        memset((void *)context->rsp, 0, sizeof(arch_thread_init_stack_user_t));
+        ((arch_thread_init_stack_user_t *)context->rsp)->userspace_init = x86_64_thread_userspace_init;
+        ((arch_thread_init_stack_user_t *)context->rsp)->entry = entry;
 
         char *argv[] = { "/usr/bin/init", NULL };
         char *envp[] = { NULL };
-        ((arch_thread_init_stack_user_t *)context->kernel_stack)->user_stack =
+        ((arch_thread_init_stack_user_t *)context->rsp)->user_stack =
             x86_64_abi_stack_setup(parent_proc->addr_space, ARCH_PAGE_GRAN * 8, argv, envp);
     }
 

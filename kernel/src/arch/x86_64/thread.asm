@@ -1,7 +1,7 @@
 global x86_64_sched_context_switch
 extern sched_drop
 
-%define THREAD_RSP_OFFSET 16
+%define THREAD_RSP_OFFSET 8
 
 x86_64_sched_context_switch:
     push rax
