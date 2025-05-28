@@ -9,27 +9,12 @@
 #include <sys/proc.h>
 #include <sys/thread.h>
 
-typedef struct
-{
-    u64 rax;
-    u64 rbx;
-    u64 rcx;
-    u64 rdx;
-    u64 rbp;
-    u64 rsi;
-    u64 rdi;
-    u64 r8;
-    u64 r9;
-    u64 r10;
-    u64 r11;
-    u64 r12;
-    u64 r13;
-    u64 r14;
-    u64 r15;
-    u64 cr2;
-    u64 int_no;
-    u64 err_code;
-} __attribute__((packed)) cpu_state_t;
+typedef struct [[gnu::packed]] {
+    uint64_t r15, r14, r13, r12, r11, r10, r9, r8;
+    uint64_t rdi, rsi, rbp, rdx, rcx, rbx, rax;
+    uint64_t int_no;
+    uint64_t err_code, rip, cs, rflags, rsp, ss;
+} cpu_state_t;
 
 typedef enum
 {
@@ -72,21 +57,23 @@ void (*handlers[256])() = { NULL };
 
 void arch_int_handler(cpu_state_t *cpu_state)
 {
+    log("int %llx", cpu_state->int_no);
     if (cpu_state->int_no < 32)
     {
         if (cpu_state->int_no == 14) // PF
         {
             proc_t *proc = ((thread_t*)arch_cpu_read_thread_reg())->parent_proc;
-            vmm_pagefault_handler(proc->addr_space, cpu_state->cr2);
+            vmm_pagefault_handler(proc->addr_space, 0);
         }
 
         log("CPU EXCEPTION: %llu %#llx", cpu_state->int_no, cpu_state->err_code);
 
         arch_cpu_halt();
     }
-    else if (handlers[cpu_state->int_no] != NULL)
+    else
     {
-        handlers[cpu_state->int_no]();
+        if (handlers[cpu_state->int_no] != NULL)
+            handlers[cpu_state->int_no]();
     }
 
     x86_64_lapic_send_eoi();

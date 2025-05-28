@@ -4,9 +4,13 @@
 
 typedef struct
 {
-
+#if defined(__x86_64__)
+    void *tss;
+#elif defined(__aarch64__)
+    #error Undefined.
+#endif
 }
-arch_cpu_info_t;
+arch_cpu_local_info_t;
 
 void *arch_cpu_read_thread_reg();
 

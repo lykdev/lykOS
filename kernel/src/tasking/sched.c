@@ -8,7 +8,6 @@
 #include <sys/smp.h>
 #include <sys/thread.h>
 
-
 static spinlock_t slock = SPINLOCK_INIT;
 static list_t g_thread_list = LIST_INIT;
 
@@ -50,7 +49,7 @@ void sched_queue_add(thread_t *thread)
 
 void sched_yield(thread_status_t status)
 {
-    thread_t *curr = arch_cpu_read_thread_reg();
+    thread_t *curr = sched_get_curr_thread();
     thread_t *next = sched_next();
 
     if (next == NULL)
@@ -66,5 +65,5 @@ void sched_yield(thread_status_t status)
     }
 
     arch_cpu_write_thread_reg(next);
-    arch_thread_context_switch(curr, next); // This function calls `sched_drop` for `curr` too.
+    arch_thread_context_switch(&curr->context, &next->context); // This function calls `sched_drop` for `curr` too.
 }

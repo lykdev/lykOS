@@ -15,13 +15,17 @@ typedef struct
     u16 isr_mid;
     u32 isr_high;
     u32 _rsv;
-} __attribute__((packed)) idt_entry_t;
+}
+__attribute__((packed))
+idt_entry_t;
 
 typedef struct
 {
     u16 limit;
     u64 base;
-} __attribute__((packed)) idtr_t;
+}
+__attribute__((packed))
+idtr_t;
 
 __attribute__((aligned(0x10))) static idt_entry_t idt[256];
 extern uptr arch_int_stub_table[256];

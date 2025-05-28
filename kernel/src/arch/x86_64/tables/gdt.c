@@ -1,6 +1,7 @@
 #include "gdt.h"
 
 #include <common/log.h>
+#include <lib/string.h>
 
 // Must be set to 1 for any valid segment.
 #define ACCESS_PRESENT (1 << 7)
@@ -90,6 +91,8 @@ static gdt_entry_t g_gdt[] = {
     {}
 };
 
+x86_64_tss_t g_tss;
+
 void x86_64_gdt_load()
 {
     gdtr_t gdtr = (gdtr_t){
@@ -100,10 +103,14 @@ void x86_64_gdt_load()
     gdt_load(&gdtr, X86_64_GDT_SELECTOR_CODE64_RING0, X86_64_GDT_SELECTOR_DATA64_RING0);
 
     log("GDT loaded");
+
+    x86_64_gdt_load_tss(&g_tss);
 }
 
 void x86_64_gdt_load_tss(x86_64_tss_t *tss)
 {
+    memset(&g_tss, 0, sizeof(x86_64_tss_t));
+
     u16 tss_segment = sizeof(g_gdt) - 16;
 
     gdt_system_entry_t *sys_entry = (gdt_system_entry_t *)((uptr)g_gdt + tss_segment);

@@ -30,7 +30,7 @@ thread_t *thread_new(proc_t *parent_proc, uptr entry)
         .list_elem_inside_proc = LIST_NODE_INIT,
         .mutex_wait_queue_node = LIST_NODE_INIT
     };
-    arch_thread_context_init(&thread->context, thread->parent_proc, parent_proc->type == PROC_USER ? 1 : 0, entry);
+    arch_thread_context_init(&thread->context, thread->parent_proc, parent_proc->type == PROC_USER ? true : false, entry);
 
     list_append(&parent_proc->threads, &thread->list_elem_inside_proc);
 

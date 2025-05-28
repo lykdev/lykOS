@@ -15,7 +15,7 @@ extern void x86_64_thread_userspace_init();
 
 extern uptr x86_64_abi_stack_setup(vmm_addr_space_t *as, size_t stack_size, char **argv, char **envp);
 
-extern __attribute__((naked)) void arch_sched_context_switch(arch_thread_context_t *curr, arch_thread_context_t *next);
+extern __attribute__((naked)) void x86_64_sched_context_switch(arch_thread_context_t *curr, arch_thread_context_t *next);
 
 void arch_thread_context_init(arch_thread_context_t *context, proc_t *parent_proc, bool user, uptr entry)
 {
@@ -55,7 +55,11 @@ void arch_thread_context_init(arch_thread_context_t *context, proc_t *parent_pro
     asm volatile ("ldmxcsr %0" : : "m"(mxcsr) : "memory");
 
     g_x86_64_fpu_save(context->fpu_area);
+    if(g_smp_initialized)
+           g_x86_64_fpu_restore(sched_get_curr_thread()->context.fpu_area);
 }
+
+extern x86_64_tss_t g_tss;
 
 void arch_thread_context_switch(arch_thread_context_t *curr, arch_thread_context_t *next)
 {
@@ -68,8 +72,7 @@ void arch_thread_context_switch(arch_thread_context_t *curr, arch_thread_context
     x86_64_msr_write(X86_64_MSR_KERNEL_GS_BASE, next->gs);
     x86_64_msr_write(X86_64_MSR_FS_BASE, next->fs);
     // TSS -> stack pointer for when taking interrupts.
-    x86_64_tss_set_rsp0(, next->kernel_stack);
+    x86_64_tss_set_rsp0(&g_tss, next->kernel_stack);
 
-    arch_cpu_write_thread_reg(next);
-    arch_thread_context_switch(curr, next); // This function calls `sched_drop` for `curr` too.
+    x86_64_sched_context_switch(curr, next); // This function calls `sched_drop` for `curr` too.
 }

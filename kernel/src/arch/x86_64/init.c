@@ -7,16 +7,18 @@
 #include <arch/x86_64/fpu.h>
 #include <arch/x86_64/syscall.h>
 
+#include <arch/cpu.h>
+#include <mm/heap.h>
+
 void arch_init()
 {
     x86_64_idt_make();
     x86_64_pic_disable();
     x86_64_ioapic_init();
     x86_64_fpu_init();
-
 }
 
-void arch_cpu_core_init()
+void arch_cpu_core_init(int cpu_id)
 {
     x86_64_gdt_load();
     x86_64_idt_load();

@@ -26,6 +26,8 @@
 
 #include <lib/string.h>
 
+#include <arch/x86_64/syscall.h>
+
 extern void dev_fb_init();
 
 void _entry()
@@ -36,13 +38,13 @@ void _entry()
 
     acpi_init();
 
-    arch_init();
-    arch_cpu_core_init();
-
     pmm_init();
     kmem_init();
     heap_init();
     vmm_init();
+
+    arch_init();
+    arch_cpu_core_init(0);
 
     vfs_init();
     initrd_init();
@@ -89,8 +91,7 @@ void _entry()
         }
     }
 
-    arch_cpu_int_unmask();
-    //smp_init();
+    smp_init();
 
     log("Kernel end.");
     while (true)

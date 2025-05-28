@@ -23,8 +23,6 @@ static proc_t *g_idle_proc = NULL;
 
 [[gnu::noinline]] static void thread_idle_func()
 {
-
-
     while (true)
         sched_yield(THREAD_STATE_BLOCKED);
 }
@@ -38,7 +36,7 @@ static void core_init(struct limine_mp_info *mp_info)
 
     log("NEW CORE %u", mp_info->extra_argument);
 
-    arch_cpu_core_init();
+    arch_cpu_core_init(mp_info->extra_argument);
 
     thread_t *idle_thread = thread_new(g_idle_proc, (uptr)&thread_idle_func);
     smp_cpu_core_t *cpu_core = heap_alloc(sizeof(smp_cpu_core_t));

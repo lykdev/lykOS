@@ -1,5 +1,6 @@
 #pragma once
 
+#include <arch/cpu.h>
 #include <sys/thread.h>
 #include <lib/def.h>
 #include <lib/list.h>
