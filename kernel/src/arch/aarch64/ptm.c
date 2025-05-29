@@ -1,11 +1,11 @@
 #include <arch/ptm.h>
 
 #include <mm/pmm.h>
-#include <utils/assert.h>
-#include <utils/hhdm.h>
-#include <utils/limine/requests.h>
-#include <utils/log.h>
-#include <utils/string.h>
+#include <common/assert.h>
+#include <common/hhdm.h>
+#include <common/limine/requests.h>
+#include <common/log.h>
+#include <lib/string.h>
 
 #define PRESENT (1ull << 0)
 #define TABLE (1ull << 1)

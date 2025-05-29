@@ -9,7 +9,7 @@
 #define PS2_DATA_PORT 0x60
 #define KB_IRQ 1
 
-static void ps2kb_irq_handler()
+void ps2kb_irq_handler()
 {
     u8 scancode = x86_64_io_inb(PS2_DATA_PORT);
 
