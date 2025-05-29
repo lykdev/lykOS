@@ -73,9 +73,15 @@ void list_insert_before(list_t *list, list_node_t *pos, list_node_t *new)
     list->length++;
 }
 
-void list_append(list_t *list, list_node_t *node) { list_insert_after(list, list->tail, node); }
+void list_append(list_t *list, list_node_t *node)
+{
+    list_insert_after(list, list->tail, node);
+}
 
-void list_prepend(list_t *list, list_node_t *node) { list_insert_before(list, list->head, node); }
+void list_prepend(list_t *list, list_node_t *node)
+{
+    list_insert_before(list, list->head, node);
+}
 
 void list_remove(list_t *list, list_node_t *node)
 {

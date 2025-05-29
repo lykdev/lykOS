@@ -15,12 +15,12 @@ void arch_cpu_write_thread_reg(void *t)
 void arch_cpu_halt()
 {
     while (true)
-        __asm__ volatile("wfi");
+        asm volatile("wfi");
 }
 
 void arch_cpu_relax()
 {
-    __asm__ volatile("yield");
+    asm volatile("yield");
 }
 
 void arch_cpu_int_unmask()

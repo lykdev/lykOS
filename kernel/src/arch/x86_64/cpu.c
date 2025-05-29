@@ -1,8 +1,6 @@
 #include <arch/cpu.h>
 #include <arch/x86_64/msr.h>
 
-#include <common/log.h>
-
 void *arch_cpu_read_thread_reg()
 {
     void *thread = NULL;

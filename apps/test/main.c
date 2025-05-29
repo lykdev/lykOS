@@ -20,8 +20,5 @@ int main()
     FILE *file = fopen("/dev/fb", "r+");
     fwrite(p, 4, 400, file);
 
-    while (1)
-        ;
-
     return 43;
 }
