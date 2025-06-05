@@ -17,6 +17,6 @@ typedef struct
 __attribute__((packed))
 acpi_sdt_t;
 
-void acpi_init();
+bool acpi_init();
 
 acpi_sdt_t *acpi_lookup(const char *signature);

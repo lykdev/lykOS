@@ -114,7 +114,10 @@ arch_ptm_map_t arch_ptm_new_map()
     return map;
 }
 
-void arch_ptm_clear_map(arch_ptm_map_t *map) { delete_level(map->pml4, 4); }
+void arch_ptm_clear_map(arch_ptm_map_t *map)
+{
+    delete_level(map->pml4, 4);
+}
 
 uptr arch_ptm_virt_to_phys(arch_ptm_map_t *map, uptr virt)
 {
@@ -134,13 +137,19 @@ uptr arch_ptm_virt_to_phys(arch_ptm_map_t *map, uptr virt)
     return PTE_GET_ADDR(table[table_entries[i]]) + (virt & 0xFFF);
 }
 
+#include <graphics/draw.h>
+
 void arch_ptm_init()
 {
     for (int i = 0; i < 256; i++)
     {
-        pte_t *table = (pte_t *)((uptr)pmm_alloc(0) + HHDM);
+        void *phys = pmm_alloc(0);
+        if (!phys)
+            panic("arch_ptm_init: Out of memory");
+
+        pte_t *table = (pte_t *)((uptr)phys + HHDM);
         memset(table, 0, ARCH_PAGE_GRAN);
 
-        higher_half_entries[i] = (pte_t)((uptr)table - HHDM) | PRESENT | WRITE | GLOBAL;
+        higher_half_entries[i] = (pte_t)((uptr)phys) | PRESENT | WRITE | GLOBAL;
     }
 }

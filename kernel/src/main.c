@@ -30,20 +30,15 @@
 
 extern void dev_fb_init();
 
-void _entry()
+void kernel_main()
 {
-    video_init();
-    log("Kernel start.");
-    log("Kernel compiled on %s at %s.", __DATE__, __TIME__);
-
-    acpi_init();
+    log("Kernel main");
 
     pmm_init();
     kmem_init();
     heap_init();
     vmm_init();
 
-    arch_init();
     arch_cpu_core_init(0);
 
     vfs_init();

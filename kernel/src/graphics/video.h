@@ -9,7 +9,9 @@ typedef struct
     u64 width;
     u64 pitch;
     u64 size;
-} framebuffer_t;
+    u64 bpp;
+}
+framebuffer_t;
 
 extern framebuffer_t video_fb;
 

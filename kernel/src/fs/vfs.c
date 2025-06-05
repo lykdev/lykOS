@@ -55,6 +55,7 @@ static char *vfs_get_mountpoint(const char *path, vfs_mountpoint_t **out)
 
 int vfs_mount(const char *path, vfs_mountpoint_t *mp)
 {
+    const char *_path = path;
     trie_node_t *current = &g_trie_root;
 
     while (*path != '\0')
@@ -74,6 +75,8 @@ int vfs_mount(const char *path, vfs_mountpoint_t *mp)
         current = child;
     }
     current->mp = mp;
+
+    log("Filesystem mounted at %s.", _path);
     return 0;
 }
 

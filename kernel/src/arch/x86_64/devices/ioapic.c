@@ -137,7 +137,9 @@ void x86_64_ioapic_init()
         ptr += length;
     }
 
-    if (!g_ioapic_base)
+    if (g_ioapic_base)
+        log("I/O APIC initialized.");
+    else
         panic("I/O APIC interrupt controller structure not found!");
 }
 

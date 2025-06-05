@@ -197,11 +197,14 @@ void vmm_load_addr_space(vmm_addr_space_t *addr_space)
 
 void vmm_init()
 {
+    if (request_memmap.response == NULL)
+        panic("Invalid memory map provided by bootloader!");
+
     arch_ptm_init();
 
-    g_vmm_kernel_addr_space = vmm_new_addr_space(ARCH_KERNEL_MIN_VIRT, ARCH_KERNEL_MAX_VIRT);
-
     g_segment_cache = kmem_new_cache("VMM Segment Cache", sizeof(vmm_seg_t));
+
+    g_vmm_kernel_addr_space = vmm_new_addr_space(ARCH_KERNEL_MIN_VIRT, ARCH_KERNEL_MAX_VIRT);
 
     // Mappings done according to the Limine specification.
     vmm_map_fixed(
@@ -220,6 +223,29 @@ void vmm_init()
         request_kernel_addr.response->physical_base,
         true // Premap this segment. PF handlers are found here so we cannot rely on them to do the mapping later.
     );
+    for (u64 i = 0; i < request_memmap.response->entry_count; i++)
+    {
+        struct limine_memmap_entry *e = request_memmap.response->entries[i];
+        if (e->type == LIMINE_MEMMAP_RESERVED ||
+            e->type == LIMINE_MEMMAP_BAD_MEMORY)
+            continue;
+
+        uptr base   = FLOOR(e->base, ARCH_PAGE_GRAN);
+        u64  length = CEIL(e->base + e->length, ARCH_PAGE_GRAN) - base;
+
+        vmm_map_fixed(
+            g_vmm_kernel_addr_space,
+            base + HHDM,
+            length,
+            VMM_FULL,
+            base,
+            true
+        );
+    }
+
+    log("5");
+    for (volatile u64 i = 0; i < 1'000'000'000; i++)
+        ;
 
     vmm_load_addr_space(g_vmm_kernel_addr_space);
 

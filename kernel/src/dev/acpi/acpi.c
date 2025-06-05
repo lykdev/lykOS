@@ -25,12 +25,18 @@ acpi_sdp_t;
 static acpi_sdt_t *root_sdt;
 static bool extended;
 
-void acpi_init()
+bool acpi_init()
 {
-    if (request_rsdp.response->address == 0)
+    if (request_rsdp.response == NULL)
     {
-        log("ACPI: No RSDP found");
-        return;
+        log("Limine RSDP request failed.");
+        return false;
+    }
+
+    if (request_rsdp.response->address == NULL)
+    {
+        log("No RSDP found!");
+        return false;
     }
 
     acpi_sdp_t *sdp = (acpi_sdp_t*)request_rsdp.response->address;
@@ -40,6 +46,7 @@ void acpi_init()
         root_sdt = (acpi_sdt_t*)((u64)sdp->xsdt_addr + HHDM), extended = true;
 
     log("ACPI: Found valid root SDT.");
+    return true;
 }
 
 acpi_sdt_t *acpi_lookup(const char *signature)
