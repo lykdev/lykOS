@@ -243,9 +243,6 @@ void vmm_init()
         );
     }
 
-    log("5");
-    for (volatile u64 i = 0; i < 1'000'000'000; i++)
-        ;
 
     vmm_load_addr_space(g_vmm_kernel_addr_space);
 
