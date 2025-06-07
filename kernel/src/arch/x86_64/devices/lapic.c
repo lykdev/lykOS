@@ -2,6 +2,7 @@
 
 #include <arch/timer.h>
 #include <arch/x86_64/msr.h>
+#include <arch/x86_64/devices/pit.h>
 #include <common/hhdm.h>
 #include <common/log.h>
 
@@ -22,6 +23,7 @@
 #define MASK         (1 << 16)
 
 static u64 g_lapic_base;
+static u64 g_lapic_timer_freq = 0;
 
 static inline void lapic_write(u32 reg, u32 data)
 {
@@ -33,18 +35,18 @@ static inline u32 lapic_read(uint32_t reg)
     return *(volatile u32*)(g_lapic_base + reg);
 }
 
-void arch_timer_stop()
+void x86_64_lapic_timer_stop()
 {
     lapic_write(REG_TIMER_LVT, MASK);
     lapic_write(REG_TIMER_INITIAL_COUNT, 0);
 }
 
-void arch_timer_oneshoot(u8 vector, u8 ms)
+void x86_64_lapic_timer_oneshoot(u8 vector, u8 us)
 {
-    arch_timer_stop();
+    x86_64_lapic_timer_stop();
     lapic_write(REG_TIMER_LVT, ONE_SHOOT | vector);
     lapic_write(REG_TIMER_DIV, 0);
-    // lapic_write(REG_TIMER_INITIAL_COUNT, ms * (X86_64_CPU_CURRENT.lapic_timer_frequency / 1'000'000));
+    lapic_write(REG_TIMER_INITIAL_COUNT, us * (g_lapic_timer_freq / 1'000'000));
 }
 
 void x86_64_lapic_send_eoi()
@@ -61,8 +63,37 @@ void x86_64_lapic_ipi(u32 lapic_id, u32 vec)
 void x86_64_lapic_init()
 {
     g_lapic_base = (x86_64_msr_read(X86_64_MSR_APIC_BASE) & 0xFFFFFFFFFF000) + HHDM;
-
     lapic_write(REG_SPURIOUS, (1 << 8) | 0xFF);
+
+    if (!g_lapic_timer_freq)
+    {
+        lapic_write(REG_TIMER_DIV, 0);
+        for (u64 lapic_ticks = 8; /* :) */; lapic_ticks *= 2)
+        {
+            x86_64_pit_set_reload(UINT16_MAX);
+            u16 pit_start = x86_64_pit_count();
+
+            // Start LAPIC timer with `lapic_ticks` and wait for it to count down to 0.
+            lapic_write(REG_TIMER_LVT, MASK);
+            lapic_write(REG_TIMER_INITIAL_COUNT, lapic_ticks);
+            while(lapic_read(REG_TIMER_CURRENT_COUNT) != 0)
+                ;
+            lapic_write(REG_TIMER_LVT, MASK);
+
+            u16 pit_end = x86_64_pit_count();
+            // Compute how many PIT ticks elapsed during the LAPIC countdown.
+            u16 pit_delta = pit_start - pit_end;
+
+            if (pit_delta < UINT16_MAX / 4)
+                continue;
+
+            // Compute LAPIC timer frequency. Multiplications go first to avoid truncation.
+            // (lapic_ticks / pit_delta) * X86_64_PIT_BASE_FREQ
+            g_lapic_timer_freq = lapic_ticks * X86_64_PIT_BASE_FREQ / pit_delta;
+            log("LAPIC timer calibrated. Timer freq: %uHz", g_lapic_timer_freq);
+            break;
+        }
+    }
 
     log("LAPIC initialized.");
 }

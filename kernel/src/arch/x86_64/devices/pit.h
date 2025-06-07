@@ -2,10 +2,10 @@
 
 #include <lib/def.h>
 
-/*
-    Inlining helps with the accuracy of the readings.
-*/
+#define X86_64_PIT_BASE_FREQ 1'193'180
 
-void x86_64_pit_set_frequency(u64 frequency) __attribute__((always_inline));
+void x86_64_pit_set_reload(u16 reload_value);
 
-u16 x86_64_pit_count() __attribute__((always_inline));
+void x86_64_pit_set_frequency(u64 frequency);
+
+u16 x86_64_pit_count();

@@ -7,9 +7,7 @@
 #define PIT_DATA_2 0x42
 #define PIT_CMD    0x43
 
-#define PIT_BASE_FREQ 1'193'180
-
-static void x86_64_pit_set_reload(u16 reload_value)
+void x86_64_pit_set_reload(u16 reload_value)
 {
     x86_64_io_outb(PIT_CMD, 0x34);
     x86_64_io_outb(PIT_DATA_0, (u8)reload_value);
@@ -18,8 +16,8 @@ static void x86_64_pit_set_reload(u16 reload_value)
 
 void x86_64_pit_set_frequency(u64 frequency)
 {
-    u16 divisor = PIT_BASE_FREQ / frequency;
-    if(PIT_BASE_FREQ % frequency > frequency / 2) // Round up.
+    u16 divisor = X86_64_PIT_BASE_FREQ / frequency;
+    if(X86_64_PIT_BASE_FREQ % frequency > frequency / 2) // Round up.
         divisor++;
     x86_64_pit_set_reload(divisor);
 }
