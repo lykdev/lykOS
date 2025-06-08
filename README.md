@@ -4,7 +4,7 @@ This is the main repository of LykOS, an open source hobbyist operating system t
 ### Implemented and Planned Features
 A feature is considered implemented if it exists in any working form, even if rudimentary or incomplete.
 #### General
-- [x] Virtual Memory
+- [x] Virtual memory
 - [x] Slab allocator
 - [x] Kernel modules
 - [ ] Userspace
@@ -16,10 +16,12 @@ A feature is considered implemented if it exists in any working form, even if ru
 - [ ] Basic graphical environment
 #### Tasking
 - [x] SMP (multiprocessing)
-- [ ] Multitasking
+- [x] Multitasking
   - [x] Non-preemtive
-  - [ ] Preemtive
+  - [x] Preemtive
 - [ ] IPC
+  - [ ] Pipes
+  - [ ] Sockets
 #### Drivers
 - [ ] AHCI
 - [ ] NVMe
@@ -36,6 +38,6 @@ A feature is considered implemented if it exists in any working form, even if ru
 - [x] Initrd
 - [ ] Ext2
 - [ ] FAT32
-- [ ] /dev
+- [x] /dev
 - [ ] /mod
 - [ ] /proc
