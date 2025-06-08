@@ -24,7 +24,10 @@ static thread_t *sched_next()
 
     list_node_t *node = list_pop_head(&g_thread_list);
     if (node != NULL)
+    {
         ret = LIST_GET_CONTAINER(node, thread_t, list_elem_thread);
+        __atomic_fetch_sub(&ret->ref_count, 1, __ATOMIC_RELAXED);
+    }
     else
         ret = sched_get_curr_thread()->assigned_core->idle_thread;
 
@@ -44,7 +47,10 @@ void sched_drop(thread_t *thread)
 
     if (thread != sched_get_curr_thread()->assigned_core->idle_thread
     &&  thread->status == THREAD_STATE_READY)
+    {
         list_append(&g_thread_list, &thread->list_elem_thread);
+        __atomic_fetch_add(&thread->ref_count, 1, __ATOMIC_RELAXED);
+    }
 
     spinlock_release(&slock);
 }

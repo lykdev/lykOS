@@ -29,7 +29,7 @@ void  syscall_tcb(void *ptr);
 //     (void*)syscall_close,
 //     (void*)syscall_debug_log,
 //     (void*)syscall_exit,
-//     (void*)syscall_lseek,
+//     (void*)syscall_seek,
 //     (void*)syscall_mmap,
 //     (void*)syscall_open,
 //     (void*)syscall_read,

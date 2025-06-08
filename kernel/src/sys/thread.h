@@ -30,6 +30,14 @@ struct thread
     list_node_t list_elem_thread;
     list_node_t list_elem_inside_proc;
     list_node_t mutex_wait_queue_node;
+
+    /*
+     * `ref_count` starts at 0 but will increment if:
+     * - it is scheduled
+     * - it is assigned to a parent process
+     * - it is enqueued inside a mutex
+     */
+    uint ref_count;
 };
 
 extern u64 g_thread_count;
