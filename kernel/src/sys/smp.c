@@ -21,10 +21,10 @@ static proc_t *g_idle_proc = NULL;
 
 #include <arch/x86_64/io.h>
 
-[[gnu::noinline]] static void thread_idle_func()
+[[noreturn]] [[gnu::noinline]] static void thread_idle_func()
 {
     while (true)
-        sched_yield(THREAD_STATE_BLOCKED);
+        sched_yield(THREAD_STATE_READY);
 }
 
 static u64 g_cores_initialized = 0;
@@ -55,6 +55,8 @@ static void core_init(struct limine_mp_info *mp_info)
     spinlock_release(&slock);
 
     arch_cpu_write_thread_reg(idle_thread);
+    sched_init();
+    arch_cpu_context_init(&cpu_core->context);
     arch_cpu_int_unmask();
 
     thread_idle_func();

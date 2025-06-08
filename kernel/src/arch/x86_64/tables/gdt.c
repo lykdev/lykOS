@@ -91,8 +91,6 @@ static gdt_entry_t g_gdt[] = {
     {}
 };
 
-x86_64_tss_t g_tss;
-
 void x86_64_gdt_load()
 {
     gdtr_t gdtr = (gdtr_t){
@@ -103,13 +101,11 @@ void x86_64_gdt_load()
     gdt_load(&gdtr, X86_64_GDT_SELECTOR_CODE64_RING0, X86_64_GDT_SELECTOR_DATA64_RING0);
 
     log("GDT loaded");
-
-    x86_64_gdt_load_tss(&g_tss);
 }
 
 void x86_64_gdt_load_tss(x86_64_tss_t *tss)
 {
-    memset(&g_tss, 0, sizeof(x86_64_tss_t));
+    memset(tss, 0, sizeof(x86_64_tss_t));
 
     u16 tss_segment = sizeof(g_gdt) - 16;
 

@@ -62,9 +62,7 @@ void arch_thread_context_init(arch_thread_context_t *context, proc_t *parent_pro
            g_x86_64_fpu_restore(sched_get_curr_thread()->context.fpu_area);
 }
 
-extern x86_64_tss_t g_tss;
-
-void arch_thread_context_switch(arch_thread_context_t *curr, arch_thread_context_t *next)
+void arch_thread_context_switch(arch_cpu_context_t *cpu, arch_thread_context_t *curr, arch_thread_context_t *next)
 {
     // FPU
     g_x86_64_fpu_save(curr->fpu_area);
@@ -75,7 +73,7 @@ void arch_thread_context_switch(arch_thread_context_t *curr, arch_thread_context
     x86_64_msr_write(X86_64_MSR_KERNEL_GS_BASE, next->gs);
     x86_64_msr_write(X86_64_MSR_FS_BASE, next->fs);
     // TSS -> stack pointer for when taking interrupts.
-    x86_64_tss_set_rsp0(&g_tss, next->kernel_stack);
+    x86_64_tss_set_rsp0(cpu->tss, next->kernel_stack);
 
     x86_64_sched_context_switch(curr, next); // This function calls `sched_drop` for `curr` too.
 }

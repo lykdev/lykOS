@@ -43,4 +43,5 @@ x86_64_sched_context_switch:
     pop rbx
     pop rax
 
+    sti ; Unmask interrupts
     ret

@@ -14,6 +14,8 @@
 #include <sys/smp.h>
 #include <tasking/sched.h>
 
+u64 g_thread_count = 0;
+
 /// @brief Last ID assigned to a thread.
 static u64 g_last_id = 0;
 
@@ -33,6 +35,8 @@ thread_t *thread_new(proc_t *parent_proc, uptr entry)
     arch_thread_context_init(&thread->context, thread->parent_proc, parent_proc->type == PROC_USER ? true : false, entry);
 
     list_append(&parent_proc->threads, &thread->list_elem_inside_proc);
+
+    __atomic_fetch_add(&g_thread_count, 1, __ATOMIC_RELAXED);
 
     return thread;
 }

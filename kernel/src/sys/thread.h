@@ -14,7 +14,8 @@ typedef enum
 {
     THREAD_STATE_RUNNING,
     THREAD_STATE_READY,
-    THREAD_STATE_BLOCKED
+    THREAD_STATE_BLOCKED,
+    THREAD_STATE_AWAITING_CLEANUP
 }
 thread_status_t;
 
@@ -30,5 +31,7 @@ struct thread
     list_node_t list_elem_inside_proc;
     list_node_t mutex_wait_queue_node;
 };
+
+extern u64 g_thread_count;
 
 thread_t *thread_new(proc_t *parent_proc, uptr entry);

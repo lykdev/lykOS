@@ -12,6 +12,7 @@ typedef struct proc proc_t;
 
 struct smp_cpu_core
 {
+    arch_cpu_context_t context;
     uint id;
     thread_t *curr_thread;
     thread_t *idle_thread;

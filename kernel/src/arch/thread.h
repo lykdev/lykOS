@@ -135,4 +135,4 @@ arch_thread_context_t;
 
 void arch_thread_context_init(arch_thread_context_t *context, proc_t *parent_proc, bool user, uptr entry);
 
-void arch_thread_context_switch(arch_thread_context_t *curr, arch_thread_context_t *next);
+void arch_thread_context_switch(arch_cpu_context_t *cpu, arch_thread_context_t *curr, arch_thread_context_t *next);

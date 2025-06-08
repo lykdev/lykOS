@@ -79,12 +79,12 @@ void arch_int_handler(cpu_state_t *cpu_state)
     x86_64_lapic_send_eoi();
 }
 
-void arch_int_register_exception_handler(uint exception, void (*handler)())
+void arch_int_register_exception_handler(uint exception, void (*handler)(void))
 {
     handlers[exception] = handler;
 }
 
-void arch_int_register_irq_handler(uint irq, void (*handler)())
+void arch_int_register_irq_handler(uint irq, void (*handler)(void))
 {
     handlers[32 + irq] = handler;
 }

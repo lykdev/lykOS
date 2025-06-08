@@ -10,7 +10,9 @@ typedef struct
     #error Undefined.
 #endif
 }
-arch_cpu_local_info_t;
+arch_cpu_context_t;
+
+void arch_cpu_context_init(arch_cpu_context_t *context);
 
 void *arch_cpu_read_thread_reg();
 

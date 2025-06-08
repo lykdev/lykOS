@@ -2,7 +2,7 @@
 
 ADDRESS=0x$1
 
-objdump .chariot-cache/recipes/package/apps/install/usr/bin/test.elf \
+objdump .chariot-cache/recipes/custom/kernel/install/kernel.elf \
     -d -wrC \
     --visualize-jumps=color \
     --disassembler-color=on \

@@ -1,8 +1,17 @@
 extern arch_int_handler
 global arch_int_stub_table
 
+%macro SWAPGS_CONDITIONAL 0
+        test qword [rsp + 24], 3
+        jz %%noswap
+        swapgs
+    %%noswap:
+%endmacro
+
 isr_stub:
     cld                                                     ; Clear direction flag
+
+    SWAPGS_CONDITIONAL
 
     push rax
     push rbx
@@ -39,6 +48,8 @@ isr_stub:
     pop rcx
     pop rbx
     pop rax
+
+    SWAPGS_CONDITIONAL
 
     add rsp, 16                                            ; Discard interrupt number and error code
     iretq

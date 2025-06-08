@@ -35,18 +35,18 @@ static inline u32 lapic_read(uint32_t reg)
     return *(volatile u32*)(g_lapic_base + reg);
 }
 
-void x86_64_lapic_timer_stop()
+void arch_timer_stop()
 {
     lapic_write(REG_TIMER_LVT, MASK);
     lapic_write(REG_TIMER_INITIAL_COUNT, 0);
 }
 
-void x86_64_lapic_timer_oneshoot(u8 vector, u8 us)
+void arch_timer_oneshoot(uint irq, u64 us)
 {
-    x86_64_lapic_timer_stop();
-    lapic_write(REG_TIMER_LVT, ONE_SHOOT | vector);
+    lapic_write(REG_TIMER_LVT, MASK);
+    lapic_write(REG_TIMER_LVT, ONE_SHOOT | 32 + irq);
     lapic_write(REG_TIMER_DIV, 0);
-    lapic_write(REG_TIMER_INITIAL_COUNT, us * (g_lapic_timer_freq / 1'000'000));
+    lapic_write(REG_TIMER_INITIAL_COUNT, us * g_lapic_timer_freq / 1'000'000);
 }
 
 void x86_64_lapic_send_eoi()
@@ -84,11 +84,16 @@ void x86_64_lapic_init()
             // Compute how many PIT ticks elapsed during the LAPIC countdown.
             u16 pit_delta = pit_start - pit_end;
 
+            /*
+             * For optimal calibration, measurements must be performed over a maximal time interval.
+             * UINT16_MAX / 2 is not chosen as the threshold because if pit_delta were close to it the
+             * next iteration might cause the counter to overflow, resulting in incorrect calibration.
+             * Using a safer threshold of UINT16_MAX / 4 avoids this risk entirely.
+             */
             if (pit_delta < UINT16_MAX / 4)
                 continue;
 
             // Compute LAPIC timer frequency. Multiplications go first to avoid truncation.
-            // (lapic_ticks / pit_delta) * X86_64_PIT_BASE_FREQ
             g_lapic_timer_freq = lapic_ticks * X86_64_PIT_BASE_FREQ / pit_delta;
             log("LAPIC timer calibrated. Timer freq: %uHz", g_lapic_timer_freq);
             break;

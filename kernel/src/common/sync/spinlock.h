@@ -14,8 +14,8 @@ spinlock_t;
 
 void spinlock_acquire(volatile spinlock_t *slock);
 
-void spinlock_release(volatile spinlock_t *slock) __attribute__((always_inline));
+void spinlock_release(volatile spinlock_t *slock);
 
 void spinlock_primitive_acquire(volatile spinlock_t *slock);
 
-void spinlock_primitive_release(volatile spinlock_t *slock) __attribute__((always_inline));
+void spinlock_primitive_release(volatile spinlock_t *slock);

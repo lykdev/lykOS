@@ -1,5 +1,14 @@
 #include <arch/cpu.h>
 #include <arch/x86_64/msr.h>
+#include <arch/x86_64/tables/gdt.h>
+#include <arch/x86_64/tables/tss.h>
+#include <mm/heap.h>
+
+void arch_cpu_context_init(arch_cpu_context_t *context)
+{
+    context->tss = heap_alloc(sizeof(x86_64_tss_t));
+    x86_64_gdt_load_tss(context->tss);
+}
 
 void *arch_cpu_read_thread_reg()
 {

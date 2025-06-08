@@ -21,7 +21,8 @@ void list_insert_after(list_t *list, list_node_t *pos, list_node_t *new)
         list->tail = new;
         new->prev = NULL;
         new->next = NULL;
-    } else
+    }
+    else
     {
         // Middle/new node.
         new->prev = pos;
@@ -52,7 +53,8 @@ void list_insert_before(list_t *list, list_node_t *pos, list_node_t *new)
         list->tail = new;
         new->prev = NULL;
         new->next = NULL;
-    } else
+    }
+    else
     {
         // Middle/new node.
         new->prev = pos->prev;
@@ -104,7 +106,7 @@ list_node_t *list_pop_head(list_t *list)
 {
     list_node_t *node = list->head;
     if (node != NULL)
-        list_remove(list, list->head);
+        list_remove(list, node);
 
     return node;
 }
@@ -113,7 +115,7 @@ list_node_t *list_pop_tail(list_t *list)
 {
     list_node_t *node = list->tail;
     if (node != NULL)
-        list_remove(list, list->tail);
+        list_remove(list, node);
 
     return node;
 }
