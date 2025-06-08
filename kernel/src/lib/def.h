@@ -20,3 +20,5 @@ typedef unsigned int uint;
 #define KIB 1024ull
 #define MIB (KIB * 1024ull)
 #define GIB (MIB * 1024ull)
+
+#define BAD_ADDRESS ((uptr)-1)

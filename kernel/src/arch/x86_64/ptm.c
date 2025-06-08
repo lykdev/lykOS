@@ -133,8 +133,15 @@ uptr arch_ptm_virt_to_phys(arch_ptm_map_t *map, uptr virt)
     for (i = 3; i >= 1; i--)
     {
         table = get_next_level(table, table_entries[i], false);
+        if (!table)
+            return BAD_ADDRESS;
     }
-    return PTE_GET_ADDR(table[table_entries[i]]) + (virt & 0xFFF);
+
+    pte_t pte = table[table_entries[0]];
+    if (!(pte & PRESENT))
+        return BAD_ADDRESS;
+
+    return PTE_GET_ADDR(pte) + (virt & 0xFFF);
 }
 
 #include <graphics/draw.h>

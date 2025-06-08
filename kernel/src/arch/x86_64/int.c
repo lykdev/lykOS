@@ -60,15 +60,21 @@ void arch_int_handler(cpu_state_t *cpu_state)
     log("int %llx", cpu_state->int_no);
     if (cpu_state->int_no < 32)
     {
+        bool handled = false;
+
         if (cpu_state->int_no == 14) // PF
         {
+            uptr fault_addr;
+            asm volatile ("mov %%cr2, %0" : "=r" (fault_addr));
             proc_t *proc = ((thread_t*)arch_cpu_read_thread_reg())->parent_proc;
-            vmm_pagefault_handler(proc->addr_space, 0);
+            handled = vmm_pagefault_handler(proc->addr_space, fault_addr);
         }
 
-        log("CPU EXCEPTION: %llu %#llx", cpu_state->int_no, cpu_state->err_code);
-
-        arch_cpu_halt();
+        if (!handled)
+        {
+            log("CPU EXCEPTION: %llu %#llx", cpu_state->int_no, cpu_state->err_code);
+            arch_cpu_halt();
+        }
     }
     else
     {

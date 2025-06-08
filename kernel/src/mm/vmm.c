@@ -90,32 +90,20 @@ bool vmm_pagefault_handler(vmm_addr_space_t *addr_space, uptr addr)
 
     switch (seg->type)
     {
-    case VMM_SEG_ANON:
-    {
-        uptr virt = FLOOR(addr, ARCH_PAGE_GRAN);
-        uptr phys = (uptr)pmm_alloc(0);
-        arch_ptm_map(
-            &seg->addr_space->ptm_map,
-            virt,
-            phys,
-            ARCH_PAGE_GRAN
-        );
-        return true;
-    }
-    case VMM_SEG_FIXED:
-    {
-        uptr virt = FLOOR(addr, ARCH_PAGE_GRAN);
-        uptr phys = seg->off + (virt - seg->base);
-        arch_ptm_map(
-            &seg->addr_space->ptm_map,
-            virt,
-            phys,
-            ARCH_PAGE_GRAN
-        );
-        return true;
-    }
-    default:
-        return false;
+        case VMM_SEG_ANON:
+        {
+            uptr virt = FLOOR(addr, ARCH_PAGE_GRAN);
+            uptr phys = (uptr)pmm_alloc(0);
+            arch_ptm_map(
+                &seg->addr_space->ptm_map,
+                virt,
+                phys,
+                ARCH_PAGE_GRAN
+            );
+            return true;
+        }
+        default:
+            return false;
     }
 }
 
@@ -130,21 +118,12 @@ void vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t p
         .type = VMM_SEG_ANON,
         .base = virt,
         .len  = len,
-        .off  = 0,
         .list_elem = LIST_NODE_INIT
     };
     vmm_insert_seg(addr_space, created_seg);
-
-    //TODO: this was temp
-    spinlock_acquire(&addr_space->slock);
-
-    for (uptr addr = 0; addr < len; addr += ARCH_PAGE_SIZE_4K)
-        arch_ptm_map(&addr_space->ptm_map, virt + addr, (uptr)pmm_alloc(0), ARCH_PAGE_SIZE_4K);
-
-    spinlock_release(&addr_space->slock);
 }
 
-void vmm_map_fixed(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot, uptr phys, bool premap)
+void vmm_map_kernel(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot, uptr phys)
 {
     (void)(prot);
     ASSERT(virt % ARCH_PAGE_GRAN == 0 && len % ARCH_PAGE_GRAN == 0);
@@ -152,23 +131,19 @@ void vmm_map_fixed(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t 
     vmm_seg_t *created_seg = kmem_alloc_cache(g_segment_cache);
     *created_seg = (vmm_seg_t) {
         .addr_space = addr_space,
-        .type = VMM_SEG_FIXED,
+        .type = VMM_SEG_KERNEL,
         .base = virt,
         .len  = len,
-        .off  = phys,
         .list_elem = LIST_NODE_INIT
     };
     vmm_insert_seg(addr_space, created_seg);
 
-    if (premap)
-    {
-        spinlock_acquire(&addr_space->slock);
+    spinlock_acquire(&addr_space->slock);
 
-        for (uptr addr = 0; addr < len; addr += ARCH_PAGE_SIZE_4K)
-            arch_ptm_map(&addr_space->ptm_map, virt + addr, phys + addr, ARCH_PAGE_SIZE_4K);
+    for (uptr addr = 0; addr < len; addr += ARCH_PAGE_SIZE_4K)
+        arch_ptm_map(&addr_space->ptm_map, virt + addr, phys + addr, ARCH_PAGE_SIZE_4K);
 
-        spinlock_release(&addr_space->slock);
-    }
+    spinlock_release(&addr_space->slock);
 }
 
 uptr vmm_virt_to_phys(vmm_addr_space_t *addr_space, uptr virt)
@@ -207,21 +182,19 @@ void vmm_init()
     g_vmm_kernel_addr_space = vmm_new_addr_space(ARCH_KERNEL_MIN_VIRT, ARCH_KERNEL_MAX_VIRT);
 
     // Mappings done according to the Limine specification.
-    vmm_map_fixed(
+    vmm_map_kernel(
         g_vmm_kernel_addr_space,
         HHDM,
         4 * GIB,
         VMM_FULL,
-        0,
-        true
+        0
     );
-    vmm_map_fixed(
+    vmm_map_kernel(
         g_vmm_kernel_addr_space,
         request_kernel_addr.response->virtual_base,
         2 * GIB,
         VMM_FULL,
-        request_kernel_addr.response->physical_base,
-        true // Premap this segment. PF handlers are found here so we cannot rely on them to do the mapping later.
+        request_kernel_addr.response->physical_base
     );
     for (u64 i = 0; i < request_memmap.response->entry_count; i++)
     {
@@ -233,16 +206,14 @@ void vmm_init()
         uptr base   = FLOOR(e->base, ARCH_PAGE_GRAN);
         u64  length = CEIL(e->base + e->length, ARCH_PAGE_GRAN) - base;
 
-        vmm_map_fixed(
+        vmm_map_kernel(
             g_vmm_kernel_addr_space,
             base + HHDM,
             length,
             VMM_FULL,
-            base,
-            true
+            base
         );
     }
-
 
     vmm_load_addr_space(g_vmm_kernel_addr_space);
 
@@ -255,7 +226,14 @@ u64 vmm_copy_to(vmm_addr_space_t *dest_as, uptr dest_addr, void *src, u64 count)
     while (i < count)
     {
         u64 offset = (dest_addr + i) % ARCH_PAGE_GRAN;
-        uptr phys = vmm_virt_to_phys(dest_as, dest_addr + i); // TODO: vmm_virt_to_phys can fail but it will still return 0 as if it was valid (WHICH IS WRONG)
+        uptr phys = vmm_virt_to_phys(dest_as, dest_addr + i);
+        if (phys == BAD_ADDRESS)
+        {
+            vmm_pagefault_handler(dest_as, dest_addr + i);
+            phys = vmm_virt_to_phys(dest_as, dest_addr + i);
+            if (phys == BAD_ADDRESS)
+                panic("tf");
+        }
 
         u64 len = MIN(count - i, ARCH_PAGE_GRAN - offset);
         memcpy((void*)(phys + HHDM), src, len);
@@ -271,7 +249,14 @@ u64 vmm_zero_out(vmm_addr_space_t *dest_as, uptr dest_addr, u64 count)
     while (i < count)
     {
         u64 offset = (dest_addr + i) % ARCH_PAGE_GRAN;
-        uptr phys = vmm_virt_to_phys(dest_as, dest_addr + i); // TODO: vmm_virt_to_phys can fail but it will still return 0 as if it was valid (WHICH IS WRONG)
+        uptr phys = vmm_virt_to_phys(dest_as, dest_addr + i);
+        if (phys == BAD_ADDRESS)
+        {
+            vmm_pagefault_handler(dest_as, dest_addr + i);
+            phys = vmm_virt_to_phys(dest_as, dest_addr + i);
+            if (phys == BAD_ADDRESS)
+                panic("tf");
+        }
 
         u64 len = MIN(count - i, ARCH_PAGE_GRAN - offset);
         memset((void*)(phys + HHDM), 0, len);

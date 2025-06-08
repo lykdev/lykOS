@@ -23,8 +23,7 @@ vmm_addr_space_t;
 typedef enum
 {
     VMM_SEG_ANON,
-    VMM_SEG_FIXED,
-    VMM_SEG_DEV
+    VMM_SEG_KERNEL
 }
 vmm_seg_type_t;
 
@@ -44,7 +43,6 @@ typedef struct
     vmm_seg_type_t type;
     uptr base;
     u64  len;
-    uptr off;
 
     list_node_t list_elem;
 }
@@ -60,7 +58,7 @@ bool vmm_pagefault_handler(vmm_addr_space_t *addr_space, uptr addr);
 
 void vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot);
 
-void vmm_map_fixed(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot, uptr phys, bool premap);
+void vmm_map_kernel(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot, uptr phys);
 
 uptr vmm_virt_to_phys(vmm_addr_space_t *addr_space, uptr virt);
 
