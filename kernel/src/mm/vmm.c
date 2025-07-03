@@ -1,6 +1,6 @@
 #include "vmm.h"
-#include "arch/types.h"
 
+#include <arch/types.h>
 #include <arch/ptm.h>
 #include <common/assert.h>
 #include <common/hhdm.h>
@@ -14,20 +14,39 @@
 #include <mm/heap.h>
 #include <mm/pmm.h>
 
-#define SEG_INTERSECTS(BASE1, LENGTH1, BASE2, LENGTH2) ((BASE1) < ((BASE2) + (LENGTH2)) && (BASE2) < ((BASE1) + (LENGTH1)))
+typedef enum
+{
+    VMM_SEG_VNODE,
+    VMM_SEG_KERNEL
+}
+vmm_seg_type_t;
+
+typedef struct
+{
+    vmm_seg_type_t type;
+    uptr base;
+    u64 len;
+    //
+    int prot, flags;
+    //
+    vfs_node_t *vnode;
+    uptr offset;
+    //
+    list_node_t list_node;
+}
+vmm_seg_t;
 
 vmm_addr_space_t *g_vmm_kernel_addr_space;
-
 static kmem_cache_t *g_segment_cache;
 
-static void vmm_insert_seg(vmm_addr_space_t *addr_space, vmm_seg_t *seg)
+static void vmm_insert_seg(vmm_addr_space_t *as, vmm_seg_t *seg)
 {
-    spinlock_acquire(&addr_space->slock);
+    spinlock_acquire(&as->slock);
 
     list_node_t *pos = NULL;
-    FOREACH(n, addr_space->segments)
+    FOREACH(n, as->segments)
     {
-        vmm_seg_t *i = LIST_GET_CONTAINER(n, vmm_seg_t, list_elem);
+        vmm_seg_t *i = LIST_GET_CONTAINER(n, vmm_seg_t, list_node);
 
         if (i->base < seg->base)
             pos = n;
@@ -36,22 +55,22 @@ static void vmm_insert_seg(vmm_addr_space_t *addr_space, vmm_seg_t *seg)
     }
 
     if (pos)
-        list_insert_after(&addr_space->segments, pos, &seg->list_elem);
+        list_insert_after(&as->segments, pos, &seg->list_node);
     else
-        list_prepend(&addr_space->segments, &seg->list_elem);
+        list_prepend(&as->segments, &seg->list_node);
 
-    spinlock_release(&addr_space->slock);
+    spinlock_release(&as->slock);
 }
 
-uptr vmm_find_space(vmm_addr_space_t *addr_space, u64 len)
+static uptr vmm_find_space(vmm_addr_space_t *as, u64 len)
 {
-    if (list_is_empty(&addr_space->segments))
-        return addr_space->limit_low;
+    if (list_is_empty(&as->segments))
+        return as->limit_low;
 
-    uptr start = addr_space->limit_low;
-    FOREACH(n, addr_space->segments)
+    uptr start = as->limit_low;
+    FOREACH(n, as->segments)
     {
-        vmm_seg_t *seg = LIST_GET_CONTAINER(n, vmm_seg_t, list_elem);
+        vmm_seg_t *seg = LIST_GET_CONTAINER(n, vmm_seg_t, list_node);
         // If there's enough space between current start and this segment.
         if (start + len < seg->base)
             break;
@@ -60,17 +79,42 @@ uptr vmm_find_space(vmm_addr_space_t *addr_space, u64 len)
     }
 
     // Check if there us space after the last segment.
-    if (start + len - 1 <= addr_space->limit_high)
+    if (start + len - 1 <= as->limit_high)
         return start;
 
     return 0;
 }
 
-vmm_seg_t *vmm_addr_to_seg(vmm_addr_space_t *addr_space, uptr addr)
+static bool vmm_check_collision(vmm_addr_space_t *as, uptr base, u64 len)
 {
-    FOREACH (n, addr_space->segments)
+    uptr end = base + len - 1;
+
+    FOREACH(n, as->segments)
     {
-        vmm_seg_t *seg = LIST_GET_CONTAINER(n, vmm_seg_t, list_elem);
+        vmm_seg_t *seg = LIST_GET_CONTAINER(n, vmm_seg_t, list_node);
+        uptr seg_base = seg->base;
+        uptr seg_end = seg->base + seg->len - 1;
+
+        if (end >= seg_base && base <= seg_end)
+            return true;
+    }
+
+    return false;
+}
+
+static bool vmm_is_in_bounds(vmm_addr_space_t *as, uptr base, u64 len)
+{
+    if (base < as->limit_low || base + len > as->limit_high)
+        return false;
+
+    return true;
+}
+
+vmm_seg_t *vmm_addr_to_seg(vmm_addr_space_t *as, uptr addr)
+{
+    FOREACH (n, as->segments)
+    {
+        vmm_seg_t *seg = LIST_GET_CONTAINER(n, vmm_seg_t, list_node);
 
         if (seg->base <= addr && addr < seg->base + seg->len)
             return seg;
@@ -79,76 +123,112 @@ vmm_seg_t *vmm_addr_to_seg(vmm_addr_space_t *addr_space, uptr addr)
     return NULL;
 }
 
-bool vmm_pagefault_handler(vmm_addr_space_t *addr_space, uptr addr)
+bool vmm_pagefault_handler(vmm_addr_space_t *as, uptr addr)
 {
-    vmm_seg_t *seg = vmm_addr_to_seg(addr_space, addr);
+    vmm_seg_t *seg = vmm_addr_to_seg(as, addr);
     if (seg == NULL)
     {
         log("VMM: bruh");
         return false;
     }
 
-    switch (seg->type)
+    if (seg->type == VMM_SEG_KERNEL)
+        panic("PF on kernel segment!");
+
+    uptr virt = FLOOR(addr, ARCH_PAGE_GRAN);
+    uptr phys = (uptr)pmm_alloc(0);
+    arch_ptm_map(
+        &as->ptm_map,
+        virt,
+        phys,
+        ARCH_PAGE_GRAN
+    );
+
+    if (seg->flags & VMM_MAP_ANON)
+        memset((void*)(phys + HHDM), 0, ARCH_PAGE_GRAN);
+    else
     {
-        case VMM_SEG_ANON:
-        {
-            uptr virt = FLOOR(addr, ARCH_PAGE_GRAN);
-            uptr phys = (uptr)pmm_alloc(0);
-            arch_ptm_map(
-                &seg->addr_space->ptm_map,
-                virt,
-                phys,
-                ARCH_PAGE_GRAN
-            );
-            return true;
-        }
-        default:
-            return false;
+        u64 count = seg->vnode->file_ops->read(seg->vnode, addr - seg->base + seg->offset, (void*)(phys + HHDM), ARCH_PAGE_GRAN);
+        ASSERT(count == ARCH_PAGE_GRAN);
     }
+
+    return true;
 }
 
-void vmm_map_anon(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot)
+void *vmm_map_vnode(vmm_addr_space_t *as, uptr virt, u64 len, int prot, int flags, vfs_node_t *vnode, u64 offset)
 {
-    (void)(prot);
     ASSERT(virt % ARCH_PAGE_GRAN == 0 && len % ARCH_PAGE_GRAN == 0);
+    ASSERT(((flags & VMM_MAP_PRIVATE) != 0) ^ ((flags & VMM_MAP_SHARED) != 0));
+
+    if (flags & VMM_MAP_ANON)
+        vnode = NULL, offset = 0;
+    else
+        ASSERT(vnode != NULL);
+
+    if (vmm_check_collision(as, virt, len) || !vmm_is_in_bounds(as, virt, len))
+    {
+        if (flags & VMM_MAP_FIXED)
+            return VMM_MAP_FAILED;
+        else
+            virt = vmm_find_space(as, len);
+    }
+
+    if (flags & VMM_MAP_POPULATE)
+    {
+        for (uptr addr = 0; addr < len; addr += ARCH_PAGE_GRAN)
+        {
+            uptr phys = (uptr)pmm_alloc(0);
+            arch_ptm_map(&as->ptm_map, virt + addr, phys, ARCH_PAGE_GRAN);
+
+            if (flags & VMM_MAP_ANON)
+                memset((void*)(phys + HHDM), 0, ARCH_PAGE_GRAN);
+            else
+                vnode->file_ops->read(vnode, offset + addr, (void*)(phys + HHDM), ARCH_PAGE_GRAN);
+        }
+    }
 
     vmm_seg_t *created_seg = kmem_alloc_cache(g_segment_cache);
     *created_seg = (vmm_seg_t) {
-        .addr_space = addr_space,
-        .type = VMM_SEG_ANON,
+        .type = VMM_SEG_VNODE,
         .base = virt,
-        .len  = len,
-        .list_elem = LIST_NODE_INIT
+        .len = len,
+        .prot = prot,
+        .flags = flags,
+        .vnode = vnode,
+        .offset = offset,
+        .list_node = LIST_NODE_INIT
     };
-    vmm_insert_seg(addr_space, created_seg);
+    vmm_insert_seg(as, created_seg);
+
+    return (void*)virt;
 }
 
-void vmm_map_kernel(vmm_addr_space_t *addr_space, uptr virt, u64 len, vmm_prot_t prot, uptr phys)
+void vmm_map_kernel(vmm_addr_space_t *as, uptr virt, u64 len, int prot, uptr phys)
 {
     (void)(prot);
     ASSERT(virt % ARCH_PAGE_GRAN == 0 && len % ARCH_PAGE_GRAN == 0);
 
     vmm_seg_t *created_seg = kmem_alloc_cache(g_segment_cache);
     *created_seg = (vmm_seg_t) {
-        .addr_space = addr_space,
         .type = VMM_SEG_KERNEL,
         .base = virt,
-        .len  = len,
-        .list_elem = LIST_NODE_INIT
+        .len = len,
+        .prot = prot,
+        .list_node = LIST_NODE_INIT
     };
-    vmm_insert_seg(addr_space, created_seg);
+    vmm_insert_seg(as, created_seg);
 
-    spinlock_acquire(&addr_space->slock);
+    spinlock_acquire(&as->slock);
 
     for (uptr addr = 0; addr < len; addr += ARCH_PAGE_SIZE_4K)
-        arch_ptm_map(&addr_space->ptm_map, virt + addr, phys + addr, ARCH_PAGE_SIZE_4K);
+        arch_ptm_map(&as->ptm_map, virt + addr, phys + addr, ARCH_PAGE_SIZE_4K);
 
-    spinlock_release(&addr_space->slock);
+    spinlock_release(&as->slock);
 }
 
-uptr vmm_virt_to_phys(vmm_addr_space_t *addr_space, uptr virt)
+uptr vmm_virt_to_phys(vmm_addr_space_t *as, uptr virt)
 {
-    return arch_ptm_virt_to_phys(&addr_space->ptm_map, virt);
+    return arch_ptm_virt_to_phys(&as->ptm_map, virt);
 }
 
 vmm_addr_space_t *vmm_new_addr_space(uptr limit_low, uptr limit_high)
@@ -165,9 +245,9 @@ vmm_addr_space_t *vmm_new_addr_space(uptr limit_low, uptr limit_high)
     return addr_space;
 }
 
-void vmm_load_addr_space(vmm_addr_space_t *addr_space)
+void vmm_load_addr_space(vmm_addr_space_t *as)
 {
-    arch_ptm_load_map(&addr_space->ptm_map);
+    arch_ptm_load_map(&as->ptm_map);
 }
 
 void vmm_init()
@@ -186,14 +266,14 @@ void vmm_init()
         g_vmm_kernel_addr_space,
         HHDM,
         4 * GIB,
-        VMM_FULL,
+        VMM_PROT_FULL,
         0
     );
     vmm_map_kernel(
         g_vmm_kernel_addr_space,
         request_kernel_addr.response->virtual_base,
         2 * GIB,
-        VMM_FULL,
+        VMM_PROT_FULL,
         request_kernel_addr.response->physical_base
     );
     for (u64 i = 0; i < request_memmap.response->entry_count; i++)
@@ -210,7 +290,7 @@ void vmm_init()
             g_vmm_kernel_addr_space,
             base + HHDM,
             length,
-            VMM_FULL,
+            VMM_PROT_FULL,
             base
         );
     }

@@ -8,7 +8,7 @@ DISK="qemu/disk.img"
 
 QEMU_FLAGS=(
     -m 2G
-    -smp 4
+    -smp 1
     -no-shutdown
     -no-reboot
     -cdrom "$LYKOS_ISO"

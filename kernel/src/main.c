@@ -39,8 +39,6 @@ void kernel_main()
     heap_init();
     vmm_init();
 
-    arch_cpu_core_init(0);
-
     vfs_init();
     initrd_init();
 
@@ -89,6 +87,5 @@ void kernel_main()
     smp_init();
 
     log("Kernel end.");
-    while (true)
-        arch_cpu_halt();
+    arch_cpu_halt();
 }

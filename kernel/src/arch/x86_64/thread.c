@@ -1,7 +1,8 @@
 #include <arch/thread.h>
 #include <common/hhdm.h>
-#include <lib/string.h>
+#include <common/log.h>
 #include <lib/math.h>
+#include <lib/string.h>
 #include <mm/pmm.h>
 #include <tasking/sched.h>
 #include <sys/proc.h>
@@ -31,17 +32,18 @@ void arch_thread_context_init(arch_thread_context_t *context, proc_t *parent_pro
     }
     else
     {
-        context->kernel_stack = (uptr)pmm_alloc(0) + HHDM + ARCH_PAGE_GRAN;
-        context->rsp = context->kernel_stack - sizeof(arch_thread_init_stack_kernel_t);
-
-        memset((void *)context->rsp, 0, sizeof(arch_thread_init_stack_user_t));
-        ((arch_thread_init_stack_user_t *)context->rsp)->userspace_init = x86_64_thread_userspace_init;
-        ((arch_thread_init_stack_user_t *)context->rsp)->entry = entry;
-
         char *argv[] = { "/usr/bin/init", NULL };
         char *envp[] = { NULL };
-        ((arch_thread_init_stack_user_t *)context->rsp)->user_stack =
-            x86_64_abi_stack_setup(parent_proc->addr_space, ARCH_PAGE_GRAN * 8, argv, envp);
+
+        context->kernel_stack = (uptr)pmm_alloc(0) + HHDM + ARCH_PAGE_GRAN;
+        context->rsp = (context->kernel_stack - sizeof(arch_thread_init_stack_kernel_t)) & (~0xF);
+
+        arch_thread_init_stack_user_t *init_stack = (arch_thread_init_stack_user_t *)context->rsp;
+        *init_stack = (arch_thread_init_stack_user_t) {
+            .userspace_init = x86_64_thread_userspace_init,
+            .entry = entry,
+            .user_stack = x86_64_abi_stack_setup(parent_proc->addr_space, ARCH_PAGE_GRAN * 8, argv, envp)
+        };
     }
 
     u8 order = pmm_pagecount_to_order(CEIL(g_x86_64_fpu_area_size, ARCH_PAGE_GRAN)) / ARCH_PAGE_GRAN;

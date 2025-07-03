@@ -20,13 +20,18 @@
 
 uptr x86_64_abi_stack_setup(vmm_addr_space_t *as, size_t stack_size, char **argv, char **envp)
 {
-    ASSERT(stack_size % ARCH_PAGE_GRAN == 0);
-
-    // TODO: use vmm_alloc
-    uptr stack_ptr = vmm_find_space(as, stack_size);
-    vmm_map_anon(as, stack_ptr, stack_size, VMM_FULL);
-    uptr stack = (uptr) stack_ptr + stack_size - 1;
+    void *stack_ptr = vmm_map_vnode(
+        as,
+        0, stack_size,
+        VMM_PROT_FULL,
+        VMM_MAP_ANON |  VMM_MAP_POPULATE | VMM_MAP_PRIVATE,
+        NULL, 0
+    );
+    ASSERT(stack_ptr != VMM_MAP_FAILED);
+    uptr stack = (uptr)stack_ptr + stack_size - 1;
     stack &= ~0xF;
+
+    /*
 
     int argc = 0;
     for(; argv[argc]; argc++)
@@ -72,6 +77,8 @@ uptr x86_64_abi_stack_setup(vmm_addr_space_t *as, size_t stack_size, char **argv
     }
     // Argument count.
     WRITE_QWORD(argc);
+
+    */
 
     return stack;
 }

@@ -6,7 +6,7 @@
 
 int syscall_close(int fd)
 {
-    proc_t *proc = syscall_get_proc();
+    proc_t *proc = sched_get_curr_thread()->parent_proc;
 
     proc->resource_table.resources[fd] = NULL;
 
@@ -15,7 +15,7 @@ int syscall_close(int fd)
 
 int syscall_open(const char *path, int flags, int mode)
 {
-    proc_t *proc = syscall_get_proc();
+    proc_t *proc = sched_get_curr_thread()->parent_proc;
 
     vfs_node_t *node = vfs_lookup(path);
     if(node == NULL)
@@ -26,7 +26,7 @@ int syscall_open(const char *path, int flags, int mode)
 
 int syscall_read(int fd, void *buf, u64 count)
 {
-    proc_t *proc = syscall_get_proc();
+    proc_t *proc = sched_get_curr_thread()->parent_proc;
 
     resource_t *res = resource_get(&proc->resource_table, fd);
     if (res == NULL)
@@ -45,9 +45,9 @@ int syscall_read(int fd, void *buf, u64 count)
 
 int syscall_seek(int fd, u64 offset, int whence)
 {
-    proc_t *proc = syscall_get_proc();
+    proc_t *proc = sched_get_curr_thread()->parent_proc;
 
-    resource_t *res  = resource_get(&proc->resource_table, fd);
+    resource_t *res = resource_get(&proc->resource_table, fd);
     if (res == NULL)
         return -1;
     vfs_node_t *node = res->node;
@@ -77,7 +77,7 @@ int syscall_write(int fd, void *buf, u64 count)
     if (fd == 1)
         log("%s", buf);
 
-    proc_t *proc = syscall_get_proc();
+    proc_t *proc = sched_get_curr_thread()->parent_proc;
 
     resource_t *res  = resource_get(&proc->resource_table, fd);
     if (res == NULL)

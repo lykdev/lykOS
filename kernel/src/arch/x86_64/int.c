@@ -57,7 +57,6 @@ void (*handlers[256])() = { NULL };
 
 void arch_int_handler(cpu_state_t *cpu_state)
 {
-    log("int %llx", cpu_state->int_no);
     if (cpu_state->int_no < 32)
     {
         bool handled = false;

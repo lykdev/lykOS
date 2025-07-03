@@ -49,12 +49,19 @@ module_t *module_load(vfs_node_t *file)
         &&  section->sh_size != 0
         &&  section->sh_flags & SHF_ALLOC)
         {
-            // TODO: use vmm_alloc
             u64 size = CEIL(section->sh_size, ARCH_PAGE_GRAN);
-            uptr mem = vmm_find_space(g_vmm_kernel_addr_space, size);
-            vmm_map_anon(g_vmm_kernel_addr_space, mem, size, VMM_FULL);
-            file->file_ops->read(file, section->sh_offset, (void*)mem, section->sh_size);
-            section_addr[i] = mem;
+            void *mem = vmm_map_vnode(
+                g_vmm_kernel_addr_space,
+                0,
+                size,
+                VMM_PROT_FULL,
+                VMM_MAP_ANON | VMM_MAP_POPULATE | VMM_MAP_PRIVATE,
+                NULL,
+                0
+            );
+            file->file_ops->read(file, section->sh_offset, mem, section->sh_size);
+
+            section_addr[i] = (uptr)mem;
         }
     }
 

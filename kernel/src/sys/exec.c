@@ -49,8 +49,16 @@ proc_t *exec_load(vfs_node_t *file)
             uptr end   = CEIL(ph->p_vaddr + ph->p_memsz, ARCH_PAGE_GRAN);
             u64  diff  = end - start;
 
-            vmm_map_anon(proc->addr_space, start, diff, VMM_FULL);
-            vmm_zero_out(proc->addr_space, ph->p_vaddr, ph->p_memsz);
+            vmm_map_vnode(
+                proc->addr_space,
+                start,
+                diff,
+                VMM_PROT_FULL,
+                VMM_MAP_ANON | VMM_MAP_POPULATE | VMM_MAP_FIXED | VMM_MAP_PRIVATE,
+                NULL,
+                0
+            );
+
             // TODO: stop using pmm
             ASSERT(pmm_order_to_pagecount(10) * ARCH_PAGE_GRAN >= ph->p_filesz);
             void *buf = pmm_alloc(10);

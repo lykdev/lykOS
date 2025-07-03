@@ -8,7 +8,7 @@ source/mlibc {
 }
 
 package/mlibc_headers {
-    dependencies: [ source/mlibc tool/pkgconf image/meson ]
+    dependencies: [ !source/mlibc tool/pkgconf image/meson ]
     configure: <sh>
         meson setup \
             --prefix=$PREFIX \

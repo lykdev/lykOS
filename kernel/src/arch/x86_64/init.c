@@ -5,7 +5,7 @@
 #include <arch/x86_64/fpu.h>
 #include <arch/x86_64/syscall.h>
 
-void arch_cpu_core_init(int cpu_id)
+void arch_cpu_core_init()
 {
     x86_64_gdt_load();
     x86_64_idt_load();
