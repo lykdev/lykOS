@@ -57,9 +57,9 @@ void kernel_main()
             panic("Could not find directory `/modules`.");
         u64 idx = 0;
         const char *name;
-        while ((name = module_dir->dir_ops->list(module_dir, &idx)))
+        while ((name = module_dir->ops->list(module_dir, &idx)))
         {
-            vfs_node_t *file = module_dir->dir_ops->lookup(module_dir, name);
+            vfs_node_t *file = module_dir->ops->lookup(module_dir, name);
             module_t *mod = module_load(file);
 
             if (mod->probe())
@@ -76,9 +76,9 @@ void kernel_main()
             panic("Could not find directory `/usr/bin`.");
         u64 idx = 0;
         const char *name;
-        while ((name = init_dir->dir_ops->list(init_dir, &idx)))
+        while ((name = init_dir->ops->list(init_dir, &idx)))
         {
-            vfs_node_t *file = init_dir->dir_ops->lookup(init_dir, name);
+            vfs_node_t *file = init_dir->ops->lookup(init_dir, name);
             proc_t *proc = exec_load(file);
             sched_queue_add(LIST_GET_CONTAINER(proc->threads.head, thread_t, list_elem_inside_proc));
         }

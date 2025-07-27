@@ -93,7 +93,7 @@ vfs_node_t *vfs_lookup(const char *path)
         path = path_consume_comp(path, comp);
 
         if (comp[0] != '\0')
-            curr = curr->dir_ops->lookup(curr, comp);
+            curr = curr->ops->lookup(curr, comp);
         else
             return curr;
     }

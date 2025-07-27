@@ -148,7 +148,7 @@ bool vmm_pagefault_handler(vmm_addr_space_t *as, uptr addr)
         memset((void*)(phys + HHDM), 0, ARCH_PAGE_GRAN);
     else
     {
-        u64 count = seg->vnode->file_ops->read(seg->vnode, addr - seg->base + seg->offset, (void*)(phys + HHDM), ARCH_PAGE_GRAN);
+        u64 count = seg->vnode->ops->read(seg->vnode, addr - seg->base + seg->offset, (void*)(phys + HHDM), ARCH_PAGE_GRAN);
         ASSERT(count == ARCH_PAGE_GRAN);
     }
 
@@ -183,7 +183,7 @@ void *vmm_map_vnode(vmm_addr_space_t *as, uptr virt, u64 len, int prot, int flag
             if (flags & VMM_MAP_ANON)
                 memset((void*)(phys + HHDM), 0, ARCH_PAGE_GRAN);
             else
-                vnode->file_ops->read(vnode, offset + addr, (void*)(phys + HHDM), ARCH_PAGE_GRAN);
+                vnode->ops->read(vnode, offset + addr, (void*)(phys + HHDM), ARCH_PAGE_GRAN);
         }
     }
 

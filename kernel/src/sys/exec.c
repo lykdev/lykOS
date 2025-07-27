@@ -17,7 +17,7 @@ proc_t *exec_load(vfs_node_t *file)
     log("Loading executable `%s`.", file->name);
 
     Elf64_Ehdr ehdr;
-    if (file->file_ops->read(file, 0, &ehdr, sizeof(Elf64_Ehdr)) != sizeof(Elf64_Ehdr))
+    if (file->ops->read(file, 0, &ehdr, sizeof(Elf64_Ehdr)) != sizeof(Elf64_Ehdr))
     {
         log("Could not read file header!");
         return NULL;
@@ -37,7 +37,7 @@ proc_t *exec_load(vfs_node_t *file)
     proc_t *proc = proc_new(PROC_USER);
 
     CLEANUP Elf64_Phdr *ph_table = heap_alloc(ehdr.e_phentsize * ehdr.e_phnum);
-    file->file_ops->read(file, ehdr.e_phoff, ph_table, ehdr.e_phentsize * ehdr.e_phnum);
+    file->ops->read(file, ehdr.e_phoff, ph_table, ehdr.e_phentsize * ehdr.e_phnum);
 
     for (uint i = 0; i < ehdr.e_phnum; i++)
     {
@@ -62,7 +62,7 @@ proc_t *exec_load(vfs_node_t *file)
             // TODO: stop using pmm
             ASSERT(pmm_order_to_pagecount(10) * ARCH_PAGE_GRAN >= ph->p_filesz);
             void *buf = pmm_alloc(10);
-            file->file_ops->read(file, ph->p_offset, (void*)((uptr)buf + HHDM), ph->p_filesz);
+            file->ops->read(file, ph->p_offset, (void*)((uptr)buf + HHDM), ph->p_filesz);
             vmm_copy_to(proc->addr_space, ph->p_vaddr, (void*)((uptr)buf + HHDM), ph->p_filesz);
             pmm_free(buf);
         }

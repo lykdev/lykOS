@@ -19,7 +19,7 @@ module_t *module_load(vfs_node_t *file)
     module_t module;
 
     Elf64_Ehdr ehdr;
-    if (file->file_ops->read(file, 0, &ehdr, sizeof(Elf64_Ehdr)) != sizeof(Elf64_Ehdr))
+    if (file->ops->read(file, 0, &ehdr, sizeof(Elf64_Ehdr)) != sizeof(Elf64_Ehdr))
     {
         log("Could not read file header!");
         return NULL;
@@ -42,7 +42,7 @@ module_t *module_load(vfs_node_t *file)
 
     for(int i = 0; i < ehdr.e_shnum; i++)
     {
-        file->file_ops->read(file, ehdr.e_shoff + (ehdr.e_shentsize * i), &shdr[i], sizeof(Elf64_Shdr));
+        file->ops->read(file, ehdr.e_shoff + (ehdr.e_shentsize * i), &shdr[i], sizeof(Elf64_Shdr));
         Elf64_Shdr *section = &shdr[i];
 
         if (section->sh_type == SHT_PROGBITS
@@ -59,7 +59,7 @@ module_t *module_load(vfs_node_t *file)
                 NULL,
                 0
             );
-            file->file_ops->read(file, section->sh_offset, mem, section->sh_size);
+            file->ops->read(file, section->sh_offset, mem, section->sh_size);
 
             section_addr[i] = (uptr)mem;
         }
@@ -76,7 +76,7 @@ module_t *module_load(vfs_node_t *file)
         return NULL;
     }
     CLEANUP void *symtab = heap_alloc(symtab_hdr->sh_size);
-    file->file_ops->read(file, symtab_hdr->sh_offset, symtab, symtab_hdr->sh_size);
+    file->ops->read(file, symtab_hdr->sh_offset, symtab, symtab_hdr->sh_size);
 
     // String table.
     Elf64_Shdr *strtab_hdr = &shdr[symtab_hdr->sh_link];
@@ -86,7 +86,7 @@ module_t *module_load(vfs_node_t *file)
         return NULL;
     }
     CLEANUP char *strtab = heap_alloc(strtab_hdr->sh_size);
-    file->file_ops->read(file, strtab_hdr->sh_offset, strtab, strtab_hdr->sh_size);
+    file->ops->read(file, strtab_hdr->sh_offset, strtab, strtab_hdr->sh_size);
 
     // Resolve symbols.
     size_t sym_count = symtab_hdr->sh_size / symtab_hdr->sh_entsize;
@@ -141,7 +141,7 @@ module_t *module_load(vfs_node_t *file)
             continue;
 
         Elf64_Rela rela_entries[section->sh_size / section->sh_entsize];
-        file->file_ops->read(file, section->sh_offset, rela_entries, section->sh_size);
+        file->ops->read(file, section->sh_offset, rela_entries, section->sh_size);
 
         for (uint j = 0; j < section->sh_size / section->sh_entsize; j++)
         {

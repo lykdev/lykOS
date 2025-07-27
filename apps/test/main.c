@@ -17,8 +17,8 @@ int main()
     for (size_t i = 75; i < 100; i++)
         p[i] = 0xFFFFFF;
 
-    // FILE *file = fopen("/dev/fb", "r+");
-    // fwrite(p, 4, 400, file);
+    FILE *file = fopen("/dev/fb", "r+");
+    fwrite(p, 4, 400, file);
 
     return 43;
 }

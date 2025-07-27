@@ -36,7 +36,7 @@ int syscall_read(int fd, void *buf, u64 count)
     if (node == NULL)
         return -1;
 
-    return node->file_ops->read(node, res->offset, buf, count);
+    return node->ops->read(node, res->offset, buf, count);
 }
 
 #define SEEK_SET  0
@@ -88,9 +88,9 @@ int syscall_write(int fd, void *buf, u64 count)
         return -1;
 
     if (node->type == VFS_NODE_FILE)
-        return node->file_ops->write(node, res->offset, buf, count);
+        return node->ops->write(node, res->offset, buf, count);
     else if (node->type == VFS_NODE_CHAR)
-        return node->char_ops->write(node, res->offset, buf, count);
+        return node->ops->write(node, res->offset, buf, count);
     else
         return -1;
 }

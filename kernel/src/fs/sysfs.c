@@ -29,21 +29,20 @@ static vfs_node_t* dir_create(vfs_node_t *self, vfs_node_type_t t, char *name);
 
 //
 
-static vfs_node_ops_file_t g_node_file_ops = {
+static vfs_node_ops_t g_node_file_ops = {
     .read = file_read,
     .write = file_write,
 };
 
-static vfs_node_ops_dir_t g_node_dir_ops = {
+static vfs_node_ops_t g_node_dir_ops = {
     .lookup = dir_lookup,
     .list = dir_list,
     .create = dir_create
 };
 
-static vfs_node_ops_fifo_t g_node_fifo_ops = {
+static vfs_node_ops_t g_node_fifo_ops = {
     .read = file_read,
     .write = file_write,
-    .poll = NULL,
 };
 
 //
@@ -148,13 +147,13 @@ static vfs_node_t* dir_create(vfs_node_t *self, vfs_node_type_t type, char *name
     switch (type)
     {
         case VFS_NODE_FILE:
-            vn->file_ops = &g_node_file_ops;
+            vn->ops = &g_node_file_ops;
             break;
         case VFS_NODE_DIR:
-            vn->dir_ops = &g_node_dir_ops;
+            vn->ops = &g_node_dir_ops;
             break;
         case VFS_NODE_FIFO:
-            vn->fifo_ops = &g_node_fifo_ops;
+            vn->ops = &g_node_fifo_ops;
             break;
         case VFS_NODE_SOCKET:
         case VFS_NODE_CHAR:
@@ -181,7 +180,7 @@ vfs_mountpoint_t *sysfs_new_mp(const char *name)
     *root_node = (inode_t) {
         .vfs_node = (vfs_node_t) {
             .type = VFS_NODE_DIR,
-            .dir_ops = &g_node_dir_ops
+            .ops = &g_node_dir_ops
         },
         .children = LIST_INIT,
         .spinlock = SPINLOCK_INIT,

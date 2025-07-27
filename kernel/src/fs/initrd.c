@@ -133,11 +133,11 @@ const char *list(vfs_node_t *self, u64 *hint)
     return NULL;
 }
 
-static vfs_node_ops_file_t g_file_ops = (vfs_node_ops_file_t) {
+static vfs_node_ops_t g_file_ops = (vfs_node_ops_t) {
     .read = read,
 };
 
-static vfs_node_ops_dir_t g_dir_ops = (vfs_node_ops_dir_t) {
+static vfs_node_ops_t g_dir_ops = (vfs_node_ops_t) {
     .lookup = lookup,
     .list = list
 };
