@@ -56,6 +56,8 @@ vfs_mountpoint_t;
 
 int vfs_mount(const char *path, vfs_mountpoint_t *mp);
 
+vfs_node_t *vfs_create(vfs_node_type_t t, const char *path);
+
 vfs_node_t *vfs_lookup(const char *path);
 
 void vfs_init();

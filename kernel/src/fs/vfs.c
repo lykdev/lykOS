@@ -80,6 +80,27 @@ int vfs_mount(const char *path, vfs_mountpoint_t *mp)
     return 0;
 }
 
+vfs_node_t *vfs_create(vfs_node_type_t t, const char *path)
+{
+    char parent_path[256];
+    char child_name[64];
+
+    char *c = strrchr(path, '/');
+    if (c == NULL)
+        return NULL;
+
+    strncpy(parent_path, path, (uptr)c - (uptr)path);
+    strcpy(child_name, c);
+
+    vfs_node_t *parent_node = vfs_lookup(parent_path);
+    if (parent_node == NULL)
+        return NULL;
+    if (parent_node->ops->lookup(parent_node, "child_name") != NULL)
+        return NULL;
+
+    return parent_node->ops->create(parent_node, t, child_name);
+}
+
 vfs_node_t *vfs_lookup(const char *path)
 {
     vfs_mountpoint_t *mp;
@@ -87,18 +108,22 @@ vfs_node_t *vfs_lookup(const char *path)
     ASSERT(mp != NULL);
 
     vfs_node_t *curr = mp->root_node;
-    while (curr != NULL)
+    while (curr && *path)
     {
-        char comp[64] = "";
-        path = path_consume_comp(path, comp);
+        while(*path == '/')
+            path++;
 
-        if (comp[0] != '\0')
-            curr = curr->ops->lookup(curr, comp);
-        else
-            return curr;
+        char *slash = strchr(path, '/');
+        if (slash)
+            *slash = '\0';
+        curr = curr->ops->lookup(curr, path);
+        if (slash)
+            *slash = '/';
+
+        path += strlen(curr->name);
     }
 
-    return NULL;
+    return curr;
 }
 
 void vfs_init()
