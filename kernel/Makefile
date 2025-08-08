@@ -92,7 +92,7 @@ build: $(OBJ_FILES)
 limine: src/common/limine/limine.h
 
 src/common/limine/limine.h:
-	wget -O src/common/limine/limine.h https://raw.githubusercontent.com/limine-bootloader/limine/refs/heads/v8.x-binary/limine.h
+	wget -O src/common/limine/limine.h https://raw.githubusercontent.com/KM198912/limine/refs/heads/v8.x-binary/limine.h
 
 $(BUILD_DIR)/%.c.o: src/%.c src/common/limine/limine.h
 	mkdir -p $(@D)
