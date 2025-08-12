@@ -6,6 +6,7 @@
 #include <common/hhdm.h>
 #include <common/limine/requests.h>
 #include <common/log.h>
+#include <common/sync/spinlock.h>
 #include <lib/def.h>
 #include <lib/list.h>
 #include <lib/string.h>
@@ -22,6 +23,7 @@ typedef struct
 static pmm_block_t *blocks;
 static u64 block_count;
 static list_t levels[PMM_MAX_ORDER + 1];
+static spinlock_t slock = SPINLOCK_INIT;
 
 // UTILS
 
@@ -56,6 +58,8 @@ void *pmm_alloc(u8 order)
 {
     ASSERT(order <= PMM_MAX_ORDER);
 
+    spinlock_acquire(&slock);
+
     int i = order;
     while (list_is_empty(&levels[i]))
     {
@@ -80,12 +84,16 @@ void *pmm_alloc(u8 order)
 
     block->order = order;
     block->free = false;
+
+    spinlock_release(&slock);
     return (void *)block->addr;
 }
 
 void pmm_free(void *addr)
 {
     ASSERT_C((uptr)addr < HHDM, "PMM functions operate with lower half memory addresses.");
+
+    spinlock_acquire(&slock);
 
     u64 idx = (u64)addr / ARCH_PAGE_GRAN;
     pmm_block_t *block = &blocks[idx];
@@ -116,6 +124,8 @@ void pmm_free(void *addr)
     block->order = i;
     block->free = true;
     list_append(&levels[i], &block->list_elem);
+
+    spinlock_release(&slock);
 }
 
 // INIT
