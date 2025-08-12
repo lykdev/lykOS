@@ -86,16 +86,18 @@ vfs_node_t *vfs_create(vfs_node_type_t t, const char *path)
     char child_name[64];
 
     char *c = strrchr(path, '/');
-    if (c == NULL)
+    if (!c)
         return NULL;
 
-    strncpy(parent_path, path, (uptr)c - (uptr)path);
-    strcpy(child_name, c);
+    u64 parent_len = (u64)(c - path);
+    memcpy(parent_path, path, parent_len); // Using strncpy would have not guaranteed null termination either way.
+    parent_path[parent_len] = '\0';
+    strcpy(child_name, c + 1);
 
     vfs_node_t *parent_node = vfs_lookup(parent_path);
-    if (parent_node == NULL)
+    if (!parent_node)
         return NULL;
-    if (parent_node->ops->lookup(parent_node, "child_name") != NULL)
+    if (parent_node->ops->lookup(parent_node, child_name) != NULL) // If there's already a vnode with that name.
         return NULL;
 
     return parent_node->ops->create(parent_node, t, child_name);
