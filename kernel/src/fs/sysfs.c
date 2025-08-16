@@ -40,11 +40,6 @@ static vfs_node_ops_t g_node_dir_ops = {
     .create = dir_create
 };
 
-static vfs_node_ops_t g_node_fifo_ops = {
-    .read = file_read,
-    .write = file_write,
-};
-
 //
 
 static u64 file_read(vfs_node_t *self, u64 offset, void *buffer, u64 count)
@@ -153,8 +148,6 @@ static vfs_node_t* dir_create(vfs_node_t *self, vfs_node_type_t type, char *name
             vn->ops = &g_node_dir_ops;
             break;
         case VFS_NODE_FIFO:
-            vn->ops = &g_node_fifo_ops;
-            break;
         case VFS_NODE_SOCKET:
         case VFS_NODE_CHAR:
         case VFS_NODE_BLOCK:

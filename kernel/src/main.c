@@ -30,6 +30,8 @@
 
 extern void dev_fb_init();
 
+extern void afunix_init();
+
 void kernel_main()
 {
     log("Kernel main");
@@ -47,6 +49,9 @@ void kernel_main()
 
     // List PCI devices. Required for loading device drivers.
     pci_list();
+
+    // Init IPC code.
+    afunix_init();
 
     // Load kernel modules.
     {

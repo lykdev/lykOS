@@ -1,6 +1,7 @@
 #include "syscall.h"
 
 #include <common/log.h>
+#include <lib/errno.h>
 #include <lib/math.h>
 #include <fs/vfs.h>
 
@@ -12,7 +13,7 @@
 #define MAP_FAILED          ((void *)(-1))
 #define MAP_ANON            0x20
 
-void *syscall_mmap(void *addr, u64 length, int prot, int flags, int fd, u64 offset)
+i64 syscall_mmap(void *addr, u64 length, int prot, int flags, int fd, u64 offset)
 {
     proc_t *proc = sched_get_curr_thread()->parent_proc;
     vmm_addr_space_t *as = proc->addr_space;
@@ -23,13 +24,13 @@ void *syscall_mmap(void *addr, u64 length, int prot, int flags, int fd, u64 offs
     {
         res = resource_get(&proc->resource_table, fd);
         if (res == NULL)
-            return MAP_FAILED;
+            return -EBADF;
         vnode = res->node;
         if (vnode == NULL)
-            return MAP_FAILED;
+            return -EBADF;
     }
     else
         vnode = NULL, offset = 0;
 
-    return vmm_map_vnode(as, (uptr)addr, length, 0, VMM_MAP_ANON | VMM_MAP_PRIVATE, vnode, offset);
+    return (i64)vmm_map_vnode(as, (uptr)addr, length, 0, VMM_MAP_ANON | VMM_MAP_PRIVATE, vnode, offset);
 }

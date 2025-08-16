@@ -1,7 +1,7 @@
 source/mlibc {
     url: "https://github.com/lykdev/mlibc.git"
     type: "git"
-    revision: "847deef4eabd5c28eb7dc1b5b3e68d63377f04ec"
+    revision: "master"
     dependencies: [ image/meson ]
     regenerate: <sh>
         meson subprojects download
