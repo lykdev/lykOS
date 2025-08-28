@@ -9,7 +9,11 @@ source/mlibc {
 }
 
 package/mlibc_headers {
-    dependencies: [ !source/mlibc tool/pkgconf image/meson ]
+    dependencies: [
+        !source/mlibc
+        image/meson
+        tool/pkgconf
+    ]
     configure: <sh>
         meson setup \
             --prefix=$PREFIX \
@@ -28,12 +32,10 @@ package/mlibc_headers {
 
 package/mlibc {
     dependencies: [
-        source/mlibc
-        source/support
-        tool/gcc_bootstrap
-        tool/pkgconf
-        package/mlibc_headers
+        source/mlibc source/support
         image/meson
+        tool/gcc_bootstrap tool/pkgconf
+        package/mlibc_headers
     ]
     configure: <sh>
         meson setup \

@@ -1,4 +1,4 @@
-@import "host-recipes/*.chariot"
+@import "recipes/**/*.chariot"
 
 source/support {
     url: "support"
@@ -79,7 +79,10 @@ source/apps {
 }
 
 package/apps {
-    dependencies: [source/apps, tool/gcc]
+    dependencies: [
+        source/apps,
+        tool/gcc
+    ]
     build: <sh>
         $SOURCES_DIR/apps/build.py "x86_64-lykos-gcc" $BUILD_DIR
     </sh>

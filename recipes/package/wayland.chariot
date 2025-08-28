@@ -1,0 +1,53 @@
+source/wayland {
+    url: "https://gitlab.freedesktop.org/wayland/wayland/"
+    type: "git"
+    revision: "main"
+    dependencies: [ image/meson ]
+    regenerate: <sh>
+        meson subprojects download
+    </sh>
+}
+
+tool/wayland_scanner {
+    dependencies: [
+        source/wayland source/support
+        image/build-essential image/libexpat1-dev image/meson image/pkg-config
+    ]
+    configure: <sh>
+        meson setup \
+            --prefix=$PREFIX \
+            -Ddtd_validation=false \
+            -Ddocumentation=false \
+            -Dscanner=true \
+            -Dlibraries=false \
+            -Dtests=false \
+            $SOURCES_DIR/wayland
+    </sh>
+    build: <sh>
+        ninja -j$PARALLELISM
+    </sh>
+    install: <sh>
+        DESTDIR=$INSTALL_DIR ninja install
+    </sh>
+}
+
+package/wayland {
+    dependencies: [
+        source/wayland source/support
+        image/graphviz image/llvm image/meson image/pkgconf
+        tool/gcc tool/pkgconf tool/wayland_scanner
+        package/expat package/libffi package/libxml2
+    ]
+    configure: <sh>
+        meson setup \
+            --cross-file $SOURCES_DIR/support/lykos.cross-file \
+            --prefix=$PREFIX \
+            $SOURCES_DIR/wayland
+    </sh>
+    build: <sh>
+        ninja -j$PARALLELISM
+    </sh>
+    install: <sh>
+        DESTDIR=$INSTALL_DIR ninja install
+    </sh>
+}

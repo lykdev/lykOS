@@ -1,0 +1,31 @@
+source/libxml2 {
+    url: "https://download.gnome.org/sources/libxml2/2.13/libxml2-2.13.5.tar.xz"
+    b2sum: "46c280630638e2c8009c593bbbcf90ccbfffe9ddcc99987c4d91c2223043759f2b4d6511b31b2357c5250ac3b40d96ef05c17b4d2adc61972665f8a0d899dfe8"
+    type: "tar.xz"
+    dependencies: [ tool/autoconf tool/automake tool/libtool tool/pkgconf tool/reconfigure]
+    regenerate: <sh>
+        reconfigure.sh
+    </sh>
+}
+
+package/libxml2 {
+    dependencies: [ source/libxml2 tool/autoconf tool/automake tool/gcc tool/pkgconf package/zlib]
+    configure: <sh>
+        CC=x86_64-lykos-gcc \
+        $SOURCES_DIR/libxml2/configure \
+            --prefix=$PREFIX \
+            --host=x86_64-lykos \
+            --with-sysroot=$SYSROOT_DIR \
+            --with-threads \
+            --disable-ipv6 \
+            --without-python \
+            --with-history \
+            --with-icu
+    </sh>
+    build: <sh>
+        make -j$PARALLELISM
+    </sh>
+    install: <sh>
+        make DESTDIR=$INSTALL_DIR install
+    </sh>
+}

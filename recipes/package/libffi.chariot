@@ -1,0 +1,29 @@
+source/libffi {
+    url: "https://github.com/libffi/libffi/releases/download/v3.5.2/libffi-3.5.2.tar.gz"
+    b2sum: "35ce590926bcdd2556c30c94bb0fef3f0cfe8f32e809ffad00eb0bc7a8ba1ba40da844b108069c87e86bff278221cc42dc7c7aacd02a7b7bc408ea054085398c"
+    type: "tar.gz"
+    dependencies: [ tool/autoconf tool/reconfigure]
+    regenerate: <sh>
+        reconfigure.sh
+    </sh>
+}
+
+package/libffi {
+    dependencies: [
+        source/libffi
+        tool/autoconf tool/automake tool/gcc
+    ]
+    configure: <sh>
+        CC=x86_64-lykos-gcc \
+        $SOURCES_DIR/libffi/configure \
+            --prefix=$PREFIX \
+            --host=x86_64-lykos \
+            --with-sysroot=$SYSROOT_DIR
+    </sh>
+    build: <sh>
+        make -j$PARALLELISM
+    </sh>
+    install: <sh>
+        DESTDIR=$INSTALL_DIR make install
+    </sh>
+}

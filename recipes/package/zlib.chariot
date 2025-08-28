@@ -1,0 +1,29 @@
+source/zlib {
+    url: "https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.xz"
+    b2sum: "42d109223801a493de6d52e7343403d7fc3234a6ca816425fe41ac9c18019b01b93841acd28a235e99f2256a6a17f93624e96b2ddb58d588c8190a6bedb82910"
+    type: "tar.xz"
+    dependencies: [ tool/autoconf tool/automake tool/libtool tool/reconfigure]
+    regenerate: <sh>
+        reconfigure.sh
+    </sh>
+}
+
+package/zlib {
+    dependencies: [
+        source/zlib
+        image/patchelf
+        tool/autoconf tool/automake tool/gcc tool/binutils
+    ]
+    configure: <sh>
+        CC=x86_64-lykos-gcc \
+        AR=x86_64-lykos-ar \
+        $SOURCES_DIR/zlib/configure \
+            --prefix=$PREFIX \
+    </sh>
+    build: <sh>
+        make -j$PARALLELISM
+    </sh>
+    install: <sh>
+        make DESTDIR=$INSTALL_DIR install
+    </sh>
+}

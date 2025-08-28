@@ -1,0 +1,26 @@
+source/expat {
+    url: "https://github.com/libexpat/libexpat/releases/download/R_2_7_1/expat-2.7.1.tar.gz"
+    b2sum: "07d28c33945237147fc72487c5123affcddc2a9d49cdc440230fa2cfa86f9d441bc8a897b0e1894d8c10ce5e52a3a5594686c1af717ce85522d150c36b687183"
+    type: "tar.gz"
+    dependencies: [ tool/autoconf tool/automake tool/libtool tool/reconfigure]
+    regenerate: <sh>
+        reconfigure.sh
+    </sh>
+}
+
+package/expat {
+    dependencies: [ source/expat tool/autoconf tool/automake tool/gcc ]
+    configure: <sh>
+        CC=x86_64-lykos-gcc \
+        $SOURCES_DIR/expat/configure \
+            --prefix=$PREFIX \
+            --host=x86_64-lykos \
+            --with-sysroot=$SYSROOT_DIR
+    </sh>
+    build: <sh>
+        make -j$PARALLELISM
+    </sh>
+    install: <sh>
+        make DESTDIR=$INSTALL_DIR install
+    </sh>
+}
