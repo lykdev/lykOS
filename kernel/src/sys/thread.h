@@ -62,4 +62,4 @@ inline void thread_unref(thread_t *t)
     spinlock_release(&t->slock);
 }
 
-void thread_new(proc_t *parent_proc, uptr entry);
+thread_t *thread_new(proc_t *parent_proc, uptr entry);

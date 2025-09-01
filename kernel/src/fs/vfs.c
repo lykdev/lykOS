@@ -37,8 +37,8 @@ static char *vfs_get_mountpoint(const char *path, vfs_mountpoint_t **out)
         char comp[VFS_MAX_NAME_LEN];
         char *path_next = path_consume_comp(path, comp);
 
-        if (*comp == '\0') // Handle empty components gracefully
-            panic("CCC");
+        if (*comp == '\0')
+            panic("Empty component.");
 
         trie_node_t *child = find_child(current, comp);
         if (child)
@@ -52,6 +52,78 @@ static char *vfs_get_mountpoint(const char *path, vfs_mountpoint_t **out)
 
     return (char *)path;
 }
+
+/*
+ * Veneer layer
+ */
+
+int vfs_open(const char *path, vnode_t **out)
+{
+    vfs_mountpoint_t *mp;
+    path = vfs_get_mountpoint(path, &mp);
+    ASSERT(mp != NULL);
+
+    vnode_t *curr = mp->root_node;
+    while (curr && *path)
+    {
+        while(*path == '/')
+            path++;
+
+        char *slash = strchr(path, '/');
+        if (slash)
+            *slash = '\0';
+        curr->ops->lookup(curr, path, &curr);
+        if (slash)
+            *slash = '/';
+
+        path += strlen(curr->name);
+    }
+
+    *out = curr;
+    return EOK;
+}
+
+int vfs_close(vnode_t *out)
+{
+
+}
+
+int vfs_create(const char *path, vnode_type_t t, vnode_t **out)
+{
+    char parent_path[256];
+    char child_name[64];
+
+    char *c = strrchr(path, '/');
+    if (!c)
+    {
+        *out = NULL;
+        return -EINVAL;
+    }
+
+    u64 parent_len = (u64)(c - path);
+    memcpy(parent_path, path, parent_len); // Using strncpy would have not guaranteed null termination either way.
+    parent_path[parent_len] = '\0';
+    strcpy(child_name, c + 1);
+
+    vnode_t *parent_node;
+    if (vfs_open(parent_path, &parent_node) < 0)
+    {
+        *out = NULL;
+        return -ENOENT;
+    }
+
+    int ret = parent_node->ops->create(parent_node, child_name, t, out);
+    return ret;
+}
+
+int vfs_remove(const char *path)
+{
+
+}
+
+/*
+ * Mount points
+ */
 
 int vfs_mount(const char *path, vfs_mountpoint_t *mp)
 {
@@ -80,53 +152,9 @@ int vfs_mount(const char *path, vfs_mountpoint_t *mp)
     return 0;
 }
 
-vfs_node_t *vfs_create(vfs_node_type_t t, const char *path)
-{
-    char parent_path[256];
-    char child_name[64];
-
-    char *c = strrchr(path, '/');
-    if (!c)
-        return NULL;
-
-    u64 parent_len = (u64)(c - path);
-    memcpy(parent_path, path, parent_len); // Using strncpy would have not guaranteed null termination either way.
-    parent_path[parent_len] = '\0';
-    strcpy(child_name, c + 1);
-
-    vfs_node_t *parent_node = vfs_lookup(parent_path);
-    if (!parent_node)
-        return NULL;
-    if (parent_node->ops->lookup(parent_node, child_name) != NULL) // If there's already a vnode with that name.
-        return NULL;
-
-    return parent_node->ops->create(parent_node, t, child_name);
-}
-
-vfs_node_t *vfs_lookup(const char *path)
-{
-    vfs_mountpoint_t *mp;
-    path = vfs_get_mountpoint(path, &mp);
-    ASSERT(mp != NULL);
-
-    vfs_node_t *curr = mp->root_node;
-    while (curr && *path)
-    {
-        while(*path == '/')
-            path++;
-
-        char *slash = strchr(path, '/');
-        if (slash)
-            *slash = '\0';
-        curr = curr->ops->lookup(curr, path);
-        if (slash)
-            *slash = '/';
-
-        path += strlen(curr->name);
-    }
-
-    return curr;
-}
+/*
+ * Initialization & Debug
+ */
 
 void vfs_init()
 {

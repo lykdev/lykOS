@@ -10,7 +10,7 @@
 typedef struct
 {
     socket_t socket;
-    vfs_node_t *bound_vnode;
+    vnode_t *bound_vnode;
 }
 socket_unix_t;
 
@@ -33,8 +33,8 @@ static int bind(socket_t *self, const char *addr)
 
     socket_unix_t *usock = (socket_unix_t *)self;
 
-    vfs_node_t *addr_node = vfs_create(VFS_NODE_SOCKET, addr);
-    if (!addr_node)
+    vnode_t *addr_node;
+    if (vfs_create(addr, VFS_NODE_SOCKET, &addr_node) < 0)
     {
         spinlock_release(&self->lock);
         return -EADDRINUSE;
@@ -55,7 +55,8 @@ static int connect(socket_t *self, const char *addr)
     // TODO: theres a double lock issue here
     spinlock_acquire(&self->lock);
 
-    vfs_node_t *target_node = vfs_lookup(addr);
+    vnode_t *target_node;
+    vfs_open(addr, &target_node);
     if (!target_node || target_node->type != VFS_NODE_SOCKET)
     {
         spinlock_release(&self->lock);

@@ -26,7 +26,7 @@ void resource_table_expand(resource_table_t *table, uint amount)
     spinlock_release(&table->lock);
 }
 
-resource_t *resource_create_at(resource_table_t *table, int id, vfs_node_t *node, size_t offset, u8 flags, bool lock_acq)
+resource_t *resource_create_at(resource_table_t *table, int id, vnode_t *node, size_t offset, u8 flags, bool lock_acq)
 {
     ASSERT(id < table->length);
 
@@ -47,7 +47,7 @@ resource_t *resource_create_at(resource_table_t *table, int id, vfs_node_t *node
     return res;
 }
 
-int resource_create(resource_table_t *table, vfs_node_t *node, size_t offset, u8 flags)
+int resource_create(resource_table_t *table, vnode_t *node, size_t offset, u8 flags)
 {
     spinlock_acquire(&table->lock);
     int i;

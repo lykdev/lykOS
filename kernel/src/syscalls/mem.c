@@ -19,7 +19,7 @@ i64 syscall_mmap(void *addr, u64 length, int prot, int flags, int fd, u64 offset
     vmm_addr_space_t *as = proc->addr_space;
 
     resource_t *res;
-    vfs_node_t *vnode;
+    vnode_t *vnode;
     if (!(flags & MAP_ANON))
     {
         res = resource_get(&proc->resource_table, fd);

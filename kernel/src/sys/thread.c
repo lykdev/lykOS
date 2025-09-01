@@ -20,7 +20,7 @@ u64 g_thread_count = 0;
 /// @brief Last ID assigned to a thread.
 static tid_t g_last_id = 0;
 
-void thread_new(proc_t *parent_proc, uptr entry)
+thread_t *thread_new(proc_t *parent_proc, uptr entry)
 {
     ASSERT(parent_proc != NULL);
 
@@ -39,4 +39,6 @@ void thread_new(proc_t *parent_proc, uptr entry)
     list_append(&parent_proc->threads, &thread->list_node_proc);
 
     __atomic_fetch_add(&g_thread_count, 1, __ATOMIC_RELAXED);
+
+    return thread;
 }

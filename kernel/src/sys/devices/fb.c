@@ -1,29 +1,32 @@
 
 #include <common/hhdm.h>
+#include <common/log.h>
+#include <common/panic.h>
 #include <fs/vfs.h>
 #include <graphics/video.h>
 #include <lib/def.h>
 #include <lib/string.h>
-#include <common/log.h>
 
-static u64 fb_write(vfs_node_t *self, u64 offset, void *buffer, u64 count)
+static int fb_write(vnode_t *self, u64 offset, void *buffer, u64 count, u64 *out)
 {
     if (offset + count > self->size)
         count = self->size;
 
     memcpy((void*)(video_fb.addr + offset), buffer, count);
 
-    return count;
+    *out = count;
+    return EOK;
 }
 
-vfs_node_ops_t char_ops = {
+vnode_ops_t char_ops = {
     .write = fb_write
 };
 
 void dev_fb_init()
 {
-    vfs_node_t *dev_dir = vfs_lookup("/dev");
-    vfs_node_t *char_fb = dev_dir->ops->create(dev_dir, VFS_NODE_CHAR, "fb");
+    vnode_t *char_fb;
+    if (vfs_create("/dev/fb", VFS_NODE_CHAR, &char_fb) < 0)
+        panic("Could not create file `/dev/fb`.");
 
     char_fb->size = video_fb.size;
     char_fb->ops = &char_ops;

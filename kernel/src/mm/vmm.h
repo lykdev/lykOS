@@ -37,7 +37,7 @@ extern vmm_addr_space_t *g_vmm_kernel_addr_space;
 
 bool vmm_pagefault_handler(vmm_addr_space_t *as, uptr addr);
 
-void *vmm_map_vnode(vmm_addr_space_t *as, uptr virt, u64 len, int prot, int flags, vfs_node_t *vnode, u64 offset);
+void *vmm_map_vnode(vmm_addr_space_t *as, uptr virt, u64 len, int prot, int flags, vnode_t *vnode, u64 offset);
 
 void vmm_map_kernel(vmm_addr_space_t *as, uptr virt, u64 len, int prot, uptr phys);
 

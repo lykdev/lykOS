@@ -52,24 +52,23 @@ static u64 ustar_read_field(const char *str, u64 size)
 typedef struct
 {
     ustar_hdr_t *ustar_data;
-    vfs_node_t vfs_node;
+    vnode_t vfs_node;
 
     list_node_t list_elem;
 }
 initrd_entry_t;
 static list_t g_entry_list;
 
-static u64 read(vfs_node_t *self, u64 offset, void *buffer, u64 size)
+static int read(vnode_t *self, u64 offset, void *buffer, u64 size, u64 *out)
 {
-    if (self->type != VFS_NODE_FILE)
-        return -1;
-
     initrd_entry_t *entry = self->mp_data;
     uint file_content_size = ustar_read_field(entry->ustar_data->size, 12);
 
     if (offset >= file_content_size)
-        return -1;
-
+    {
+        *out = 0;
+        return EOK;
+    }
 
     if (offset + size >= file_content_size)
         size = file_content_size - offset;
@@ -80,14 +79,12 @@ static u64 read(vfs_node_t *self, u64 offset, void *buffer, u64 size)
     for (i = 0; i < size; i++)
         *(u8 *)buffer++ = *file_content++;
 
-    return i;
+    *out = i;
+    return EOK;
 }
 
-static vfs_node_t *lookup(vfs_node_t *self, const char *name)
+static int lookup(vnode_t *self, const char *name, vnode_t **out)
 {
-    if (self->type != VFS_NODE_DIR)
-        return NULL;
-
     // Maybe optimise this later... if you care enough.
     char path[100] = "";
     strcat(path, ((initrd_entry_t *)self->mp_data)->ustar_data->filename);
@@ -98,17 +95,18 @@ static vfs_node_t *lookup(vfs_node_t *self, const char *name)
     {
         initrd_entry_t *node = LIST_GET_CONTAINER(n, initrd_entry_t, list_elem);
         if (strcmp(path, node->ustar_data->filename) == 0)
-            return &node->vfs_node;
+        {
+            *out = &node->vfs_node;
+            return EOK;
+        }
     }
 
-    return NULL;
+    *out = NULL;
+    return -ENOENT;
 }
 
-const char *list(vfs_node_t *self, u64 *hint)
+static int list(vnode_t *self, u64 *hint, const char **out)
 {
-    if (self->type != VFS_NODE_DIR)
-        return NULL;
-
     // Maybe optimise this later... if you care enough.
     char path[100] = "";
     strcat(path, ((initrd_entry_t *)self->mp_data)->ustar_data->filename);
@@ -123,21 +121,23 @@ const char *list(vfs_node_t *self, u64 *hint)
             if (l_index == *hint)
             {
                 (*hint)++;
-                return (const char *)&node->ustar_data->filename[strlen(path)];
+                *out = (const char *)&node->ustar_data->filename[strlen(path)];
+                return EOK;
             }
             else
                 l_index++;
         }
     }
 
-    return NULL;
+    *out = NULL;
+    return EOK;
 }
 
-static vfs_node_ops_t g_file_ops = (vfs_node_ops_t) {
+static vnode_ops_t g_file_ops = (vnode_ops_t) {
     .read = read,
 };
 
-static vfs_node_ops_t g_dir_ops = (vfs_node_ops_t) {
+static vnode_ops_t g_dir_ops = (vnode_ops_t) {
     .lookup = lookup,
     .list = list
 };
@@ -151,7 +151,7 @@ static void process_entry(ustar_hdr_t *hdr)
     initrd_entry_t *node = heap_alloc(sizeof(initrd_entry_t));
     node->ustar_data = hdr;
 
-    node->vfs_node = (vfs_node_t) {
+    node->vfs_node = (vnode_t) {
         .type = hdr->type == '5' ? VFS_NODE_DIR : VFS_NODE_FILE,
         .mp_data = node,
         .ops = hdr->type == '5' ? (void*)&g_dir_ops : (void*)&g_file_ops

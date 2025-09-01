@@ -29,7 +29,7 @@ typedef struct
     //
     int prot, flags;
     //
-    vfs_node_t *vnode;
+    vnode_t *vnode;
     uptr offset;
     //
     list_node_t list_node;
@@ -148,14 +148,21 @@ bool vmm_pagefault_handler(vmm_addr_space_t *as, uptr addr)
         memset((void*)(phys + HHDM), 0, ARCH_PAGE_GRAN);
     else
     {
-        u64 count = seg->vnode->ops->read(seg->vnode, addr - seg->base + seg->offset, (void*)(phys + HHDM), ARCH_PAGE_GRAN);
-        ASSERT(count == ARCH_PAGE_GRAN);
+        u64 count;
+        int ret = seg->vnode->ops->read(
+            seg->vnode,
+            addr - seg->base + seg->offset,
+            (void*)(phys + HHDM),
+            ARCH_PAGE_GRAN,
+            &count
+        );
+        ASSERT(ret == EOK && count == ARCH_PAGE_GRAN);
     }
 
     return true;
 }
 
-void *vmm_map_vnode(vmm_addr_space_t *as, uptr virt, u64 len, int prot, int flags, vfs_node_t *vnode, u64 offset)
+void *vmm_map_vnode(vmm_addr_space_t *as, uptr virt, u64 len, int prot, int flags, vnode_t *vnode, u64 offset)
 {
     ASSERT(virt % ARCH_PAGE_GRAN == 0 && len % ARCH_PAGE_GRAN == 0);
     ASSERT(((flags & VMM_MAP_PRIVATE) != 0) ^ ((flags & VMM_MAP_SHARED) != 0));
@@ -183,7 +190,11 @@ void *vmm_map_vnode(vmm_addr_space_t *as, uptr virt, u64 len, int prot, int flag
             if (flags & VMM_MAP_ANON)
                 memset((void*)(phys + HHDM), 0, ARCH_PAGE_GRAN);
             else
-                vnode->ops->read(vnode, offset + addr, (void*)(phys + HHDM), ARCH_PAGE_GRAN);
+            {
+                u64 count;
+                vnode->ops->read(vnode, offset + addr, (void*)(phys + HHDM), ARCH_PAGE_GRAN, &count);
+            }
+
         }
     }
 

@@ -9,13 +9,14 @@
 
 bool __module_probe()
 {
-    vfs_node_t *dir = vfs_lookup("/sys/pci");
+    vnode_t *dir;
+    vfs_open("/sys/pci", &dir);
     if (dir == NULL)
         panic("/sys/pci not found!");
 
     u64 idx = 0;
     const char *name;
-    while ((name = dir->ops->list(dir, &idx)))
+    while (dir->ops->list(dir, &idx, &name), name)
         // Mass Storage Controller - Serial ATA Controller - AHCI
         if (strcmp(name, "01:06:01"))
             return true;
@@ -28,8 +29,10 @@ bool __module_probe()
 void __module_install()
 {
     pci_header_type0_t pci_hdr;
-    vfs_node_t *file = vfs_lookup("/sys/pci/01:06:01");
-    file->ops->read(file, 0, &pci_hdr, sizeof(pci_header_type0_t));
+    vnode_t *file;
+    vfs_open("/sys/pci/01:06:01", &file);
+    u64 out;
+    file->ops->read(file, 0, &pci_hdr, sizeof(pci_header_type0_t), &out);
 
     ahci_setup(pci_hdr.bar[5]);
 

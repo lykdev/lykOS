@@ -58,7 +58,4 @@ void ps2kb_setup()
 
     arch_int_register_irq_handler(KB_IRQ, ps2kb_irq_handler);
     x86_64_ioapic_map_legacy_irq(KB_IRQ, 0, false, false, 33);
-
-    vfs_node_t *dev_dir = vfs_lookup("/dev");
-    vfs_node_t *char_dev = dev_dir->ops->create(dev_dir, VFS_NODE_CHAR, "kb");
 }

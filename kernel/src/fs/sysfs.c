@@ -11,7 +11,7 @@
 
 typedef struct
 {
-    vfs_node_t  vfs_node;
+    vnode_t  vfs_node;
     list_t      children;
     spinlock_t  spinlock;
     list_node_t list_node;
@@ -20,21 +20,21 @@ inode_t;
 
 // Forward declarations.
 
-static u64 file_read(vfs_node_t *self, u64 offset, void *buffer, u64 count);
-static u64 file_write(vfs_node_t *self, u64 offset, void *buffer, u64 count);
+static int file_read(vnode_t *self, u64 offset, void *buffer, u64 count, u64 *out);
+static int file_write(vnode_t *self, u64 offset, void *buffer, u64 count, u64 *out);
 
-static vfs_node_t* dir_lookup(vfs_node_t *self, const char *name);
-static const char* dir_list(vfs_node_t *self, u64 *hint);
-static vfs_node_t* dir_create(vfs_node_t *self, vfs_node_type_t t, char *name);
+static int dir_lookup(vnode_t *self, const char *name, vnode_t **out);
+static int dir_list(vnode_t *self, u64 *hint, const char **out);
+static int dir_create(vnode_t *self, char *name, vnode_type_t t, vnode_t **out);
 
 //
 
-static vfs_node_ops_t g_node_file_ops = {
+static vnode_ops_t g_node_file_ops = {
     .read = file_read,
     .write = file_write,
 };
 
-static vfs_node_ops_t g_node_dir_ops = {
+static vnode_ops_t g_node_dir_ops = {
     .lookup = dir_lookup,
     .list = dir_list,
     .create = dir_create
@@ -42,22 +42,29 @@ static vfs_node_ops_t g_node_dir_ops = {
 
 //
 
-static u64 file_read(vfs_node_t *self, u64 offset, void *buffer, u64 count)
+static int file_read(vnode_t *self, u64 offset, void *buffer, u64 count, u64 *out)
 {
     if (!self->mp_data || offset >= self->size)
-        return 0;
+    {
+        *out = 0;
+        return EOK;
+    }
 
     if (offset + count > self->size)
         count = self->size - offset;
 
     memcpy(buffer, self->mp_data + offset, count);
-    return count;
+    *out = 0;
+    return EOK;
 }
 
-static u64 file_write(vfs_node_t *self, u64 offset, void *buffer, u64 count)
+static int file_write(vnode_t *self, u64 offset, void *buffer, u64 count, u64 *out)
 {
     if (!self->mp_data)
-        return 0;
+    {
+        *out = 0;
+        return EOK;
+    }
 
     if (offset + count > self->size)
     {
@@ -68,10 +75,11 @@ static u64 file_write(vfs_node_t *self, u64 offset, void *buffer, u64 count)
     }
 
     memcpy(self->mp_data + offset, buffer, count);
-    return count;
+    *out = count;
+    return EOK;
 }
 
-static vfs_node_t* dir_lookup(vfs_node_t *self, const char *name)
+static int dir_lookup(vnode_t *self, const char *name, vnode_t **out)
 {
     inode_t *parent_node = (inode_t*)(self);
 
@@ -79,18 +87,25 @@ static vfs_node_t* dir_lookup(vfs_node_t *self, const char *name)
     {
         inode_t *child = LIST_GET_CONTAINER(n, inode_t, list_node);
         if (strcmp(child->vfs_node.name, name) == 0)
-            return &child->vfs_node;
+        {
+            *out = &child->vfs_node;
+            return EOK;
+        }
     }
 
-    return NULL;
+    *out = NULL;
+    return -ENOENT;
 }
 
-static const char* dir_list(vfs_node_t *self, u64 *hint)
+static int dir_list(vnode_t *self, u64 *hint, const char **out)
 {
     inode_t *parent = (inode_t*)(self);
 
     if (*hint == 0xFFFF)
-        return NULL;
+    {
+        return EOK;
+        *out = NULL;
+    }
 
     list_node_t *next;
     if (*hint == 0)
@@ -105,16 +120,18 @@ static const char* dir_list(vfs_node_t *self, u64 *hint)
     if (next)
     {
         *hint = (u64)next;
-        return LIST_GET_CONTAINER(next, inode_t, list_node)->vfs_node.name;
+        *out = LIST_GET_CONTAINER(next, inode_t, list_node)->vfs_node.name;
+        return EOK;
     }
     else
     {
         *hint = 0xFFFF;
-        return NULL;
+        *out = NULL;
+        return EOK;
     }
 }
 
-static vfs_node_t* dir_create(vfs_node_t *self, vfs_node_type_t type, char *name)
+static int dir_create(vnode_t *self, char *name, vnode_type_t t, vnode_t **out)
 {
     inode_t *parent_node = (inode_t*)(self);
 
@@ -122,8 +139,8 @@ static vfs_node_t* dir_create(vfs_node_t *self, vfs_node_type_t type, char *name
 
     inode_t *new_node = heap_alloc(sizeof(inode_t));
     *new_node = (inode_t) {
-        .vfs_node = (vfs_node_t) {
-            .type  = type,
+        .vfs_node = (vnode_t) {
+            .type  = t,
             .perm  = 0x777,
             .uid   = 0,
             .gid   = 0,
@@ -138,8 +155,8 @@ static vfs_node_t* dir_create(vfs_node_t *self, vfs_node_type_t type, char *name
     };
     strcpy(new_node->vfs_node.name, name);
 
-    vfs_node_t *vn = &new_node->vfs_node;
-    switch (type)
+    vnode_t *vn = &new_node->vfs_node;
+    switch (t)
     {
         case VFS_NODE_FILE:
             vn->ops = &g_node_file_ops;
@@ -154,13 +171,14 @@ static vfs_node_t* dir_create(vfs_node_t *self, vfs_node_type_t type, char *name
             vn->ops = NULL;
             break;
         default:
-            panic("Unknown VFS node type: %d!", type);
+            panic("Unknown VFS node type: %d!", t);
     }
 
     list_append(&parent_node->children, &new_node->list_node);
 
     spinlock_release(&parent_node->spinlock);
-    return &new_node->vfs_node;
+    *out = &new_node->vfs_node;
+    return EOK;
 }
 
 //
@@ -171,7 +189,7 @@ vfs_mountpoint_t *sysfs_new_mp(const char *name)
     inode_t *root_node = heap_alloc(sizeof(inode_t));
 
     *root_node = (inode_t) {
-        .vfs_node = (vfs_node_t) {
+        .vfs_node = (vnode_t) {
             .type = VFS_NODE_DIR,
             .ops = &g_node_dir_ops
         },

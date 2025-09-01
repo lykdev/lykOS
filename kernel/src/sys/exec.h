@@ -3,4 +3,4 @@
 #include <fs/vfs.h>
 #include <sys/proc.h>
 
-proc_t *exec_load(vfs_node_t *file);
+proc_t *exec_load(vnode_t *file);

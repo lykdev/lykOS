@@ -25,7 +25,7 @@ i64 syscall_accept(int sockfd, const char *addr)
     if (ret < 0)
         return ret;
 
-    vfs_node_t *handle = heap_alloc(sizeof(vfs_node_t));
+    vnode_t *handle = heap_alloc(sizeof(vnode_t));
     if (!handle)
         return -ENOMEM; // TODO: destroy the socket
     handle->type = VFS_NODE_SOCKET;
@@ -126,7 +126,7 @@ i64 syscall_socket(int domain, int type, int protocol)
     if (!family)
         return -EINVAL;
 
-    vfs_node_t *handle = heap_alloc(sizeof(vfs_node_t));
+    vnode_t *handle = heap_alloc(sizeof(vnode_t));
     if (!handle)
         return -ENOMEM;
 

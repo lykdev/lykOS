@@ -27,7 +27,7 @@ i64 syscall_ioctl(int fd, int op, void *argp)
     resource_t *res = resource_get(&proc->resource_table, fd);
     if (res == NULL)
         return -EBADF;
-    vfs_node_t *node = res->node;
+    vnode_t *node = res->node;
     if (node == NULL)
         return -EBADF;
 
@@ -38,9 +38,10 @@ i64 syscall_open(const char *path, int flags, int mode)
 {
     proc_t *proc = sched_get_curr_thread()->parent_proc;
 
-    vfs_node_t *node = vfs_lookup(path);
-    if(node == NULL)
-        return -EACCES;
+    vnode_t *node;
+    int ret = vfs_open(path, &node);
+    if(ret < 0)
+        return ret;
 
     return resource_create(&proc->resource_table, node, 0, RESOURCE_READ | RESOURCE_WRITE);
 }
@@ -52,11 +53,17 @@ i64 syscall_read(int fd, void *buf, u64 count)
     resource_t *res = resource_get(&proc->resource_table, fd);
     if (res == NULL || (res->flags & RESOURCE_READ) == 0)
         return -EBADF;
-    vfs_node_t *node = res->node;
+    vnode_t *node = res->node;
     if (node == NULL)
         return -EBADF;
 
-    return node->ops->read(node, res->offset, buf, count);
+    u64 out;
+    int ret = node->ops->read(node, res->offset, buf, count, &out);
+
+    if (ret < 0)
+        return ret;
+    else
+        return out;
 }
 
 i64 syscall_seek(int fd, u64 offset, int whence)
@@ -66,7 +73,7 @@ i64 syscall_seek(int fd, u64 offset, int whence)
     resource_t *res = resource_get(&proc->resource_table, fd);
     if (res == NULL)
         return -EBADF;
-    vfs_node_t *node = res->node;
+    vnode_t *node = res->node;
     if (node == NULL)
         return -EBADF;
 
@@ -93,9 +100,15 @@ i64 syscall_write(int fd, void *buf, u64 count)
     resource_t *res  = resource_get(&proc->resource_table, fd);
     if (res == NULL || (res->flags & RESOURCE_WRITE) == 0)
         return -EBADF;
-    vfs_node_t *node = res->node;
+    vnode_t *node = res->node;
     if (node == NULL)
         return -EBADF;
 
-    return node->ops->write(node, res->offset, buf, count);
+    u64 out;
+    int ret = node->ops->write(node, res->offset, buf, count, &out);
+
+    if (ret < 0)
+        return ret;
+    else
+        return out;
 }

@@ -2,10 +2,11 @@
 
 #include <common/sync/spinlock.h>
 #include <lib/def.h>
+#include <lib/errno.h>
 
 #define VFS_MAX_NAME_LEN 64
 
-typedef struct vfs_node vfs_node_t;
+typedef struct vnode vnode_t;
 
 typedef enum
 {
@@ -16,49 +17,83 @@ typedef enum
     VFS_NODE_BLOCK,
     VFS_NODE_SOCKET
 }
-vfs_node_type_t;
+vnode_type_t;
 
 typedef struct
 {
-    u64 (*read) (vfs_node_t *self, u64 offset, void *buffer, u64 count);
-    u64 (*write)(vfs_node_t *self, u64 offset, void *buffer, u64 count);
-    vfs_node_t* (*lookup)(vfs_node_t *self, const char *name);
-    const char* (*list)  (vfs_node_t *self, u64 *hint);
-    vfs_node_t* (*create)(vfs_node_t *self, vfs_node_type_t t, char *name);
-    int (*ioctl)(vfs_node_t *self, u64 request, void *args);
+    int (*read) (vnode_t *self, u64 offset, void *buffer, u64 count, u64 *out);
+    int (*write)(vnode_t *self, u64 offset, void *buffer, u64 count, u64 *out);
+    int (*lookup)(vnode_t *self, const char *name, vnode_t **out);
+    int (*list)  (vnode_t *self, u64 *hint, const char **out);
+    int (*create)(vnode_t *self, char *name, vnode_type_t t, vnode_t **out);
+    int (*ioctl) (vnode_t *self, u64 request, void *args);
 }
-vfs_node_ops_t;
+vnode_ops_t;
 
-struct vfs_node
+struct vnode
 {
     char name[VFS_MAX_NAME_LEN]; // Filename.
-    vfs_node_type_t type;
+    vnode_type_t type;
     u32 perm;  // Permission mask.
     u32 uid;   // User id.
     u32 gid;   // Group id.
-    u32 size;  // File size.
+    u64 size;  // File size.
     u64 ctime; // Time created.
     u64 mtime; // Time modified.
     u64 atime; // Time accessed.
 
-    vfs_node_ops_t *ops;
-
-    spinlock_t lock;
-    u16 ref_count;
+    vnode_ops_t *ops;
     void *mp_data;
+
+    spinlock_t slock;
+    u64 ref_count;
 };
 
 typedef struct
 {
-    vfs_node_t *root_node;
+    vnode_t *root_node;
 }
 vfs_mountpoint_t;
 
-int vfs_mount(const char *path, vfs_mountpoint_t *mp);
+/*
+ * Veneer layer
+ */
 
-vfs_node_t *vfs_create(vfs_node_type_t t, const char *path);
+int vfs_open(const char *path, vnode_t **out);
 
-vfs_node_t *vfs_lookup(const char *path);
+int vfs_close(vnode_t *out);
+
+int vfs_create(const char *path, vnode_type_t t, vnode_t **out);
+
+int vfs_remove(const char *path);
+
+inline void VN_HOLD(vnode_t *vn)
+{
+    spinlock_acquire(&vn->slock);
+
+    vn->ref_count++;
+
+    spinlock_release(&vn->slock);
+}
+
+inline void VN_RELE(vnode_t *vn)
+{
+    spinlock_acquire(&vn->slock);
+
+    vn->ref_count--;
+
+    spinlock_release(&vn->slock);
+}
+
+/*
+ * Mount points
+ */
+
+ int vfs_mount(const char *path, vfs_mountpoint_t *mp);
+
+/*
+ * Initialization & Debug
+ */
 
 void vfs_init();
 
