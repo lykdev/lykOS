@@ -1,32 +1,35 @@
-#include <lib/list.h>
-#include <sys/proc.h>
 #include <arch/cpu.h>
-#include <arch/int.h>
-#include <arch/syscall.h>
-#include <arch/init.h>
+
 #include <common/assert.h>
 #include <common/log.h>
+
 #include <dev/acpi/acpi.h>
 #include <dev/pci.h>
+
 #include <fs/initrd.h>
 #include <fs/vfs.h>
 #include <fs/sysfs.h>
+
 #include <graphics/video.h>
+
 #include <lib/def.h>
+#include <lib/list.h>
+#include <lib/string.h>
+
 #include <mm/heap.h>
 #include <mm/kmem.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
+
 #include <sys/exec.h>
 #include <sys/ksym.h>
 #include <sys/module.h>
-#include <sys/thread.h>
+#include <sys/proc.h>
+#include <sys/reaper.h>
 #include <sys/smp.h>
+#include <sys/thread.h>
+
 #include <tasking/sched.h>
-
-#include <lib/string.h>
-
-#include <arch/x86_64/syscall.h>
 
 extern void dev_fb_init();
 
@@ -85,10 +88,11 @@ void kernel_main()
         {
             vfs_node_t *file = init_dir->ops->lookup(init_dir, name);
             proc_t *proc = exec_load(file);
-            sched_queue_add(LIST_GET_CONTAINER(proc->threads.head, thread_t, list_elem_inside_proc));
+            sched_enqueue(LIST_GET_CONTAINER(proc->threads.head, thread_t, list_node_proc));
         }
     }
 
+    reaper_init();
     smp_init();
 
     log("Kernel end.");

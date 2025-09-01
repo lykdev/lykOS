@@ -68,9 +68,7 @@ proc_t *exec_load(vfs_node_t *file)
         }
     }
 
-    thread_t *thread = thread_new(proc, ehdr.e_entry);
-    // Unsafe.
-    list_append(&proc->threads, &thread->list_elem_inside_proc);
+    thread_new(proc, ehdr.e_entry);
 
     return proc;
 }

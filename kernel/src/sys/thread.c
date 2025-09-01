@@ -11,15 +11,16 @@
 #include <lib/string.h>
 #include <mm/heap.h>
 #include <mm/pmm.h>
+#include <sys/reaper.h>
 #include <sys/smp.h>
 #include <tasking/sched.h>
 
 u64 g_thread_count = 0;
 
 /// @brief Last ID assigned to a thread.
-static u64 g_last_id = 0;
+static tid_t g_last_id = 0;
 
-thread_t *thread_new(proc_t *parent_proc, uptr entry)
+void thread_new(proc_t *parent_proc, uptr entry)
 {
     ASSERT(parent_proc != NULL);
 
@@ -28,16 +29,14 @@ thread_t *thread_new(proc_t *parent_proc, uptr entry)
         .id = g_last_id++,
         .parent_proc = parent_proc,
         .assigned_core = NULL,
-        .list_elem_thread = LIST_NODE_INIT,
-        .list_elem_inside_proc = LIST_NODE_INIT,
-        .mutex_wait_queue_node = LIST_NODE_INIT
+        .list_node_sched = LIST_NODE_INIT,
+        .list_node_proc = LIST_NODE_INIT,
+        .list_node_mutex = LIST_NODE_INIT,
+        .ref_count = 0
     };
     arch_thread_context_init(&thread->context, thread->parent_proc, parent_proc->type == PROC_USER ? true : false, entry);
 
-    list_append(&parent_proc->threads, &thread->list_elem_inside_proc);
-    __atomic_fetch_add(&thread->ref_count, 1, __ATOMIC_RELAXED);
+    list_append(&parent_proc->threads, &thread->list_node_proc);
 
     __atomic_fetch_add(&g_thread_count, 1, __ATOMIC_RELAXED);
-
-    return thread;
 }

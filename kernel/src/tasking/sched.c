@@ -7,6 +7,7 @@
 #include <common/log.h>
 #include <common/panic.h>
 #include <common/sync/spinlock.h>
+#include <sys/reaper.h>
 #include <sys/smp.h>
 #include <sys/thread.h>
 
@@ -25,8 +26,8 @@ static thread_t *sched_next()
     list_node_t *node = list_pop_head(&g_thread_list);
     if (node != NULL)
     {
-        ret = LIST_GET_CONTAINER(node, thread_t, list_elem_thread);
-        __atomic_fetch_sub(&ret->ref_count, 1, __ATOMIC_RELAXED);
+        ret = LIST_GET_CONTAINER(node, thread_t, list_node_sched);
+        thread_ref(ret);
     }
     else
         ret = sched_get_curr_thread()->assigned_core->idle_thread;
@@ -43,23 +44,33 @@ thread_t *sched_get_curr_thread()
 
 void sched_drop(thread_t *thread)
 {
-    spinlock_acquire(&slock);
+    if (thread == sched_get_curr_thread()->assigned_core->idle_thread)
+        return;
 
-    if (thread != sched_get_curr_thread()->assigned_core->idle_thread
-    &&  thread->status == THREAD_STATE_READY)
+    switch (thread->status)
     {
-        list_append(&g_thread_list, &thread->list_elem_thread);
-        __atomic_fetch_add(&thread->ref_count, 1, __ATOMIC_RELAXED);
+    case THREAD_STATE_AWAITING_CLEANUP:
+        reaper_enqueue_thread(thread);
+        break;
+    case THREAD_STATE_BLOCKED:
+        break;
+    case THREAD_STATE_READY:
+        sched_enqueue(thread);
+        break;
+    case THREAD_STATE_RUNNING:
+        ASSERT_C(true, "Thread state should not be 'running' on drop.");
+        break;
+    default:
+        ASSERT_C(true, "Invalid thread state on drop.")
     }
-
-    spinlock_release(&slock);
 }
 
-void sched_queue_add(thread_t *thread)
+void sched_enqueue(thread_t *thread)
 {
     spinlock_acquire(&slock);
 
-    list_append(&g_thread_list, &thread->list_elem_thread);
+    list_append(&g_thread_list, &thread->list_node_sched);
+    thread_ref(thread);
 
     spinlock_release(&slock);
 }
