@@ -41,6 +41,34 @@ static u64 get_hdr_size(u8 header_type)
     }
 }
 
+static void setup_pci_dir_tree()
+{
+    vnode_t *dev_dir, *bus_dir, *pci_dir, *devices_dir;
+
+    // Ensure `/dev` exists.
+    if (vfs_open("/dev", &dev_dir) != EOK)
+        panic("Could not open '/dev'!");
+
+    // Create `/dev/bus` if needed.
+    if (dev_dir->ops->lookup(dev_dir, "bus", &bus_dir) != EOK)
+        if (dev_dir->ops->create(dev_dir, "bus", VFS_NODE_DIR, &bus_dir) != EOK)
+            panic("Could not create `/dev/bus`!");
+
+    // Create `/dev/bus/pci`.
+    if (bus_dir->ops->create(bus_dir, "pci", VFS_NODE_DIR, &pci_dir) != EOK)
+        panic("Could not create `/dev/bus/pci`!");
+
+    // Create `/dev/bus/pci/devices`.
+    if (pci_dir->ops->create(pci_dir, "devices", VFS_NODE_DIR, &devices_dir) != EOK)
+        panic("Could not create `/dev/bus/pci/devices`!");
+
+    vfs_close(devices_dir);
+    vfs_close(pci_dir);
+    vfs_close(bus_dir);
+    vfs_close(dev_dir);
+}
+
+
 void pci_list()
 {
     acpi_mcfg_t *mcfg = (acpi_mcfg_t*)acpi_lookup("MCFG");
@@ -50,10 +78,10 @@ void pci_list()
         return;
     }
 
-    // Create /sys/pci
-    vnode_t *pci_dir;
-    if (vfs_create("/sys/pci", VFS_NODE_DIR, &pci_dir) < 0)
-        panic("Could not create `/sys/pci`.");
+    setup_pci_dir_tree();
+
+    vnode_t *pci_dev_dir;
+    vfs_open("/dev/bus/pci/devices", &pci_dev_dir);
 
     for (u64 i = 0; i < (mcfg->sdt.length - sizeof(acpi_mcfg_t)) / 16; i++)
     {
@@ -69,17 +97,25 @@ void pci_list()
                     if (pci_hdr->vendor_id == 0xFFFF)
                         continue;
 
-                    // Create file.
-                    // Name format: CC:SS:PP
-                    char name[16];
-                    sprintf(name, "%02X:%02X:%02X", pci_hdr->class, pci_hdr->subclass, pci_hdr->prog_if);
-                    vnode_t *file;
-                    if (pci_dir->ops->create(pci_dir, name, VFS_NODE_FILE, &file) < 0)
-                        panic("Could not create file for PCI device.");
-                    file->mp_data = pci_hdr;
-                    file->size = get_hdr_size(pci_dir->type);
+                    // Create pci device file.
+                    // Name format: VNID-DVID-CC:SS:PP
+                    char name[32];
+                    sprintf(name, "%04X:%04X-%02X:%02X:%02X",
+                        pci_hdr->vendor_id, pci_hdr->device_id,
+                        pci_hdr->class, pci_hdr->subclass, pci_hdr->prog_if
+                    );
 
-                    log("PCI: %X %X %02X:%02X:%02X", pci_hdr->vendor_id, pci_hdr->device_id, pci_hdr->class, pci_hdr->subclass, pci_hdr->prog_if);
+                    vnode_t *file;
+                    if (pci_dev_dir->ops->create(pci_dev_dir, name, VFS_NODE_FILE, &file) != EOK)
+                        panic("Could not create file for PCI device '%s'!", name);
+                    file->mp_data = pci_hdr;
+                    file->size = get_hdr_size(pci_dev_dir->type);
+                    vfs_close(file);
+
+                    log("PCI: %04X:%04X-%02X:%02X:%02X",
+                        pci_hdr->vendor_id, pci_hdr->device_id,
+                        pci_hdr->class, pci_hdr->subclass, pci_hdr->prog_if
+                    );
                 }
     }
 

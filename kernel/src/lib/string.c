@@ -124,6 +124,26 @@ char *strrchr(const char *s, int c)
     return ret;
 }
 
+char *strstr(const char *s1, const char *s2)
+{
+    if (!*s2)
+        return (char *)s1;
+
+    for (; *s1; s1++)
+    {
+        const char *h = s1, *n = s2;
+
+        while (*h && *n && *h == *n)
+            h++, n++;
+
+        if (!*n)
+            return (char *)s1;
+    }
+
+    return NULL;
+}
+
+
 // Other
 
 void *memset(void *s, int c, size_t n)

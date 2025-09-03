@@ -21,8 +21,10 @@ vnode_type_t;
 
 typedef struct
 {
-    int (*read) (vnode_t *self, u64 offset, void *buffer, u64 count, u64 *out);
-    int (*write)(vnode_t *self, u64 offset, void *buffer, u64 count, u64 *out);
+    int (*open)  (vnode_t *self);
+    int (*close) (vnode_t *self);
+    int (*read)  (vnode_t *self, u64 offset, void *buffer, u64 count, u64 *out);
+    int (*write) (vnode_t *self, u64 offset, void *buffer, u64 count, u64 *out);
     int (*lookup)(vnode_t *self, const char *name, vnode_t **out);
     int (*list)  (vnode_t *self, u64 *hint, const char **out);
     int (*create)(vnode_t *self, char *name, vnode_type_t t, vnode_t **out);
@@ -61,7 +63,7 @@ vfs_mountpoint_t;
 
 int vfs_open(const char *path, vnode_t **out);
 
-int vfs_close(vnode_t *out);
+int vfs_close(vnode_t *vn);
 
 int vfs_create(const char *path, vnode_type_t t, vnode_t **out);
 

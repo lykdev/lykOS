@@ -194,7 +194,6 @@ void *vmm_map_vnode(vmm_addr_space_t *as, uptr virt, u64 len, int prot, int flag
                 u64 count;
                 vnode->ops->read(vnode, offset + addr, (void*)(phys + HHDM), ARCH_PAGE_GRAN, &count);
             }
-
         }
     }
 

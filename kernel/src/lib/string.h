@@ -22,6 +22,8 @@ char *strchr(const char *s, char c);
 
 char *strrchr(const char *s, int c);
 
+char *strstr(const char *s1, const char *s2);
+
 // Comparison
 
 int memcmp(const void *s1, const void *s2, size_t n);
