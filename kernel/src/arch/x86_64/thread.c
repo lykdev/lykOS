@@ -4,8 +4,8 @@
 #include <lib/math.h>
 #include <lib/string.h>
 #include <mm/pmm.h>
-#include <tasking/sched.h>
 #include <sys/proc.h>
+#include <sys/sched.h>
 #include <sys/smp.h>
 
 #include "tables/tss.h"

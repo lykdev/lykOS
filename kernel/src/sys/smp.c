@@ -10,7 +10,7 @@
 #include <common/panic.h>
 #include <mm/heap.h>
 #include <mm/pmm.h>
-#include <tasking/sched.h>
+#include <sys/sched.h>
 #include <sys/smp.h>
 #include <sys/thread.h>
 

@@ -1,10 +1,10 @@
 #include "mutex.h"
-#include "lib/list.h"
 
 #include <common/assert.h>
 #include <lib/likely.h>
+#include <lib/list.h>
+#include <sys/sched.h>
 #include <sys/thread.h>
-#include <tasking/sched.h>
 
 #define SPIN_COUNT 10
 

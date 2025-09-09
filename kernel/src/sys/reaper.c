@@ -2,8 +2,8 @@
 
 #include <mm/heap.h>
 #include <sys/proc.h>
+#include <sys/sched.h>
 #include <sys/thread.h>
-#include <tasking/sched.h>
 
 static list_t threads_queue = LIST_INIT;
 static spinlock_t slock_threads = SPINLOCK_INIT;

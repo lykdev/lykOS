@@ -12,8 +12,8 @@
 #include <mm/heap.h>
 #include <mm/pmm.h>
 #include <sys/reaper.h>
+#include <sys/sched.h>
 #include <sys/smp.h>
-#include <tasking/sched.h>
 
 u64 g_thread_count = 0;
 

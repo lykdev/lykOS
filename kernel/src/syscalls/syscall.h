@@ -3,9 +3,9 @@
 #include <lib/def.h>
 
 #include <sys/proc.h>
-#include <sys/thread.h>
 #include <sys/resource.h>
-#include <tasking/sched.h>
+#include <sys/sched.h>
+#include <sys/thread.h>
 
 typedef struct
 {

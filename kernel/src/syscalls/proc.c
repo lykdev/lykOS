@@ -2,7 +2,7 @@
 
 #include <arch/syscall.h>
 #include <common/log.h>
-#include <tasking/sched.h>
+#include <sys/sched.h>
 
 void syscall_exit(int code)
 {

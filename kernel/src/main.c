@@ -27,10 +27,9 @@
 #include <sys/module.h>
 #include <sys/proc.h>
 #include <sys/reaper.h>
+#include <sys/sched.h>
 #include <sys/smp.h>
 #include <sys/thread.h>
-
-#include <tasking/sched.h>
 
 extern void dev_fb_init();
 

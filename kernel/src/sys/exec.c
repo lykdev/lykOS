@@ -9,8 +9,8 @@
 #include <mm/heap.h>
 #include <mm/pmm.h>
 #include <sys/proc.h>
+#include <sys/sched.h>
 #include <sys/thread.h>
-#include <tasking/sched.h>
 
 proc_t *exec_load(vnode_t *file)
 {
