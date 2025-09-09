@@ -1,6 +1,9 @@
+#include <sys/module.h>
+
 #include <common/assert.h>
 #include <common/log.h>
 #include <dev/pci.h>
+#include <dev/devman.h>
 #include <fs/vfs.h>
 #include <mm/heap.h>
 #include <lib/string.h>
@@ -9,37 +12,28 @@
 
 bool __module_probe()
 {
-    vnode_t *dir;
-    vfs_open("/sys/pci", &dir);
-    if (dir == NULL)
-        panic("/sys/pci not found!");
-
-    u64 idx = 0;
-    const char *name;
-    while (dir->ops->list(dir, &idx, &name), name)
-        // Mass Storage Controller - Serial ATA Controller - AHCI
-        if (strcmp(name, "01:06:01"))
-            return true;
-        else
-            continue;
-
-    return false;
+    return true;
 }
 
 void __module_install()
 {
-    pci_header_type0_t pci_hdr;
-    vnode_t *file;
-    vfs_open("/sys/pci/01:06:01", &file);
-    u64 out;
-    file->ops->read(file, 0, &pci_hdr, sizeof(pci_header_type0_t), &out);
-
-    ahci_setup(pci_hdr.bar[5]);
-
-    return;
+    driver_t *drv = heap_alloc(sizeof(driver_t));
+    *drv = (driver_t) {
+        .name = heap_alloc(8),
+        .match_data = NULL,
+        .list_node = LIST_NODE_INIT
+    };
+    strcpy((char *)drv->name, "AHCI");
+    devman_reg_driver(devman_get_bus_type("PCI"), drv);
 }
 
 void __module_destroy()
 {
     log("gg");
 }
+
+MODULE_DEP("PCI")
+
+MODULE_NAME("AHCI")
+MODULE_VERSION("0.1")
+MODULE_AUTHOR("Matei Lupu")

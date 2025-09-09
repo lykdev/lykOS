@@ -13,6 +13,21 @@
 
 list_t g_mod_module_list = LIST_INIT;
 
+static void module_fetch_modinfo(module_t *mod, const char *sym_name, uptr sym_val)
+{
+#define MATCH(X) strcmp(sym_name, X) == 0
+
+    if      (MATCH("__module_probe")      ) mod->probe       = (bool(*)())sym_val;
+    else if (MATCH("__module_install")    ) mod->install     = (void(*)())sym_val;
+    else if (MATCH("__module_destroy")    ) mod->destroy     = (void(*)())sym_val;
+    else if (MATCH("__module_name")       ) mod->name        = (const char *)sym_val;
+    else if (MATCH("__module_version")    ) mod->version     = (const char *)sym_val;
+    else if (MATCH("__module_description")) mod->description = (const char *)sym_val;
+    else if (MATCH("__module_author")     ) mod->author      = (const char *)sym_val;
+
+#undef MATCH
+}
+
 module_t *module_load(vnode_t *file)
 {
     log("Loading module `%s`.", file->name);
@@ -48,9 +63,10 @@ module_t *module_load(vnode_t *file)
         file->ops->read(file, ehdr.e_shoff + (ehdr.e_shentsize * i), &shdr[i], sizeof(Elf64_Shdr), &count);
         Elf64_Shdr *section = &shdr[i];
 
-        if (section->sh_type == SHT_PROGBITS
-        &&  section->sh_size != 0
-        &&  section->sh_flags & SHF_ALLOC)
+        if (section->sh_size == 0 || (section->sh_flags & SHF_ALLOC) == 0)
+            continue;
+
+        if (section->sh_type == SHT_PROGBITS)
         {
             u64 size = CEIL(section->sh_size, ARCH_PAGE_GRAN);
             void *mem = vmm_map_vnode(
@@ -63,6 +79,22 @@ module_t *module_load(vnode_t *file)
                 0
             );
             file->ops->read(file, section->sh_offset, mem, section->sh_size, &count);
+
+            section_addr[i] = (uptr)mem;
+        }
+        else if (section->sh_type == SHT_NOBITS) // Global data.
+        {
+            u64 size = CEIL(section->sh_size, ARCH_PAGE_GRAN);
+            void *mem = vmm_map_vnode(
+                g_vmm_kernel_addr_space,
+                0,
+                size,
+                VMM_PROT_FULL,
+                VMM_MAP_ANON | VMM_MAP_POPULATE | VMM_MAP_PRIVATE,
+                NULL,
+                0
+            );
+            memset(mem, 0, section->sh_size);   // Zero the .bss
 
             section_addr[i] = (uptr)mem;
         }
@@ -115,14 +147,7 @@ module_t *module_load(vnode_t *file)
             break;
         default:
             sym->st_value += section_addr[sym->st_shndx];
-
-            if (strcmp(name, "__module_install") == 0)
-                module.install = (void(*)())sym->st_value;
-            else if (strcmp(name, "__module_destroy") == 0)
-                module.destroy = (void(*)())sym->st_value;
-            else if (strcmp(name, "__module_probe") == 0)
-                module.probe   = (bool(*)())sym->st_value;
-
+            module_fetch_modinfo(&module, name, sym->st_value);
             break;
         }
     }

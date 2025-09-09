@@ -1,3 +1,5 @@
+#include <sys/module.h>
+
 #include <common/assert.h>
 #include <common/log.h>
 #include <dev/pci.h>

@@ -7,9 +7,9 @@
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 
-bool ahci_read(port_t* port, u64 lba, void *buf, u32 count);
+// AHCI code
 
-static void port_idle(port_t* port)
+static void ahci_port_idle(port_t* port)
 {
     // PxCMD.ST, PxCMD.CR, PxCMD.FRE, PxCMD.FR should all be cleared.
     const u32 idle_flags_mask = (u32)1 << 15  // CR
@@ -28,16 +28,7 @@ static void port_idle(port_t* port)
     }
 }
 
-static void port_start(port_t* port)
-{
-    while ((port->cmd & ((u32)1 << 15)) != 0) // Wait for PxCMD.CR to return ‘0’ when read.
-        ;
-
-    port->cmd |= (u32)1 << 0; // Set PxCMD.ST
-    port->cmd |= (u32)1 << 4; // Set PxCMD.FRE
-}
-
-static int find_free_cmd_slot(port_t* port)
+static int ahci_find_free_cmd_slot(port_t* port)
 {
     u32 slots = port->sact | port->ci;
     for (int i = 0; i < 32; i++)
@@ -61,8 +52,6 @@ void ahci_setup(uptr abar)
     if(!ext_addr)
         panic("AHCI: HBA cannot access 64-bit data structures.");
 
-    int a = sizeof(fis_reg_h2d_t);
-
     for (int i = 0; i < 32; i++)
     {
         // Bit N is set to 1 if port N is implemented.
@@ -74,7 +63,7 @@ void ahci_setup(uptr abar)
             continue;
 
         // Ensure the port is in an idle state prior to manipulating HBA and port specific registers.
-        port_idle(port);
+        ahci_port_idle(port);
 
         // Allocate mmeory for the Command List Structure.
         u64 clb = (u64)pmm_alloc(0);
@@ -90,7 +79,7 @@ void ahci_setup(uptr abar)
 
         cmd_header_t* cmd_list = (cmd_header_t*)(u64)(clb + HHDM);
 
-        for (int slot = 0; slot < cmd_slots; slot++)
+        for (u32 slot = 0; slot < cmd_slots; slot++)
         {
             cmd_header_t *cmd_hdr = &cmd_list[slot];
 
@@ -103,13 +92,23 @@ void ahci_setup(uptr abar)
             memset((void*)(ctba + HHDM), 0, sizeof(cmd_table_t));
         }
 
-        port_start(port);
+        // Start port.
+
+        while ((port->cmd & ((u32)1 << 15)) != 0) // Wait for PxCMD.CR to return ‘0’ when read.
+            ;
+
+        port->cmd |= (u32)1 << 0; // Set PxCMD.ST
+        port->cmd |= (u32)1 << 4; // Set PxCMD.FRE
     }
 }
 
+/*
+ * Reads `count` sectors starting at `lba` into `buf`.
+ * A sector has 512 bytes.
+ */
 bool ahci_read(port_t* port, u64 lba, void *buf, u32 count)
 {
-    int slot = find_free_cmd_slot(port);
+    int slot = ahci_find_free_cmd_slot(port);
     if (slot == -1)
         return false;
 
@@ -122,7 +121,7 @@ bool ahci_read(port_t* port, u64 lba, void *buf, u32 count)
     memset(cmd_tbl, 0, sizeof(cmd_table_t));
 
     // Setup command header.
-    cmd_hdr->cfl = sizeof(fis_reg_h2d_t) / 4; // Command FIS length in DWORDS..
+    cmd_hdr->cfl = sizeof(fis_reg_h2d_t) / 4; // Command FIS length in DWORDS.
     cmd_hdr->w = 0;     // Read.
     cmd_hdr->prdtl = 1; // One PRDT entry.
 

@@ -4,6 +4,7 @@
 #include <common/log.h>
 
 #include <dev/acpi/acpi.h>
+#include <dev/devman.h>
 #include <dev/pci.h>
 
 #include <fs/initrd.h>
@@ -48,13 +49,11 @@ void kernel_main()
     initrd_init();
 
     vfs_mount("/sys", sysfs_new_mp("sys"));
-    vfs_mount("/dev", sysfs_new_mp("dev"));
-
-    // List PCI devices. Required for loading device drivers.
-    pci_list();
 
     // Init IPC code.
     afunix_init();
+
+    devman_init();
 
     // Load kernel modules.
     {
