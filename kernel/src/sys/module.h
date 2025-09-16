@@ -5,7 +5,6 @@
 
 typedef struct
 {
-    bool (*probe)();
     void (*install)();
     void (*destroy)();
 

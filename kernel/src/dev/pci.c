@@ -5,7 +5,7 @@
 #include <lib/string.h>
 
 #include <dev/acpi/acpi.h>
-#include <dev/devman.h>
+#include <dev/device.h>
 #include <dev/pci.h>
 
 typedef struct
@@ -26,25 +26,18 @@ typedef struct
 __attribute__((packed))
 acpi_mcfg_t;
 
-bool __module_probe()
+void pci_init()
 {
-    return acpi_lookup("MCFG") != NULL;
-}
-
-void __module_install()
-{
-    bus_type_t *bus_type_pci = heap_alloc(sizeof(bus_type_t));
-    *bus_type_pci = (bus_type_t) {
-        .name = heap_alloc(4),
-        .devices = LIST_INIT,
-        .drivers = LIST_INIT,
-        .slock = SPINLOCK_INIT,
-        .list_node = LIST_NODE_INIT
-    };
-    strcpy((char *)bus_type_pci->name, "PCI");
-    devman_reg_bus_type(bus_type_pci);
-
     acpi_mcfg_t *mcfg = (acpi_mcfg_t*)acpi_lookup("MCFG");
+    if (!mcfg)
+    {
+        log("Could not enumerate PCI devices!");
+        return;
+    }
+
+    bus_t *bus_pci = heap_alloc(sizeof(bus_t));
+    bus_init(bus_pci, "pci");
+    bus_register(bus_pci);
 
     for (u64 i = 0; i < (mcfg->sdt.length - sizeof(acpi_mcfg_t)) / 16; i++)
     {
@@ -63,7 +56,7 @@ void __module_install()
             device_t *dev = heap_alloc(sizeof(device_t));
             *dev = (device_t) {
                 .name = heap_alloc(32),
-                .data = pci_hdr,
+                .hardware_data = pci_hdr,
                 .driver = NULL,
                 .driver_data = NULL,
                 .list_node = LIST_NODE_INIT
@@ -72,14 +65,10 @@ void __module_install()
                 pci_hdr->vendor_id, pci_hdr->device_id,
                 pci_hdr->class, pci_hdr->subclass, pci_hdr->prog_if
             );
-            devman_reg_device(bus_type_pci, dev);
+
+            bus_register_device(bus_pci, dev);
         }
     }
 
     log("PCI: Successfully listed devices.");
-}
-
-void __module_destroy()
-{
-
 }

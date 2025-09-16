@@ -17,8 +17,7 @@ static void module_fetch_modinfo(module_t *mod, const char *sym_name, uptr sym_v
 {
 #define MATCH(X) strcmp(sym_name, X) == 0
 
-    if      (MATCH("__module_probe")      ) mod->probe       = (bool(*)())sym_val;
-    else if (MATCH("__module_install")    ) mod->install     = (void(*)())sym_val;
+    if      (MATCH("__module_install")    ) mod->install     = (void(*)())sym_val;
     else if (MATCH("__module_destroy")    ) mod->destroy     = (void(*)())sym_val;
     else if (MATCH("__module_name")       ) mod->name        = (const char *)sym_val;
     else if (MATCH("__module_version")    ) mod->version     = (const char *)sym_val;
@@ -152,9 +151,7 @@ module_t *module_load(vnode_t *file)
         }
     }
 
-    if (module.install == NULL
-    ||  module.destroy == NULL
-    ||  module.probe == NULL)
+    if (module.install == NULL || module.destroy == NULL)
     {
         log("Module `%s` does not implement required functions.", file->name);
         return NULL;

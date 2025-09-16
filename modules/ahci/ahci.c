@@ -28,6 +28,16 @@ static void ahci_port_idle(port_t* port)
     }
 }
 
+static void ahci_port_start(port_t* port)
+{
+    while ((port->cmd & ((u32)1 << 15)) != 0) // Wait for PxCMD.CR to return ‘0’ when read.
+        ;
+
+    port->cmd |= (u32)1 << 0; // Set PxCMD.ST
+    port->cmd |= (u32)1 << 4; // Set PxCMD.FRE
+}
+
+
 static int ahci_find_free_cmd_slot(port_t* port)
 {
     u32 slots = port->sact | port->ci;
@@ -57,6 +67,7 @@ void ahci_setup(uptr abar)
         // Bit N is set to 1 if port N is implemented.
         if (((ghc->pi >> i) & 1) == 0)
             continue;
+
         port_t* port = (port_t*)((uptr)ghc + 0x100 + (i * 0x80));
 
         if (port->sig != 0x00000101) // Skip non-SATA drives.
@@ -92,13 +103,7 @@ void ahci_setup(uptr abar)
             memset((void*)(ctba + HHDM), 0, sizeof(cmd_table_t));
         }
 
-        // Start port.
-
-        while ((port->cmd & ((u32)1 << 15)) != 0) // Wait for PxCMD.CR to return ‘0’ when read.
-            ;
-
-        port->cmd |= (u32)1 << 0; // Set PxCMD.ST
-        port->cmd |= (u32)1 << 4; // Set PxCMD.FRE
+        ahci_port_start(port);
     }
 }
 
@@ -106,7 +111,7 @@ void ahci_setup(uptr abar)
  * Reads `count` sectors starting at `lba` into `buf`.
  * A sector has 512 bytes.
  */
-bool ahci_read(port_t* port, u64 lba, void *buf, u32 count)
+bool ahci_read(port_t* port, u64 lba, void *buf, u64 count)
 {
     int slot = ahci_find_free_cmd_slot(port);
     if (slot == -1)

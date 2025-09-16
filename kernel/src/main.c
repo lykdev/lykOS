@@ -4,12 +4,11 @@
 #include <common/log.h>
 
 #include <dev/acpi/acpi.h>
-#include <dev/devman.h>
+#include <dev/device.h>
 #include <dev/pci.h>
 
 #include <fs/initrd.h>
 #include <fs/vfs.h>
-#include <fs/sysfs.h>
 
 #include <graphics/video.h>
 
@@ -31,8 +30,6 @@
 #include <sys/smp.h>
 #include <sys/thread.h>
 
-extern void dev_fb_init();
-
 extern void afunix_init();
 
 void kernel_main()
@@ -47,12 +44,14 @@ void kernel_main()
     vfs_init();
     initrd_init();
 
-    vfs_mount("/sys", sysfs_new_mp("sys"));
-
     // Init IPC code.
     afunix_init();
 
-    devman_init();
+    bus_t *bus_platform = heap_alloc(sizeof(bus_t));
+    bus_init(bus_platform, "platform");
+    bus_register(bus_platform);
+
+    pci_init();
 
     // Load kernel modules.
     {
@@ -70,12 +69,9 @@ void kernel_main()
             module_dir->ops->lookup(module_dir, name, &file);
 
             module_t *mod = module_load(file);
-            if (mod->probe())
-                mod->install();
+            mod->install();
         }
     }
-
-    dev_fb_init();
 
     // Load initial executables.
     {

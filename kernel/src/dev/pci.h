@@ -85,4 +85,4 @@ typedef struct
 __attribute__((packed))
 pci_header_type2_t;
 
-void pci_list();
+void pci_init();
