@@ -13,7 +13,7 @@
 #define MAP_FAILED          ((void *)(-1))
 #define MAP_ANON            0x20
 
-i64 syscall_mmap(void *addr, u64 length, int prot, int flags, int fd, u64 offset)
+sys_ret_t syscall_mmap(void *addr, u64 length, int prot, int flags, int fd, u64 offset)
 {
     proc_t *proc = sched_get_curr_thread()->parent_proc;
     vmm_addr_space_t *as = proc->addr_space;
@@ -24,13 +24,16 @@ i64 syscall_mmap(void *addr, u64 length, int prot, int flags, int fd, u64 offset
     {
         res = resource_get(&proc->resource_table, fd);
         if (res == NULL)
-            return -EBADF;
+            return (sys_ret_t) {0, EBADF};
         vnode = res->node;
         if (vnode == NULL)
-            return -EBADF;
+            return (sys_ret_t) {0, EBADF};
     }
     else
         vnode = NULL, offset = 0;
 
-    return (i64)vmm_map_vnode(as, (uptr)addr, length, 0, VMM_MAP_ANON | VMM_MAP_PRIVATE, vnode, offset);
+    return (sys_ret_t) {
+        (u64)vmm_map_vnode(as, (uptr)addr, length, 0, VMM_MAP_ANON | VMM_MAP_PRIVATE, vnode, offset),
+        EOK
+    };
 }

@@ -7,27 +7,27 @@
 #include <mm/heap.h>
 #include <sys/sockets/socket.h>
 
-i64 syscall_accept(int sockfd, const char *addr)
+sys_ret_t syscall_accept(int sockfd, const char *addr)
 {
     proc_t *proc = sched_get_curr_thread()->parent_proc;
 
     resource_t *res = resource_get(&proc->resource_table, sockfd);
     if (!res || !res->node || res->node->type != VFS_NODE_SOCKET)
-        return -EBADF;
+        return (sys_ret_t) {0, EBADF};
 
     socket_t *socket = (socket_t *)res->node->mp_data;
     if (!socket)
-        return -EINVAL;
+        return (sys_ret_t) {0, EINVAL};
 
     // Call the internal accept logic for the socket.
     socket_t *new_socket;
     i64 ret = socket->ops->accept(socket, 0, &new_socket);
-    if (ret < 0)
-        return ret;
+    if (ret != 0)
+        return (sys_ret_t) {0, ret};
 
     vnode_t *handle = heap_alloc(sizeof(vnode_t));
     if (!handle)
-        return -ENOMEM; // TODO: destroy the socket
+        return (sys_ret_t) {0, ENOMEM}; // TODO: destroy the socket
     handle->type = VFS_NODE_SOCKET;
     handle->mp_data = new_socket;
 
@@ -39,102 +39,102 @@ i64 syscall_accept(int sockfd, const char *addr)
     {
         //TODO: destroy the socket
         heap_free(handle);
-        return -EMFILE;
+        return (sys_ret_t) {0, EMFILE};
     }
 
-    return fd;
+    return (sys_ret_t) {fd, EOK};
 }
 
-i64 syscall_bind(int sockfd, const char *addr)
+sys_ret_t syscall_bind(int sockfd, const char *addr)
 {
     proc_t *proc = sched_get_curr_thread()->parent_proc;
 
     resource_t *res = resource_get(&proc->resource_table, sockfd);
     if (!res || !res->node || res->node->type != VFS_NODE_SOCKET)
-        return -EBADF;
+        return (sys_ret_t) {0, EBADF};
 
     socket_t *socket = (socket_t *)res->node->mp_data;
     if (!socket)
-        return -EINVAL;
+        return (sys_ret_t) {0, EINVAL};
 
     // Call the internal bind logic for the socket.
-    return socket->ops->bind(socket, addr);
+    return (sys_ret_t) {0, socket->ops->bind(socket, addr)};
 }
 
-i64 syscall_connect(int sockfd, const char *addr)
+sys_ret_t syscall_connect(int sockfd, const char *addr)
 {
     proc_t *proc = sched_get_curr_thread()->parent_proc;
 
     resource_t *res = resource_get(&proc->resource_table, sockfd);
     if (!res || !res->node || res->node->type != VFS_NODE_SOCKET)
-        return -EBADF;
+        return (sys_ret_t) {0, EBADF};
 
     socket_t *socket = (socket_t *)res->node->mp_data;
     if (!socket)
-        return -EINVAL;
+        return (sys_ret_t) {0, EINVAL};
 
     // Call the internal connect logic for the socket.
-    return socket->ops->connect(socket, addr);
+    return (sys_ret_t) {0, socket->ops->connect(socket, addr)};
 }
 
-i64 syscall_getpeername(int sockfd, char *addr)
+sys_ret_t syscall_getpeername(int sockfd, char *addr)
 {
 
 }
 
-i64 syscall_getsockname(int sockfd, char *addr)
+sys_ret_t syscall_getsockname(int sockfd, char *addr)
 {
 
 }
 
-i64 syscall_listen(int sockfd, int backlog)
+sys_ret_t syscall_listen(int sockfd, int backlog)
 {
     proc_t *proc = sched_get_curr_thread()->parent_proc;
 
     resource_t *res = resource_get(&proc->resource_table, sockfd);
     if (!res || !res->node || res->node->type != VFS_NODE_SOCKET)
-        return -EBADF;
+        return (sys_ret_t) {0, EBADF};
 
     socket_t *socket = (socket_t *)res->node->mp_data;
     if (!socket)
-        return -EINVAL;
+        return (sys_ret_t) {0, EINVAL};
 
     // Call the internal listen logic for the socket.
-    return socket->ops->listen(socket);
+    return (sys_ret_t) {0, socket->ops->listen(socket)};
 }
 
-i64 syscall_recv(int sockfd, void *buf, size_t len, int flags)
+sys_ret_t syscall_recv(int sockfd, void *buf, size_t len, int flags)
 {
 
 }
 
-i64 syscall_send(int sockfd, const void *buf, size_t len, int flags)
+sys_ret_t syscall_send(int sockfd, const void *buf, size_t len, int flags)
 {
 
 }
 
-i64 syscall_shutdown(int sockfd, int how)
+sys_ret_t syscall_shutdown(int sockfd, int how)
 {
 
 }
 
-i64 syscall_socket(int domain, int type, int protocol)
+sys_ret_t syscall_socket(int domain, int type, int protocol)
 {
     proc_t *proc = sched_get_curr_thread()->parent_proc;
 
     socket_family_t *family = socket_get_family(domain);
     if (!family)
-        return -EINVAL;
+        return (sys_ret_t) {0, EINVAL};
 
     vnode_t *handle = heap_alloc(sizeof(vnode_t));
     if (!handle)
-        return -ENOMEM;
+        return (sys_ret_t) {0, ENOMEM};
 
     socket_t *socket = family->create_socket(type, protocol);
     if (!socket)
     {
         heap_free(handle);
-        return -ENOMEM;
+        return (sys_ret_t) {0, ENOMEM};
     }
     handle->type = VFS_NODE_SOCKET;
     handle->mp_data = socket;
@@ -147,8 +147,8 @@ i64 syscall_socket(int domain, int type, int protocol)
     {
         //TODO: destroy the socket
         heap_free(handle);
-        return -EMFILE;
+        return (sys_ret_t) {0, EMFILE};
     }
 
-    return fd;
+    return (sys_ret_t) {fd, EOK};
 }

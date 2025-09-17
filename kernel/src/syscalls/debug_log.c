@@ -1,6 +1,10 @@
+#include "syscall.h"
+
 #include <common/log.h>
 
-void syscall_debug_log(const char *str)
+sys_ret_t syscall_debug_log(const char *str)
 {
-    log("MLIBC: %s", str);
+    log("%s", str);
+
+    return (sys_ret_t) {0, EOK};
 }

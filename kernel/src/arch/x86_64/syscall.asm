@@ -12,9 +12,10 @@ arch_syscall_entry:
     mov qword [gs:USER_STACK_OFFSET], rsp
     mov rsp, qword [gs:KERNEL_STACK_OFFSET]
 
+    ; RAX and RDX are not preserved because they hold the syscall return value and errno, respectively.
+
     push rbx
     push rcx
-    push rdx
     push rbp
     push rsi
     push rdi
@@ -37,7 +38,7 @@ arch_syscall_entry:
     ;
 
     ; As per the Sys V ABI RDI, RSI, RDX, RCX, R8, and R9 are function arguments.
-    ; RDI, RSI, RDX contain the first 3 arguments, this also matches the first 3 arguments for the Sys V ABI.
+    ; RDI, RSI, RDX contain the first 3 arguments; this also matches the first 3 arguments for the Sys V ABI.
     ; The SYSCALL instruction sets RCX, thus it cannot be used. R10 is used to replace it.
     ; Lastly, R8 and R9 are passed which will match Sys V again.
     mov rcx, r10
@@ -56,7 +57,6 @@ arch_syscall_entry:
     pop rdi
     pop rsi
     pop rbp
-    pop rdx
     pop rcx
     pop rbx
 

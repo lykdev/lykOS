@@ -18,7 +18,8 @@ int main()
         p[i] = 0xFFFFFF;
 
     FILE *file = fopen("/dev/fb", "r+");
-    fwrite(p, 4, 400, file);
+    if (file)
+        fwrite(p, 4, 400, file);
 
     return 43;
 }

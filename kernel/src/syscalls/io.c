@@ -9,106 +9,118 @@
 #define SEEK_CUR  1
 #define SEEK_END  2
 
-i64 syscall_close(int fd)
+sys_ret_t syscall_close(int fd)
 {
     proc_t *proc = sched_get_curr_thread()->parent_proc;
 
     if (proc->resource_table.resources[fd] == NULL)
-        return -EBADF;
+        return (sys_ret_t) {0, EBADF};
 
     proc->resource_table.resources[fd] = NULL;
-    return EOK;
+    return (sys_ret_t) {0, EOK};
 }
 
-i64 syscall_ioctl(int fd, int op, void *argp)
+sys_ret_t syscall_ioctl(int fd, int op, void *argp)
 {
     proc_t *proc = sched_get_curr_thread()->parent_proc;
 
     resource_t *res = resource_get(&proc->resource_table, fd);
     if (res == NULL)
-        return -EBADF;
+        return (sys_ret_t) {0, EBADF};
     vnode_t *node = res->node;
     if (node == NULL)
-        return -EBADF;
+        return (sys_ret_t) {0, EBADF};
 
-    return node->ops->ioctl(node, op, argp);
+    return (sys_ret_t) {
+        0,
+        node->ops->ioctl(node, op, argp)
+    };
 }
 
-i64 syscall_open(const char *path, int flags, int mode)
+sys_ret_t syscall_open(const char *path, int flags, int mode)
 {
     proc_t *proc = sched_get_curr_thread()->parent_proc;
 
     vnode_t *node;
     int ret = vfs_open(path, &node);
-    if(ret < 0)
-        return ret;
+    if (ret != 0)
+        return (sys_ret_t) {0, ret};
 
-    return resource_create(&proc->resource_table, node, 0, RESOURCE_READ | RESOURCE_WRITE);
+    return (sys_ret_t) {
+        resource_create(&proc->resource_table, node, 0, RESOURCE_READ | RESOURCE_WRITE),
+        EOK
+    };
 }
 
-i64 syscall_read(int fd, void *buf, u64 count)
+sys_ret_t syscall_read(int fd, void *buf, u64 count)
 {
     proc_t *proc = sched_get_curr_thread()->parent_proc;
 
     resource_t *res = resource_get(&proc->resource_table, fd);
     if (res == NULL || (res->flags & RESOURCE_READ) == 0)
-        return -EBADF;
+        return (sys_ret_t) {0, EBADF};
     vnode_t *node = res->node;
     if (node == NULL)
-        return -EBADF;
+        return (sys_ret_t) {0, EBADF};
 
     u64 out;
-    int ret = node->ops->read(node, res->offset, buf, count, &out);
+    int err = node->ops->read(node, res->offset, buf, count, &out);
 
-    if (ret < 0)
-        return ret;
-    else
-        return out;
+    return (sys_ret_t) {out, err};
 }
 
-i64 syscall_seek(int fd, u64 offset, int whence)
+sys_ret_t syscall_seek(int fd, u64 offset, int whence)
 {
+    // TODO: replace this with an actual solution
+    if (fd == 0 | fd == 1 || fd == 2) // stdout & stderr
+        return (sys_ret_t) {offset, EOK};
+
     proc_t *proc = sched_get_curr_thread()->parent_proc;
 
     resource_t *res = resource_get(&proc->resource_table, fd);
     if (res == NULL)
-        return -EBADF;
+        return (sys_ret_t) {0, EBADF};
     vnode_t *node = res->node;
     if (node == NULL)
-        return -EBADF;
+        return (sys_ret_t) {0, EBADF};
 
+    u64 new_offset;
     switch (whence)
     {
-    case SEEK_SET: return offset;
-    case SEEK_CUR: return res->offset + offset;
-    case SEEK_END: return res->node->size + offset;
-    default:       return -EINVAL;
+    case SEEK_SET: new_offset = offset; break;
+    case SEEK_CUR: new_offset = res->offset + offset; break;
+    case SEEK_END: new_offset = res->node->size + offset; break;
+    default:       return (sys_ret_t) {0, EINVAL};
     }
+
+    if (new_offset > res->node->size)
+        return (sys_ret_t) {0, EINVAL};
+
+    res->offset = new_offset;
+    return (sys_ret_t) {new_offset, EOK};
 }
 
-i64 syscall_write(int fd, void *buf, u64 count)
+sys_ret_t syscall_write(int fd, void *buf, u64 count)
 {
     // TODO: replace this with an actual solution
-    if (fd == 1 || fd == 2) // stdout & stderr
+    if (fd <= 2) // stdout & stderr
     {
-        log("%s", buf);
-        return count;
+        if (fd == 1 || fd == 2)
+            log("%s", buf);
+        return (sys_ret_t) {count, EOK};
     }
 
     proc_t *proc = sched_get_curr_thread()->parent_proc;
 
     resource_t *res  = resource_get(&proc->resource_table, fd);
     if (res == NULL || (res->flags & RESOURCE_WRITE) == 0)
-        return -EBADF;
+        return (sys_ret_t) {0, EBADF};
     vnode_t *node = res->node;
     if (node == NULL)
-        return -EBADF;
+        return (sys_ret_t) {0, EBADF};
 
     u64 out;
-    int ret = node->ops->write(node, res->offset, buf, count, &out);
+    int err = node->ops->write(node, res->offset, buf, count, &out);
 
-    if (ret < 0)
-        return ret;
-    else
-        return out;
+    return (sys_ret_t) {out, err};
 }
