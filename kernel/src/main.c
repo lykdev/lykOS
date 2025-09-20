@@ -59,14 +59,14 @@ void kernel_main()
 
         vnode_t *module_dir;
         vfs_open("/modules", &module_dir);
-        if (module_dir == NULL || module_dir->type != VFS_NODE_DIR)
+        if (module_dir == NULL || module_dir->type != VNODE_DIR)
             panic("Could not find directory `/modules`.");
         u64 idx = 0;
         const char *name;
         while (module_dir->ops->list(module_dir, &idx, &name), name)
         {
             vnode_t *file;
-            module_dir->ops->lookup(module_dir, name, &file);
+            module_dir->ops->open(module_dir, name, &file);
 
             module_t *mod = module_load(file);
             mod->install();
@@ -77,14 +77,14 @@ void kernel_main()
     {
         vnode_t *init_dir;
         vfs_open("/usr/bin", &init_dir);
-        if (init_dir == NULL || init_dir->type != VFS_NODE_DIR)
+        if (init_dir == NULL || init_dir->type != VNODE_DIR)
             panic("Could not find directory `/usr/bin`.");
         u64 idx = 0;
         const char *name;
         while (init_dir->ops->list(init_dir, &idx, &name), name)
         {
             vnode_t *file;
-            init_dir->ops->lookup(init_dir, name, &file);
+            init_dir->ops->open(init_dir, name, &file);
 
             proc_t *proc = exec_load(file);
             sched_enqueue(LIST_GET_CONTAINER(proc->threads.head, thread_t, list_node_proc));

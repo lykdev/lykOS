@@ -15,7 +15,7 @@ void bus_init(bus_t *bus, const char *name)
         .slock = SPINLOCK_INIT,
         .list_node = LIST_NODE_INIT
     };
-    strcpy((char *)bus->name, "platform");
+    strcpy((char *)bus->name, name);
 }
 
 void bus_register(bus_t *bus)

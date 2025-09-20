@@ -62,7 +62,7 @@ else ifeq ($(ARCH), aarch64)
 endif
 
 C_FLAGS += 							\
-	-I src					\
+	-I src							\
 	-std=gnu23						\
 	-DPRINTF_DISABLE_SUPPORT_FLOAT  \
 	-DLIMINE_API_REVISION=2

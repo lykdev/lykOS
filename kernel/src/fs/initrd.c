@@ -5,64 +5,55 @@
 #include <common/log.h>
 #include <common/panic.h>
 #include <fs/vfs.h>
+#include <fs/ustar.h>
 #include <lib/def.h>
 #include <lib/list.h>
 #include <lib/path.h>
+#include <lib/printf.h>
 #include <lib/string.h>
 #include <mm/heap.h>
 
-// USTAR
-
-#define USTAR_MAGIC "ustar"
-
 typedef struct
 {
-    char filename[100];
-    char filemode[8];
-    char uid[8];
-    char gid[8];
-    char size[12];
-    char mtime[12];
-    char checksum[8];
-    char type;
-    char linkname[100];
-    char magic[6];
-    char version[2];
-    char uname[32];
-    char gname[32];
-    char devmajor[8];
-    char devminor[8];
-    char filename_prefix[155];
-    char _rsv[12];
-} __attribute__((packed)) ustar_hdr_t;
+    vnode_t vn;
 
-static u64 ustar_read_field(const char *str, u64 size)
+    list_t children;
+    void *data;
+
+    list_node_t list_node;
+}
+initrd_node_t;
+
+static int open(vnode_t *self, const char *name, vnode_t **out)
 {
-    u64 n = 0;
-    const char *c = str;
-    while (size-- > 0 && *c != '\0')
+    ASSERT(name && out);
+
+    if (self->type != VNODE_DIR)
     {
-        n *= 8;
-        n += *c - '0';
-        c++;
+        *out = NULL;
+        return ENOTDIR;
     }
-    return n;
-}
 
-typedef struct
-{
-    ustar_hdr_t *ustar_data;
-    vnode_t vfs_node;
+    initrd_node_t *parent = (initrd_node_t *)self;
+    FOREACH(n, parent->children)
+    {
+        initrd_node_t *child = LIST_GET_CONTAINER(n, initrd_node_t, list_node);
+        if (strcmp(child->vn.name, name) == 0)
+        {
+            VN_HOLD(&child->vn);
+            *out = &child->vn;
+            return EOK;
+        }
+    }
 
-    list_node_t list_elem;
+    *out = NULL;
+    return ENOENT;
 }
-initrd_entry_t;
-static list_t g_entry_list;
 
 static int read(vnode_t *self, u64 offset, void *buffer, u64 size, u64 *out)
 {
-    initrd_entry_t *entry = self->mp_data;
-    uint file_content_size = ustar_read_field(entry->ustar_data->size, 12);
+    initrd_node_t *node = (initrd_node_t *)self;
+    uint file_content_size = node->vn.size;
 
     if (offset >= file_content_size)
     {
@@ -73,7 +64,7 @@ static int read(vnode_t *self, u64 offset, void *buffer, u64 size, u64 *out)
     if (offset + size >= file_content_size)
         size = file_content_size - offset;
 
-    u8 *file_content = (u8 *)((uptr)entry->ustar_data + 512 + offset);
+    u8 *file_content = (u8 *)((uptr)node->data + offset);
 
     uint i;
     for (i = 0; i < size; i++)
@@ -83,63 +74,61 @@ static int read(vnode_t *self, u64 offset, void *buffer, u64 size, u64 *out)
     return EOK;
 }
 
-static int lookup(vnode_t *self, const char *name, vnode_t **out)
-{
-    // Maybe optimise this later... if you care enough.
-    char path[100] = "";
-    strcat(path, ((initrd_entry_t *)self->mp_data)->ustar_data->filename);
-    strcat(path, "/");
-    strcat(path, name);
-
-    FOREACH(n, g_entry_list)
-    {
-        initrd_entry_t *node = LIST_GET_CONTAINER(n, initrd_entry_t, list_elem);
-        if (strcmp(path, node->ustar_data->filename) == 0)
-        {
-            *out = &node->vfs_node;
-            return EOK;
-        }
-    }
-
-    *out = NULL;
-    return -ENOENT;
-}
-
 static int list(vnode_t *self, u64 *hint, const char **out)
 {
-    // Maybe optimise this later... if you care enough.
-    char path[100] = "";
-    strcat(path, ((initrd_entry_t *)self->mp_data)->ustar_data->filename);
-    strcat(path, "/");
+    ASSERT(hint && out);
 
-    uint l_index = 0;
-    FOREACH(n, g_entry_list)
+    if (self->type != VNODE_DIR)
     {
-        initrd_entry_t *node = LIST_GET_CONTAINER(n, initrd_entry_t, list_elem);
-        if (strncmp(path, node->ustar_data->filename, strlen(path)) == 0)
-        {
-            if (l_index == *hint)
-            {
-                (*hint)++;
-                *out = (const char *)&node->ustar_data->filename[strlen(path)];
-                return EOK;
-            }
-            else
-                l_index++;
-        }
+        *out = NULL;
+        return ENOTDIR;
     }
 
-    *out = NULL;
-    return EOK;
+    initrd_node_t *parent = (initrd_node_t *)self;
+
+    if (*hint == 0xFFFF)
+    {
+        *out = NULL;
+        return EOK;
+    }
+
+    list_node_t *next;
+    if (*hint == 0)
+        next = parent->children.head;
+    else
+        next = ((list_node_t *)*hint)->next;
+
+    if (next)
+    {
+        *hint = (u64)next;
+
+        initrd_node_t *child = LIST_GET_CONTAINER(next, initrd_node_t, list_node);
+        *out = (const char *)&child->vn.name;
+        return EOK;
+    }
+    else
+    {
+        *hint = 0xFFFF;
+        *out = NULL;
+        return EOK;
+    }
 }
 
-static vnode_ops_t g_file_ops = (vnode_ops_t) {
+static vnode_ops_t ustar_file_ops = (vnode_ops_t) {
     .read = read,
+    .open = open,
+    .list = list
 };
 
-static vnode_ops_t g_dir_ops = (vnode_ops_t) {
-    .lookup = lookup,
-    .list = list
+static initrd_node_t initrd_root_node = {
+    .vn = (vnode_t) {
+        .name = "/",
+        .type = VNODE_DIR,
+        .ops = &ustar_file_ops
+    },
+    .children = LIST_INIT,
+    .data = NULL,
+    .list_node = LIST_NODE_INIT
 };
 
 static vfs_mountpoint_t g_mountpoint;
@@ -148,21 +137,54 @@ static void process_entry(ustar_hdr_t *hdr)
 {
     path_normalize(hdr->filename, hdr->filename);
 
-    initrd_entry_t *node = heap_alloc(sizeof(initrd_entry_t));
-    node->ustar_data = hdr;
-
-    node->vfs_node = (vnode_t) {
-        .type = hdr->type == '5' ? VFS_NODE_DIR : VFS_NODE_FILE,
-        .mp_data = node,
-        .ops = hdr->type == '5' ? (void*)&g_dir_ops : (void*)&g_file_ops
+    // INODE
+    initrd_node_t *node = heap_alloc(sizeof(initrd_node_t));
+    *node = (initrd_node_t) {
+        .children = LIST_INIT,
+        .data = (void*)((uptr)hdr + 512),
+        .list_node = LIST_NODE_INIT
     };
+    // VNODE
     char *p = strrchr(hdr->filename, '/');
     if (p)
-        strcpy(node->vfs_node.name, p + 1);
+        strcpy(node->vn.name, p + 1);
     else
-        strcpy(node->vfs_node.name, hdr->filename);
+        strcpy(node->vn.name, hdr->filename);
+    switch (hdr->type)
+    {
+        case USTAR_REG:   node->vn.type = VNODE_REG;   break;
+        case USTAR_CHAR:  node->vn.type = VNODE_CHAR;  break;
+        case USTAR_BLOCK: node->vn.type = VNODE_BLOCK; break;
+        case USTAR_DIR:   node->vn.type = VNODE_DIR;   break;
+        case USTAR_FIFO:  node->vn.type = VNODE_FIFO;  break;
+        default:
+            panic("Invalid file type inside initrd!");
+        break;
+    }
+    node->vn.size = ustar_read_field(hdr->size, 12);
+    node->vn.ops = &ustar_file_ops;
+    node->vn.slock = SPINLOCK_INIT;
+    node->vn.ref_count = 0;
 
-    list_append(&g_entry_list, &node->list_elem);
+    vnode_t *curr = &initrd_root_node.vn;
+    const char *path = hdr->filename;
+    while (*path)
+    {
+        char *slash = strchr(path, '/');
+        if (slash)
+            *slash = '\0';
+
+        vnode_t *next;
+        if (curr->ops->open(curr, path, &next) == EOK)
+            curr = next;
+        else
+            break;
+
+        path += strlen(path) + 1;
+    }
+
+    initrd_node_t *parent = (initrd_node_t *)curr;
+    list_append(&parent->children, &node->list_node);
 }
 
 void initrd_init()
@@ -193,6 +215,6 @@ void initrd_init()
         hdr = (ustar_hdr_t *)((uptr)hdr + (blocks + 1) * 512);
     }
 
-    g_mountpoint.root_node = &LIST_GET_CONTAINER(g_entry_list.head, initrd_entry_t, list_elem)->vfs_node;
-    vfs_mount("", &g_mountpoint);
+    g_mountpoint.root_node = &initrd_root_node.vn;
+    vfs_mount("/", &g_mountpoint);
 }

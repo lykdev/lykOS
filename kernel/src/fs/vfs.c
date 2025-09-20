@@ -7,6 +7,10 @@
 #include <lib/string.h>
 #include <mm/heap.h>
 
+/*
+ * Mount points
+ */
+
 typedef struct trie_node_t trie_node_t;
 
 struct trie_node_t
@@ -20,10 +24,10 @@ struct trie_node_t
 };
 static trie_node_t g_trie_root;
 
-static trie_node_t *find_child(trie_node_t *parent, const char *comp)
+static trie_node_t *find_child(trie_node_t *parent, const char *comp, u64 length)
 {
     for (uint i = 0; i < parent->children_cnt; i++)
-        if (strcmp(parent->children[i]->comp, comp) == 0)
+        if (strncmp(parent->children[i]->comp, comp, length) == 0)
             return parent->children[i];
     return NULL;
 }
@@ -32,25 +36,62 @@ static char *vfs_get_mountpoint(const char *path, vfs_mountpoint_t **out)
 {
     trie_node_t *current = &g_trie_root;
 
-    while (*path != '\0')
+    while (*path)
     {
-        char comp[VFS_MAX_NAME_LEN];
-        char *path_next = path_consume_comp(path, comp);
+        while(*path == '/')
+            path++;
+        char *slash = strchr(path, '/');
+        u64 length;
+        if (slash)
+            length = slash - path;
+        else
+            length = UINT64_MAX;
 
-        if (*comp == '\0')
-            panic("Empty component.");
-
-        trie_node_t *child = find_child(current, comp);
+        trie_node_t *child = find_child(current, path, length);
         if (child)
             current = child;
         else
             break;
 
-        path = path_next;
+        path += strlen(child->comp);
     }
-    *out = current->mp;
 
+    *out = current->mp;
     return (char *)path;
+}
+
+int vfs_mount(const char *path, vfs_mountpoint_t *mp)
+{
+    const char *_path = path;
+    trie_node_t *current = &g_trie_root;
+
+    while (*path != '\0')
+    {
+        while(*path == '/')
+            path++;
+
+        if (!*path)
+            break;
+
+        char *slash = strchr(path, '/');
+        u64 comp_len = slash ? slash - path : VFS_MAX_NAME_LEN;
+
+        trie_node_t *child = find_child(current, path, comp_len);
+        if (child == NULL)
+        {
+            child = heap_alloc(sizeof(trie_node_t));
+            strncpy(child->comp, path, comp_len);
+            child->children_cnt = 0;
+            current->children[current->children_cnt++] = child;
+        }
+        current = child;
+
+        path += comp_len;
+    }
+    current->mp = mp;
+
+    log("Filesystem mounted at %s.", _path);
+    return 0;
 }
 
 /*
@@ -72,7 +113,7 @@ int vfs_open(const char *path, vnode_t **out)
         char *slash = strchr(path, '/');
         if (slash)
             *slash = '\0';
-        curr->ops->lookup(curr, path, &curr);
+        curr->ops->open(curr, path, &curr);
         if (slash)
             *slash = '/';
 
@@ -122,43 +163,12 @@ int vfs_remove(const char *path)
 }
 
 /*
- * Mount points
- */
-
-int vfs_mount(const char *path, vfs_mountpoint_t *mp)
-{
-    const char *_path = path;
-    trie_node_t *current = &g_trie_root;
-
-    while (*path != '\0')
-    {
-        char comp[VFS_MAX_NAME_LEN];
-        path = path_consume_comp(path, comp);
-
-        // Search for the token among the current node's children.
-        trie_node_t *child = find_child(current, comp);
-        if (child == NULL)
-        {
-            child = heap_alloc(sizeof(trie_node_t));
-            strcpy(child->comp, comp);
-            child->children_cnt = 0;
-            current->children[current->children_cnt++] = child;
-        }
-        current = child;
-    }
-    current->mp = mp;
-
-    log("Filesystem mounted at %s.", _path);
-    return 0;
-}
-
-/*
  * Initialization & Debug
  */
 
 void vfs_init()
 {
-    strcpy(g_trie_root.comp, "");
+    strcpy(g_trie_root.comp, "/");
     g_trie_root.children_cnt = 0;
 
     log("VFS initialized");

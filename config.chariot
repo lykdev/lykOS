@@ -98,8 +98,9 @@ custom/initrd {
     dependencies: [source/initrd, package/modules, package/apps, package/mlibc]
     build: <sh>
         cp -r $SOURCES_DIR/initrd .
-        cp -r $SYSROOT_DIR/* ./initrd
-        tar -cvf initrd.tar --format=ustar ./initrd
+        cp -r $SYSROOT_DIR/* initrd
+        cd initrd
+        tar -cvf ../initrd.tar --format=ustar *
     </sh>
     install: <sh>
         install initrd.tar $INSTALL_DIR

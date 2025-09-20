@@ -20,12 +20,12 @@ struct storage_device
     const char *name;
     storage_device_type type;
 
-    u32 lba_size;
+    u64 sector_size;
 
     u64 (*read) (storage_device_t *self, u64 lba, void *buffer, u64 count);
     u64 (*write)(storage_device_t *self, u64 lba, void *buffer, u64 count);
-    u64 (*get_capacity)  (storage_device_t *self);
-    u64 (*get_free_space)(storage_device_t *self);
+    u64 (*get_sector_count)(storage_device_t *self);
+    u64 (*get_free_sector_count)(storage_device_t *self);
 
     list_t partitions;
 

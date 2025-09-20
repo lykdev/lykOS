@@ -34,7 +34,7 @@ static int bind(socket_t *self, const char *addr)
     socket_unix_t *usock = (socket_unix_t *)self;
 
     vnode_t *addr_node;
-    if (vfs_create(addr, VFS_NODE_SOCKET, &addr_node) < 0)
+    if (vfs_create(addr, VNODE_SOCKET, &addr_node) < 0)
     {
         spinlock_release(&self->lock);
         return -EADDRINUSE;
@@ -57,7 +57,7 @@ static int connect(socket_t *self, const char *addr)
 
     vnode_t *target_node;
     vfs_open(addr, &target_node);
-    if (!target_node || target_node->type != VFS_NODE_SOCKET)
+    if (!target_node || target_node->type != VNODE_SOCKET)
     {
         spinlock_release(&self->lock);
         return -ENOENT;

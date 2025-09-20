@@ -27,12 +27,12 @@ void storage_device_register(storage_device_t *dev)
 {
     spinlock_acquire(&g_slock);
 
-    if (!dev->lba_size || !dev->read || !dev->write)
+    if (!dev->sector_size || !dev->read || !dev->write)
         panic("Registered storage device does not implement all required fields!");
 
     bool gpt_disk = false;
 
-    mbr_header_t *mbr_hdr = heap_alloc(dev->lba_size);
+    mbr_header_t *mbr_hdr = heap_alloc(dev->sector_size);
     dev->read(dev, 0, &mbr_hdr, 1);
 
     if (mbr_hdr->signature == 0xAA55)
@@ -50,7 +50,7 @@ void storage_device_register(storage_device_t *dev)
     if (!gpt_disk)
         goto skip_gpt;
 
-    gpt_header_t *gpt_hdr = heap_alloc(dev->lba_size);
+    gpt_header_t *gpt_hdr = heap_alloc(dev->sector_size);
     dev->read(dev, 1, &gpt_hdr, 1);
 
     if (memcmp(gpt_hdr->signature, "EFI PART", 8) == 0)
@@ -58,7 +58,7 @@ void storage_device_register(storage_device_t *dev)
         u64 entries_size = gpt_hdr->part_table_entry_count * gpt_hdr->part_table_entry_size;
         void *entries = heap_alloc(entries_size);
         dev->read(dev, gpt_hdr->part_table_lba, entries,
-                  entries_size / dev->lba_size);
+                  entries_size / dev->sector_size);
 
         for (uint i = 0; i < gpt_hdr->part_table_entry_count; i++)
         {

@@ -5,13 +5,15 @@
 typedef struct list_node
 {
     struct list_node *prev, *next;
-} list_node_t;
+}
+list_node_t;
 
 typedef struct
 {
     size_t length;
     list_node_t *head, *tail;
-} list_t;
+}
+list_t;
 
 /// @param NODE List node.
 /// @param TYPE The type of the container.

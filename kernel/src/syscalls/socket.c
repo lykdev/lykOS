@@ -12,7 +12,7 @@ sys_ret_t syscall_accept(int sockfd, const char *addr)
     proc_t *proc = sched_get_curr_thread()->parent_proc;
 
     resource_t *res = resource_get(&proc->resource_table, sockfd);
-    if (!res || !res->node || res->node->type != VFS_NODE_SOCKET)
+    if (!res || !res->node || res->node->type != VNODE_SOCKET)
         return (sys_ret_t) {0, EBADF};
 
     socket_t *socket = (socket_t *)res->node->mp_data;
@@ -28,7 +28,7 @@ sys_ret_t syscall_accept(int sockfd, const char *addr)
     vnode_t *handle = heap_alloc(sizeof(vnode_t));
     if (!handle)
         return (sys_ret_t) {0, ENOMEM}; // TODO: destroy the socket
-    handle->type = VFS_NODE_SOCKET;
+    handle->type = VNODE_SOCKET;
     handle->mp_data = new_socket;
 
     int fd = resource_create(&proc->resource_table,
@@ -50,7 +50,7 @@ sys_ret_t syscall_bind(int sockfd, const char *addr)
     proc_t *proc = sched_get_curr_thread()->parent_proc;
 
     resource_t *res = resource_get(&proc->resource_table, sockfd);
-    if (!res || !res->node || res->node->type != VFS_NODE_SOCKET)
+    if (!res || !res->node || res->node->type != VNODE_SOCKET)
         return (sys_ret_t) {0, EBADF};
 
     socket_t *socket = (socket_t *)res->node->mp_data;
@@ -66,7 +66,7 @@ sys_ret_t syscall_connect(int sockfd, const char *addr)
     proc_t *proc = sched_get_curr_thread()->parent_proc;
 
     resource_t *res = resource_get(&proc->resource_table, sockfd);
-    if (!res || !res->node || res->node->type != VFS_NODE_SOCKET)
+    if (!res || !res->node || res->node->type != VNODE_SOCKET)
         return (sys_ret_t) {0, EBADF};
 
     socket_t *socket = (socket_t *)res->node->mp_data;
@@ -92,7 +92,7 @@ sys_ret_t syscall_listen(int sockfd, int backlog)
     proc_t *proc = sched_get_curr_thread()->parent_proc;
 
     resource_t *res = resource_get(&proc->resource_table, sockfd);
-    if (!res || !res->node || res->node->type != VFS_NODE_SOCKET)
+    if (!res || !res->node || res->node->type != VNODE_SOCKET)
         return (sys_ret_t) {0, EBADF};
 
     socket_t *socket = (socket_t *)res->node->mp_data;
@@ -136,7 +136,7 @@ sys_ret_t syscall_socket(int domain, int type, int protocol)
         heap_free(handle);
         return (sys_ret_t) {0, ENOMEM};
     }
-    handle->type = VFS_NODE_SOCKET;
+    handle->type = VNODE_SOCKET;
     handle->mp_data = socket;
 
     int fd = resource_create(&proc->resource_table,
