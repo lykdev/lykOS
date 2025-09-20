@@ -40,7 +40,6 @@ static pte_t *get_next_level(pte_t *top_level, u64 idx, bool alloc)
 static void delete_level(pte_t *lvl, u8 depth)
 {
     if (depth != 1)
-    {
         for (u64 i = 0; i < 512; i++)
         {
             if (!(lvl[i] & PRESENT) || lvl[i] & HUGE)
@@ -48,7 +47,7 @@ static void delete_level(pte_t *lvl, u8 depth)
 
             delete_level((pte_t *)(PTE_GET_ADDR(lvl[i]) + HHDM), depth - 1);
         }
-    }
+
     pmm_free((void *)((uptr)lvl - HHDM));
 }
 
@@ -98,7 +97,7 @@ void arch_ptm_unmap(arch_ptm_map_t *map, uptr virt, uptr phys, u64 size)
 
 void arch_ptm_load_map(arch_ptm_map_t *map)
 {
-    __asm__ volatile("movq %0, %%cr3" : : "r"((uptr)map->pml4 - HHDM) : "memory");
+    asm volatile("movq %0, %%cr3" : : "r"((uptr)map->pml4 - HHDM) : "memory");
 }
 
 arch_ptm_map_t arch_ptm_new_map()
@@ -143,8 +142,6 @@ uptr arch_ptm_virt_to_phys(arch_ptm_map_t *map, uptr virt)
 
     return PTE_GET_ADDR(pte) + (virt & 0xFFF);
 }
-
-#include <graphics/draw.h>
 
 void arch_ptm_init()
 {
