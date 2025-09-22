@@ -71,8 +71,8 @@ void bus_register_driver(bus_t *bus, driver_t *drv)
         device_t *dev = LIST_GET_CONTAINER(n, device_t, list_node);
         if (dev->driver != NULL)
             continue;
-        if (!drv->probe_device || drv->probe_device(dev))
-            break;
+        if (drv->probe_device && drv->probe_device(dev))
+            drv->setup_device(dev);
     }
 
     spinlock_release(&bus->slock);

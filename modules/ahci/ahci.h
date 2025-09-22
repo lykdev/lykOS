@@ -142,5 +142,3 @@ __attribute__((packed))
 fis_recv_t;
 
 void ahci_setup(uptr abar);
-
-bool ahci_read(port_t* port, u64 lba, void *buf, u64 count);

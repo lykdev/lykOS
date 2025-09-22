@@ -2,12 +2,11 @@
 
 #include <common/hhdm.h>
 #include <common/log.h>
-#include <common/panic.h>
+#include <dev/storage.h>
 #include <lib/string.h>
+#include <mm/heap.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
-
-// AHCI code
 
 static void ahci_port_idle(port_t* port)
 {
@@ -37,15 +36,91 @@ static void ahci_port_start(port_t* port)
     port->cmd |= (u32)1 << 4; // Set PxCMD.FRE
 }
 
-
-static int ahci_find_free_cmd_slot(port_t* port)
+static uint ahci_find_free_cmd_slot(port_t* port)
 {
     u32 slots = port->sact | port->ci;
-    for (int i = 0; i < 32; i++)
+    for (uint i = 0; i < 32; i++)
         if ((slots & (1 << i)) == 0)
             return i;
 
     return -1;
+}
+
+static bool ahci_issue_cmd(port_t *port, int slot)
+{
+    port->is = (u32)-1; // Clear port interrupt.
+    while ((port->tfd & (1 << 7 | 1 << 3)) != 0) // Wait until the port is not busy.
+        ;
+    port->ci |= 1 << slot; // Issue command.
+    while ((port->ci & (1 << slot)) != 0) // Wait for completion.
+    {
+        if (port->is & (1 << 30))
+            return false;
+    }
+
+    return true;
+}
+
+bool ahci_read(storage_device_t *storage_device, u64 lba, void *buf, u64 count);
+bool ahci_write(storage_device_t *storage_device, u64 lba, void *buf, u64 count);
+
+static bool ahci_setup_storage_device(port_t *port)
+{
+    int slot = ahci_find_free_cmd_slot(port);
+    if (slot == -1)
+        return false;
+
+    // Output buffer.
+    uptr buf_phys = (uptr)pmm_alloc(0); // TODO: free
+
+    cmd_header_t *cmd_list = (cmd_header_t*)((((u64)port->clbu << 32) | port->clb) + HHDM);
+    cmd_header_t *cmd_hdr  = &cmd_list[slot];
+    cmd_table_t  *cmd_tbl  = (cmd_table_t*)((((u64)cmd_hdr->ctbau << 32) | cmd_hdr->ctba) + HHDM);
+
+    // Setup command header.
+    cmd_hdr->cfl = sizeof(fis_reg_h2d_t) / 4; // Command FIS length in DWORDS.
+    cmd_hdr->w = 0;     // Read.
+    cmd_hdr->prdtl = 1; // One PRDT entry.
+    // Setup command table.
+    fis_reg_h2d_t* fis = (fis_reg_h2d_t *)&cmd_tbl->cfis;
+    *fis = (fis_reg_h2d_t) {
+        .type = FIS_TYPE_REG_H2D,
+        .c = 1,             // Command.
+        .command = 0xEC     // IDENTIFY DEVICE (defined in the ATA/ATAPI spec).
+    };
+    memset(cmd_tbl->acmd, 0, sizeof(cmd_tbl->acmd));
+    cmd_tbl->prdt_entry[0] = (prdt_entry_t) {
+        .dba  = buf_phys & 0xFFFFFFFF,
+        .dbau = (buf_phys >> 32) & 0xFFFFFFFF,
+        .dbc  = 512 - 1, // Byte count.
+        .i = 1
+    };
+
+    if (!ahci_issue_cmd(port, slot))
+        return false;
+
+    u16 *identify_buf = (u16 *)(buf_phys + HHDM);
+    char *name = heap_alloc(41);
+    for (int i = 0; i < 20; i++)
+    {
+        name[i * 2]     = identify_buf[27 + i] >> 8;
+        name[i * 2 + 1] = identify_buf[27 + i] & 0xFF;
+    }
+    name[40] = '\0';
+
+    storage_device_t *dev = heap_alloc(sizeof(storage_device_t));
+    *dev = (storage_device_t) {
+        .name = name,
+        .type = (identify_buf[217] == 0) ? STORAGE_DEVICE_SSD : STORAGE_DEVICE_HDD,
+        .sector_size  = identify_buf[106] & (1 << 12) ?
+                        ((u32)identify_buf[118] << 16) | identify_buf[117]
+                      : 512,
+        .sector_count = ((u64)identify_buf[61] << 16) | identify_buf[60],
+        .driver_data  = (void *)port
+    };
+
+    //storage_device_register(dev);
+    return true;
 }
 
 void ahci_setup(uptr abar)
@@ -60,16 +135,16 @@ void ahci_setup(uptr abar)
     // Indicates whether the HBA can access 64-bit data structures.
     bool ext_addr = (ghc->cap >> 31) & 1;
     if(!ext_addr)
-        panic("AHCI: HBA cannot access 64-bit data structures.");
+    {
+        log("AHCI: HBA cannot access 64-bit data structures.");
+        return;
+    }
 
     for (int i = 0; i < 32; i++)
     {
-        // Bit N is set to 1 if port N is implemented.
-        if (((ghc->pi >> i) & 1) == 0)
+        if (((ghc->pi >> i) & 1) == 0) // Bit N is set to 1 if port N is implemented.
             continue;
-
         port_t* port = (port_t*)((uptr)ghc + 0x100 + (i * 0x80));
-
         if (port->sig != 0x00000101) // Skip non-SATA drives.
             continue;
 
@@ -89,8 +164,7 @@ void ahci_setup(uptr abar)
     	memset((void*)(fb + HHDM), 0, 256);
 
         cmd_header_t* cmd_list = (cmd_header_t*)(u64)(clb + HHDM);
-
-        for (u32 slot = 0; slot < cmd_slots; slot++)
+        for (uint slot = 0; slot < cmd_slots; slot++)
         {
             cmd_header_t *cmd_hdr = &cmd_list[slot];
 
@@ -104,72 +178,61 @@ void ahci_setup(uptr abar)
         }
 
         ahci_port_start(port);
+
+        if (!ahci_setup_storage_device(port))
+            continue;
     }
 }
 
-/*
- * Reads `count` sectors starting at `lba` into `buf`.
- * A sector has 512 bytes.
- */
-bool ahci_read(port_t* port, u64 lba, void *buf, u64 count)
+bool ahci_read(storage_device_t *storage_device, u64 lba, void *buf, u64 count)
 {
+    port_t *port = storage_device->driver_data;
+
     int slot = ahci_find_free_cmd_slot(port);
     if (slot == -1)
         return false;
 
-    buf = (void*)vmm_virt_to_phys(g_vmm_kernel_addr_space, (uptr)buf);
+    u64 buf_phys = vmm_virt_to_phys(g_vmm_kernel_addr_space, (uptr)buf);
 
     cmd_header_t *cmd_list = (cmd_header_t*)((((u64)port->clbu << 32) | port->clb) + HHDM);
     cmd_header_t *cmd_hdr  = &cmd_list[slot];
     cmd_table_t  *cmd_tbl  = (cmd_table_t*)((((u64)cmd_hdr->ctbau << 32) | cmd_hdr->ctba) + HHDM);
 
-    memset(cmd_tbl, 0, sizeof(cmd_table_t));
-
     // Setup command header.
     cmd_hdr->cfl = sizeof(fis_reg_h2d_t) / 4; // Command FIS length in DWORDS.
     cmd_hdr->w = 0;     // Read.
     cmd_hdr->prdtl = 1; // One PRDT entry.
-
     // Setup command table.
+    fis_reg_h2d_t* fis = (fis_reg_h2d_t *)&cmd_tbl->cfis;
+    *fis = (fis_reg_h2d_t) {
+        .type = FIS_TYPE_REG_H2D,
+        .c = 1,                     // Command.
+        .command = 0x25,            // READ DMA EXT (defined in the ATA/ATAPI spec).
+        .lba0 = lba & 0xFF,
+        .lba1 = (lba >>  8) & 0xFF,
+        .lba2 = (lba >> 16) & 0xFF,
+        .device = 1 << 6,           // LBA mode.
+        .lba3 = (lba >> 24) & 0xFF,
+        .lba4 = (lba >> 32) & 0xFF,
+        .lba5 = (lba >> 40) & 0xFF,
+        .count0 = count & 0xFF,
+        .count1 = (count >> 8) & 0xFF
+    };
+    memset(cmd_tbl->acmd, 0, sizeof(cmd_tbl->acmd));
+    cmd_tbl->prdt_entry[0] = (prdt_entry_t) {
+        .dba =  buf_phys & 0xFFFFFFFF,
+        .dbau = (buf_phys >> 32) & 0xFFFFFFFF,
+        .dbc =  (count * 512) - 1, // Byte count.
+        .i = 1 // Trigger interrupt on completion.
+    };
 
-    // Setup FIS.
-    fis_reg_h2d_t* fis = (fis_reg_h2d_t*)(&cmd_tbl->cfis);
-    memset(fis, 0, sizeof(fis_reg_h2d_t));
-    fis->type = FIS_TYPE_REG_H2D;
-    fis->c = 1; // Command.
-    fis->command = 0x25; // READ DMA EXT (defined in the ATA/ATAPI spec).
-    fis->lba0 = lba & 0xFF;
-    fis->lba1 = (lba >>  8) & 0xFF;
-    fis->lba2 = (lba >> 16) & 0xFF;
-    fis->device = 1 << 6; // LBA mode.
-    fis->lba3 = (lba >> 24) & 0xFF;
-    fis->lba4 = (lba >> 32) & 0xFF;
-    fis->lba5 = (lba >> 40) & 0xFF;
-    fis->count0 = count & 0xFF;
-    fis->count1 = (count >> 8) & 0xFF;
-
-    // Setup PRDT.
-    cmd_tbl->prdt_entry[0].dba =  (u64)buf & 0xFFFFFFFF;
-    cmd_tbl->prdt_entry[0].dbau = ((u64)buf >> 32) & 0xFFFFFFFF;
-    cmd_tbl->prdt_entry[0].dbc =  (count * 512) - 1; // Byte count.
-    cmd_tbl->prdt_entry[0].i = 1; // Trigger interrupt on completion.
-
-    // Clear port interrupt.
-    port->is = (u32)-1;
-
-    // Wait until the port is not busy.
-    while ((port->tfd & (1 << 7 | 1 << 3)) != 0)
-        ;
-
-    // Issue command.
-    port->ci |= 1 << slot;
-
-    // Wait for completion.
-    while ((port->ci & (1 << slot)) != 0)
-    {
-        if (port->is & (1 << 30))
-            return false;
-    }
+    if (!ahci_issue_cmd(port, slot))
+        return false;
 
     return true;
+}
+
+bool ahci_write(storage_device_t *storage_device, u64 lba, void *buf, u64 count)
+{
+    return false; // TODO: imlement ahci_write.
 }

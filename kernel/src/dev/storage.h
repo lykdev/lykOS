@@ -7,11 +7,11 @@ typedef struct storage_device storage_device_t;
 
 typedef enum
 {
-    RAMDISK,
-    NETWORK,
-    HDD,
-    SSD,
-    NVME,
+    STORAGE_DEVICE_RAMDISK,
+    STORAGE_DEVICE_NETWORK,
+    STORAGE_DEVICE_HDD,
+    STORAGE_DEVICE_SSD,
+    STORAGE_DEVICE_NVME,
 }
 storage_device_type;
 
@@ -19,15 +19,15 @@ struct storage_device
 {
     const char *name;
     storage_device_type type;
+    list_t partitions;
 
     u64 sector_size;
+    u64 sector_count;
 
-    u64 (*read) (storage_device_t *self, u64 lba, void *buffer, u64 count);
-    u64 (*write)(storage_device_t *self, u64 lba, void *buffer, u64 count);
-    u64 (*get_sector_count)(storage_device_t *self);
-    u64 (*get_free_sector_count)(storage_device_t *self);
+    bool (*read) (storage_device_t *self, u64 lba, void *buffer, u64 count);
+    bool (*write)(storage_device_t *self, u64 lba, void *buffer, u64 count);
 
-    list_t partitions;
+    void *driver_data;
 
     spinlock_t slock;
     list_node_t list_node;
