@@ -67,9 +67,7 @@ resource_t *resource_get(resource_table_t *table, int id)
     if (id < 0 || id >= table->length)
         return NULL;
 
-    spinlock_acquire(&table->lock);
     resource_t *ret = table->resources[id];
-    spinlock_release(&table->lock);
 
     return ret;
 }
