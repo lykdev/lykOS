@@ -2,7 +2,7 @@
 
 #include <common/hhdm.h>
 #include <common/log.h>
-#include <dev/storage.h>
+#include <dev/block.h>
 #include <lib/string.h>
 #include <mm/heap.h>
 #include <mm/pmm.h>
@@ -61,8 +61,8 @@ static bool ahci_issue_cmd(port_t *port, int slot)
     return true;
 }
 
-bool ahci_read(storage_device_t *storage_device, u64 lba, void *buf, u64 count);
-bool ahci_write(storage_device_t *storage_device, u64 lba, void *buf, u64 count);
+bool ahci_read(block_device_t *blk_dev, u64 lba, void *buf, u64 count);
+bool ahci_write(block_device_t *blk_dev, u64 lba, void *buf, u64 count);
 
 static bool ahci_setup_storage_device(port_t *port)
 {
@@ -108,18 +108,21 @@ static bool ahci_setup_storage_device(port_t *port)
     }
     name[40] = '\0';
 
-    storage_device_t *dev = heap_alloc(sizeof(storage_device_t));
-    *dev = (storage_device_t) {
-        .name = name,
-        .type = (identify_buf[217] == 0) ? STORAGE_DEVICE_SSD : STORAGE_DEVICE_HDD,
-        .sector_size  = identify_buf[106] & (1 << 12) ?
-                        ((u32)identify_buf[118] << 16) | identify_buf[117]
-                      : 512,
-        .sector_count = ((u64)identify_buf[61] << 16) | identify_buf[60],
-        .driver_data  = (void *)port
-    };
+    // (identify_buf[217] == 0) ? STORAGE_DEVICE_SSD : STORAGE_DEVICE_HDD,
+    u64 sector_size  = identify_buf[106] & (1 << 12) ?
+                       ((u32)identify_buf[118] << 16) | identify_buf[117]
+                     : 512;
+    u64 sector_count = ((u64)identify_buf[61] << 16) | identify_buf[60];
 
-    //storage_device_register(dev);
+    block_device_register_drive(
+        name,
+        sector_size,
+        sector_count,
+        ahci_read,
+        ahci_write,
+        (void *)port
+    );
+
     return true;
 }
 
@@ -184,9 +187,9 @@ void ahci_setup(uptr abar)
     }
 }
 
-bool ahci_read(storage_device_t *storage_device, u64 lba, void *buf, u64 count)
+bool ahci_read(block_device_t *blk_dev, u64 lba, void *buf, u64 count)
 {
-    port_t *port = storage_device->driver_data;
+    port_t *port = blk_dev->driver_data;
 
     int slot = ahci_find_free_cmd_slot(port);
     if (slot == -1)
@@ -232,7 +235,7 @@ bool ahci_read(storage_device_t *storage_device, u64 lba, void *buf, u64 count)
     return true;
 }
 
-bool ahci_write(storage_device_t *storage_device, u64 lba, void *buf, u64 count)
+bool ahci_write(block_device_t *blk_dev, u64 lba, void *buf, u64 count)
 {
     return false; // TODO: imlement ahci_write.
 }

@@ -7,9 +7,18 @@
 #include <lib/string.h>
 #include <mm/heap.h>
 
+static list_t g_fs_type_list = LIST_INIT;
+static spinlock_t g_fs_type_list_slock = SPINLOCK_INIT;
+
 /*
  * Mount points
  */
+
+typedef struct
+{
+    vnode_t *root_node;
+}
+vfs_mountpoint_t;
 
 typedef struct trie_node_t trie_node_t;
 
@@ -60,8 +69,14 @@ static char *vfs_get_mountpoint(const char *path, vfs_mountpoint_t **out)
     return (char *)path;
 }
 
-int vfs_mount(const char *path, vfs_mountpoint_t *mp)
+int vfs_mount(block_device_t *blk, filesystem_type_t *fs_type, const char *path)
 {
+    if (!fs_type->probe(blk))
+        return -1;
+
+    vfs_mountpoint_t *mp = heap_alloc(sizeof(vfs_mountpoint_t));
+    fs_type->get_root_vnode(blk, &mp->root_node);
+
     const char *_path = path;
     trie_node_t *current = &g_trie_root;
 
@@ -92,6 +107,15 @@ int vfs_mount(const char *path, vfs_mountpoint_t *mp)
 
     log("Filesystem mounted at %s.", _path);
     return 0;
+}
+
+void vfs_register_fs_type(filesystem_type_t *fs_type)
+{
+    spinlock_acquire(&g_fs_type_list_slock);
+
+    list_append(&g_fs_type_list, &fs_type->list_node);
+
+    spinlock_release(&g_fs_type_list_slock);
 }
 
 /*

@@ -4,7 +4,6 @@
 #include <common/log.h>
 #include <dev/pci.h>
 #include <dev/device.h>
-#include <dev/storage.h>
 #include <fs/vfs.h>
 #include <mm/heap.h>
 #include <lib/string.h>

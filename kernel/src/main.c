@@ -1,3 +1,4 @@
+#include "dev/block.h"
 #include <arch/cpu.h>
 
 #include <common/assert.h>
@@ -30,6 +31,15 @@
 #include <sys/smp.h>
 #include <sys/thread.h>
 
+#include <dev/block.h>
+extern void block_device_register_drive(
+    const char *name,
+    u64 sector_size,
+    u64 sector_count,
+    block_device_read_t read,
+    block_device_write_t write,
+    void *driver_data
+);
 extern void afunix_init();
 
 void kernel_main()
@@ -53,6 +63,8 @@ void kernel_main()
 
     pci_init();
 
+    block_device_register_drive(NULL, 0, 0, NULL, NULL, NULL);
+
     // Load kernel modules.
     {
         ksym_load_symbols();
@@ -70,7 +82,10 @@ void kernel_main()
 
             module_t *mod = module_load(file);
             mod->install();
+
+            VN_RELE(file);
         }
+        VN_RELE(module_dir);
     }
 
     // Load initial executables.
@@ -88,7 +103,10 @@ void kernel_main()
 
             proc_t *proc = exec_load(file);
             sched_enqueue(LIST_GET_CONTAINER(proc->threads.head, thread_t, list_node_proc));
+
+            VN_RELE(file);
         }
+        VN_RELE(init_dir);
     }
 
     reaper_init();

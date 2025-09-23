@@ -77,7 +77,9 @@ static int tmpfs_open(vnode_t *self, const char *name, vnode_t **out)
 
 static int tmpfs_close(vnode_t *self)
 {
-    VN_RELE(self);
+    ASSERT(self->ref_count == 0);
+
+    heap_free((tmpfs_node_t *)self);
 
     return EOK;
 }
@@ -167,6 +169,41 @@ static int tmpfs_write(vnode_t *self, u64 offset, void *buffer, u64 count, u64 *
 static int tmpfs_list(vnode_t *self, u64 *hint, const char **out)
 {
     ASSERT(hint && out);
+
+    if (self->type != VNODE_DIR)
+    {
+        *out = NULL;
+        return ENOTDIR;
+    }
+
+    tmpfs_node_t *parent = (tmpfs_node_t *)self;
+
+    if (*hint == 0xFFFF)
+    {
+        *out = NULL;
+        return EOK;
+    }
+
+    list_node_t *next;
+    if (*hint == 0)
+        next = parent->children.head;
+    else
+        next = ((list_node_t *)*hint)->next;
+
+    if (next)
+    {
+        *hint = (u64)next;
+
+        tmpfs_node_t *child = LIST_GET_CONTAINER(next, tmpfs_node_t, list_node);
+        *out = (const char *)&child->vn.name;
+        return EOK;
+    }
+    else
+    {
+        *hint = 0xFFFF;
+        *out = NULL;
+        return EOK;
+    }
 }
 
 static int tmpfs_create(vnode_t *self, char *name, vnode_type_t t, vnode_t **out)
@@ -201,7 +238,15 @@ static int tmpfs_ioctl(vnode_t *self, u64 request, void *args)
     return ENOTSUP;
 }
 
-void tmpfs_init()
+bool tmpfs_probe(block_device_t *blk_dev)
+{
+    if (blk_dev)
+        return false;
+    else
+        return true;
+}
+
+bool tmpfs_get_root_vnode(block_device_t *blk_dev, vnode_t **out)
 {
     vnode_t *root = heap_alloc(sizeof(vnode_t));
     *root = (vnode_t) {
@@ -211,10 +256,18 @@ void tmpfs_init()
         .slock = SPINLOCK_INIT,
         .ref_count = 1
     };
-    strcpy(root->name, "tmp");
 
-    vfs_mountpoint_t *mp = heap_alloc(sizeof(vfs_mountpoint_t));
-    mp->root_node = root;
+    *out = root;
+    return true;
+}
 
-    vfs_mount("/tmp", mp);
+static filesystem_type_t tmpfs_fs = {
+    .name = "initrd",
+    .probe = tmpfs_probe,
+    .get_root_vnode = tmpfs_get_root_vnode
+};
+
+void tmpfs_init()
+{
+    vfs_register_fs_type(&tmpfs_fs);
 }

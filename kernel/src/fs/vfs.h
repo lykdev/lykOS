@@ -1,8 +1,10 @@
 #pragma once
 
 #include <common/sync/spinlock.h>
+#include <dev/block.h>
 #include <lib/def.h>
 #include <lib/errno.h>
+#include <lib/list.h>
 
 #define VFS_MAX_NAME_LEN 64
 
@@ -52,19 +54,23 @@ struct vnode
 
 typedef struct
 {
-    vnode_t *root_node;
+    const char *name;
+
+    bool (*probe)(block_device_t *part);
+    bool (*get_root_vnode)(block_device_t *part, vnode_t **out);
+
+    list_node_t list_node;
+    u64 ref_count;
 }
-vfs_mountpoint_t;
+filesystem_type_t;
 
 /*
  * Mount points
  */
 
- int vfs_mount(const char *path, vfs_mountpoint_t *mp);
+int vfs_mount(block_device_t *blk, filesystem_type_t *fs_type, const char *path);
 
-/*
- * Veneer layer
- */
+void vfs_register_fs_type(filesystem_type_t *fs_type);
 
 int vfs_open(const char *path, vnode_t **out);
 
@@ -74,7 +80,7 @@ int vfs_create(const char *path, vnode_type_t t, vnode_t **out);
 
 int vfs_remove(const char *path);
 
-inline void VN_HOLD(vnode_t *vn)
+static inline void VN_HOLD(vnode_t *vn)
 {
     spinlock_acquire(&vn->slock);
 
@@ -83,11 +89,17 @@ inline void VN_HOLD(vnode_t *vn)
     spinlock_release(&vn->slock);
 }
 
-inline void VN_RELE(vnode_t *vn)
+static inline void VN_RELE(vnode_t *vn)
 {
     spinlock_acquire(&vn->slock);
 
     vn->ref_count--;
+
+    if (vn->ref_count == 0)
+    {
+        vfs_close(vn);
+        return;
+    }
 
     spinlock_release(&vn->slock);
 }

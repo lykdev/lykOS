@@ -131,7 +131,22 @@ static initrd_node_t initrd_root_node = {
     .list_node = LIST_NODE_INIT
 };
 
-static vfs_mountpoint_t g_mountpoint;
+bool initrd_probe(block_device_t *blk_dev [[maybe_unused]])
+{
+    return true;
+}
+
+bool initrd_get_root_vnode(block_device_t *blk_dev [[maybe_unused]], vnode_t **out)
+{
+    *out = &initrd_root_node.vn;
+    return true;
+}
+
+static filesystem_type_t initrd_fs = {
+    .name = "initrd",
+    .probe = initrd_probe,
+    .get_root_vnode = initrd_get_root_vnode
+};
 
 static void process_entry(ustar_hdr_t *hdr)
 {
@@ -215,6 +230,5 @@ void initrd_init()
         hdr = (ustar_hdr_t *)((uptr)hdr + (blocks + 1) * 512);
     }
 
-    g_mountpoint.root_node = &initrd_root_node.vn;
-    vfs_mount("/", &g_mountpoint);
+    vfs_mount(NULL, &initrd_fs, "/");
 }
