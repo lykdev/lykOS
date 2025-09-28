@@ -1,14 +1,15 @@
 #pragma once
 
 #include <common/sync/spinlock.h>
-#include <dev/block.h>
 #include <lib/def.h>
 #include <lib/errno.h>
 #include <lib/list.h>
+#include <lib/rbtree.h>
 
 #define VFS_MAX_NAME_LEN 64
 
 typedef struct vnode vnode_t;
+typedef struct vfs vfs_t;
 
 typedef enum
 {
@@ -20,6 +21,13 @@ typedef enum
     VNODE_SOCKET
 }
 vnode_type_t;
+
+typedef struct
+{
+    uptr page_addr;             // Physical address of the page.
+    rbtree_node_t rbtree_node;  // The vnode offset serves as the key.
+}
+vnode_page_t;
 
 typedef struct
 {
@@ -45,8 +53,12 @@ struct vnode
     u64 mtime; // Time modified.
     u64 atime; // Time accessed.
 
+    vfs_t *parent_vfs;
     vnode_ops_t *ops;
     void *mp_data;
+
+    bool cached;
+    rbtree_t page_cache;
 
     spinlock_t slock;
     u64 ref_count;
@@ -54,27 +66,37 @@ struct vnode
 
 typedef struct
 {
-    const char *name;
-
-    bool (*probe)(block_device_t *part);
-    bool (*get_root_vnode)(block_device_t *part, vnode_t **out);
-
-    list_node_t list_node;
-    u64 ref_count;
+    int (*mount)  (vfs_t *self, const char *path);
+    int (*unmout) (vfs_t *self);
+    int (*root)   (vfs_t *self, vnode_t **out);
+    int (*sync)   (vfs_t *self);
 }
-filesystem_type_t;
+vfs_ops_t;
+
+struct vfs
+{
+    vnode_t *covered_vn;
+    u32 flags;
+    vfs_ops_t ops;
+    void *private_data;
+
+    spinlock_t slock;
+    u64 ref_count;
+};
 
 /*
- * Mount points
+ * Veneer layer.
  */
 
-int vfs_mount(block_device_t *blk, filesystem_type_t *fs_type, const char *path);
-
-void vfs_register_fs_type(filesystem_type_t *fs_type);
+int vfs_mount(vfs_t *vfs, const char *path);
 
 int vfs_open(const char *path, vnode_t **out);
 
 int vfs_close(vnode_t *vn);
+
+int vfs_read(vnode_t *vn, u64 offset, void *buffer, u64 count, u64 *out);
+
+int vfs_write(vnode_t *vn, u64 offset, void *buffer, u64 count, u64 *out);
 
 int vfs_create(const char *path, vnode_type_t t, vnode_t **out);
 
@@ -83,24 +105,15 @@ int vfs_remove(const char *path);
 static inline void VN_HOLD(vnode_t *vn)
 {
     spinlock_acquire(&vn->slock);
-
     vn->ref_count++;
-
     spinlock_release(&vn->slock);
 }
 
 static inline void VN_RELE(vnode_t *vn)
 {
     spinlock_acquire(&vn->slock);
-
-    vn->ref_count--;
-
-    if (vn->ref_count == 0)
-    {
+    if (--vn->ref_count == 0)
         vfs_close(vn);
-        return;
-    }
-
     spinlock_release(&vn->slock);
 }
 

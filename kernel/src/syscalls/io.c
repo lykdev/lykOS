@@ -64,7 +64,7 @@ sys_ret_t syscall_read(int fd, void *buf, u64 count)
         return (sys_ret_t) {0, EBADF};
 
     u64 out;
-    int err = node->ops->read(node, res->offset, buf, count, &out);
+    int err = vfs_read(node, res->offset, buf, count, &out);
 
     return (sys_ret_t) {out, err};
 }
@@ -120,7 +120,7 @@ sys_ret_t syscall_write(int fd, void *buf, u64 count)
         return (sys_ret_t) {0, EBADF};
 
     u64 out;
-    int err = node->ops->write(node, res->offset, buf, count, &out);
+    int err = vfs_write(node, res->offset, buf, count, &out);
 
     return (sys_ret_t) {out, err};
 }

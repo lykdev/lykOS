@@ -10,6 +10,7 @@
 
 #include <fs/initrd.h>
 #include <fs/vfs.h>
+#include <fs/tmpfs.h>
 
 #include <graphics/video.h>
 
@@ -53,6 +54,7 @@ void kernel_main()
 
     vfs_init();
     initrd_init();
+    tmpfs_init();
 
     // Init IPC code.
     afunix_init();

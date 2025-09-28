@@ -101,7 +101,7 @@ static int block_device_ioctl(block_device_t *self, u64 request, void *args)
         return EOK;
     case BLKGETSIZE64:
         if (!args) return -1;
-        *(u64 *)args = self->sector_count  * self->sector_size;
+        *(u64 *)args = self->sector_count * self->sector_size;
         return EOK;
     case BLKSSZGET:
         if (!args) return -1;

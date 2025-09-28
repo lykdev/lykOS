@@ -1,4 +1,6 @@
 #include "vmm.h"
+#include "fs/vfs.h"
+#include "lib/rbtree.h"
 
 #include <arch/types.h>
 #include <arch/ptm.h>
@@ -136,41 +138,52 @@ bool vmm_pagefault_handler(vmm_addr_space_t *as, uptr addr)
         panic("PF on kernel segment!");
 
     uptr virt = FLOOR(addr, ARCH_PAGE_GRAN);
-    uptr phys = (uptr)pmm_alloc(0);
-    arch_ptm_map(
-        &as->ptm_map,
-        virt,
-        phys,
-        ARCH_PAGE_GRAN
-    );
 
-    if (seg->flags & VMM_MAP_ANON)
-        memset((void*)(phys + HHDM), 0, ARCH_PAGE_GRAN);
-    else
+    if (seg->flags & VMM_MAP_PRIVATE)
     {
-        u64 count;
-        int ret = seg->vnode->ops->read(
-            seg->vnode,
-            addr - seg->base + seg->offset,
-            (void*)(phys + HHDM),
-            ARCH_PAGE_GRAN,
-            &count
-        );
-        ASSERT(ret == EOK && count == ARCH_PAGE_GRAN);
+        uptr phys = (uptr)pmm_alloc(0);
+        arch_ptm_map(&as->ptm_map, virt, phys, ARCH_PAGE_GRAN );
+
+        if (seg->flags & VMM_MAP_ANON)
+            memset((void*)(phys + HHDM), 0, ARCH_PAGE_GRAN);
+        else
+        {
+            u64 count;
+            vfs_read(seg->vnode, addr - seg->base + seg->offset, (void*)(phys + HHDM), ARCH_PAGE_GRAN, &count);
+        }
+    }
+    else // VMM_MAP_SHARED
+    {
+        u64 page_offset = seg->offset + (virt - seg->base);
+        rbtree_node_t *node = rb_find(&seg->vnode->page_cache, page_offset);
+        vnode_page_t *vp = NULL;
+
+        if (node)
+            vp = RBTREE_GET_CONTAINER(node, vnode_page_t, rbtree_node);
+        else
+        {
+            vp = heap_alloc(sizeof(vnode_page_t));
+            *vp = (vnode_page_t) {
+                .page_addr = (uptr)pmm_alloc(0),
+                .rbtree_node.key = page_offset
+            };
+
+            u64 count = 0;
+            vfs_read(seg->vnode, page_offset, (void *)vp->page_addr, ARCH_PAGE_GRAN, &count);
+            rb_insert(&seg->vnode->page_cache, &vp->rbtree_node);
+        }
+
+        arch_ptm_map(&as->ptm_map, virt, vp->page_addr, ARCH_PAGE_GRAN);
     }
 
     return true;
 }
 
-void *vmm_map_vnode(vmm_addr_space_t *as, uptr virt, u64 len, int prot, int flags, vnode_t *vnode, u64 offset)
+void *vmm_mmap(vmm_addr_space_t *as, uptr virt, u64 len, int prot, int flags, vnode_t *vnode, u64 offset)
 {
     ASSERT(virt % ARCH_PAGE_GRAN == 0 && len % ARCH_PAGE_GRAN == 0);
     ASSERT(((flags & VMM_MAP_PRIVATE) != 0) ^ ((flags & VMM_MAP_SHARED) != 0));
-
-    if (flags & VMM_MAP_ANON)
-        vnode = NULL, offset = 0;
-    else
-        ASSERT(vnode != NULL);
+    ASSERT(((flags & VMM_MAP_ANON) != 0) ^ ((vnode != NULL) != 0));
 
     if (vmm_check_collision(as, virt, len) || !vmm_is_in_bounds(as, virt, len))
     {
@@ -178,23 +191,6 @@ void *vmm_map_vnode(vmm_addr_space_t *as, uptr virt, u64 len, int prot, int flag
             return VMM_MAP_FAILED;
         else
             virt = vmm_find_space(as, len);
-    }
-
-    if (flags & VMM_MAP_POPULATE)
-    {
-        for (uptr addr = 0; addr < len; addr += ARCH_PAGE_GRAN)
-        {
-            uptr phys = (uptr)pmm_alloc(0);
-            arch_ptm_map(&as->ptm_map, virt + addr, phys, ARCH_PAGE_GRAN);
-
-            if (flags & VMM_MAP_ANON)
-                memset((void*)(phys + HHDM), 0, ARCH_PAGE_GRAN);
-            else
-            {
-                u64 count;
-                vnode->ops->read(vnode, offset + addr, (void*)(phys + HHDM), ARCH_PAGE_GRAN, &count);
-            }
-        }
     }
 
     vmm_seg_t *created_seg = kmem_alloc_cache(g_segment_cache);
@@ -205,12 +201,53 @@ void *vmm_map_vnode(vmm_addr_space_t *as, uptr virt, u64 len, int prot, int flag
         .prot = prot,
         .flags = flags,
         .vnode = vnode,
-        .offset = offset,
-        .list_node = LIST_NODE_INIT
+        .offset = offset
     };
     vmm_insert_seg(as, created_seg);
 
-    return (void*)virt;
+    if (!(flags & VMM_MAP_POPULATE))
+        return (void *)virt;
+
+    for (u64 i = 0; i < len; i += ARCH_PAGE_GRAN)
+    {
+        if (flags & VMM_MAP_PRIVATE)
+        {
+            uptr phys = (uptr)pmm_alloc(0);
+            arch_ptm_map(&as->ptm_map, virt + i, phys, ARCH_PAGE_GRAN);
+
+            if (flags & VMM_MAP_ANON)
+                memset((void*)(phys + HHDM), 0, ARCH_PAGE_GRAN);
+            else
+            {
+                u64 count;
+                vfs_read(vnode, offset + i, (void *)(phys + HHDM), ARCH_PAGE_GRAN, &count);
+            }
+        }
+        else // VMM_MAP_SHARED
+        {
+            u64 page_offset = offset + i;
+
+            rbtree_node_t *node = rb_find(&vnode->page_cache, page_offset);
+            vnode_page_t *vp = NULL;
+            if (node)
+                vp = RBTREE_GET_CONTAINER(node, vnode_page_t, rbtree_node);
+            else
+            {
+                vp = heap_alloc(sizeof(vnode_page_t));
+                *vp = (vnode_page_t) {
+                    .page_addr = (uptr)pmm_alloc(0),
+                    .rbtree_node.key = page_offset
+                };
+                u64 count = 0;
+                vfs_read(vnode, page_offset, (void *)vp->page_addr, ARCH_PAGE_GRAN, &count);
+                rb_insert(&vnode->page_cache, &vp->rbtree_node);
+            }
+
+            arch_ptm_map(&as->ptm_map, virt + i, vp->page_addr, ARCH_PAGE_GRAN);
+        }
+    }
+
+    return (void *)virt;
 }
 
 void vmm_map_kernel(vmm_addr_space_t *as, uptr virt, u64 len, int prot, uptr phys)
@@ -244,7 +281,6 @@ uptr vmm_virt_to_phys(vmm_addr_space_t *as, uptr virt)
 vmm_addr_space_t *vmm_new_addr_space(uptr limit_low, uptr limit_high)
 {
     vmm_addr_space_t *addr_space = heap_alloc(sizeof(vmm_addr_space_t));
-
     *addr_space = (vmm_addr_space_t) {
         .slock = SPINLOCK_INIT,
         .segments = LIST_INIT,
@@ -253,6 +289,23 @@ vmm_addr_space_t *vmm_new_addr_space(uptr limit_low, uptr limit_high)
         .ptm_map = arch_ptm_new_map()
     };
     return addr_space;
+}
+
+void vmm_destroy_addr_space(vmm_addr_space_t *as)
+{
+    FOREACH(n, as->segments)
+    {
+        vmm_seg_t *seg = LIST_GET_CONTAINER(n, vmm_seg_t, list_node);
+
+
+
+        if (seg->vnode)
+            VN_RELE(seg->vnode);
+
+        kmem_free_cache(g_segment_cache, seg);
+    }
+
+    heap_free(as);
 }
 
 void vmm_load_addr_space(vmm_addr_space_t *as)

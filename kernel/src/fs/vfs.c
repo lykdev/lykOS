@@ -1,11 +1,15 @@
 #include "vfs.h"
+#include "arch/types.h"
+#include "lib/rbtree.h"
 
 #include <common/assert.h>
+#include <common/hhdm.h>
 #include <common/log.h>
 #include <common/panic.h>
 #include <lib/path.h>
 #include <lib/string.h>
 #include <mm/heap.h>
+#include <mm/pmm.h>
 
 static list_t g_fs_type_list = LIST_INIT;
 static spinlock_t g_fs_type_list_slock = SPINLOCK_INIT;
@@ -14,12 +18,6 @@ static spinlock_t g_fs_type_list_slock = SPINLOCK_INIT;
  * Mount points
  */
 
-typedef struct
-{
-    vnode_t *root_node;
-}
-vfs_mountpoint_t;
-
 typedef struct trie_node_t trie_node_t;
 
 struct trie_node_t
@@ -27,7 +25,7 @@ struct trie_node_t
     /// @brief The path component separated by delimiting characters.
     char comp[32];
     /// @brief Pointer to the mountpoint, NULL if no mount here.
-    vfs_mountpoint_t *mp;
+    vnode_t *root_vn;
     trie_node_t *children[16];
     uint children_cnt;
 };
@@ -41,7 +39,7 @@ static trie_node_t *find_child(trie_node_t *parent, const char *comp, u64 length
     return NULL;
 }
 
-static char *vfs_get_mountpoint(const char *path, vfs_mountpoint_t **out)
+static char *vfs_get_mountpoint(const char *path, vnode_t **out)
 {
     trie_node_t *current = &g_trie_root;
 
@@ -65,18 +63,12 @@ static char *vfs_get_mountpoint(const char *path, vfs_mountpoint_t **out)
         path += strlen(child->comp);
     }
 
-    *out = current->mp;
+    *out = current->root_vn;
     return (char *)path;
 }
 
-int vfs_mount(block_device_t *blk, filesystem_type_t *fs_type, const char *path)
+int vfs_mount_vnode(vnode_t *vn, const char *path)
 {
-    if (!fs_type->probe(blk))
-        return -1;
-
-    vfs_mountpoint_t *mp = heap_alloc(sizeof(vfs_mountpoint_t));
-    fs_type->get_root_vnode(blk, &mp->root_node);
-
     const char *_path = path;
     trie_node_t *current = &g_trie_root;
 
@@ -103,10 +95,22 @@ int vfs_mount(block_device_t *blk, filesystem_type_t *fs_type, const char *path)
 
         path += comp_len;
     }
-    current->mp = mp;
+    current->root_vn = vn;
 
-    log("Filesystem mounted at %s.", _path);
-    return 0;
+    log("Vnode mounted at `%s`.", _path);
+    return EOK;
+}
+
+int vfs_mount(block_device_t *blk, filesystem_type_t *fs_type, const char *path)
+{
+    if (fs_type->probe(blk))
+    {
+        vnode_t *vn;
+        fs_type->get_root_vnode(blk, &vn);
+        return vfs_mount_vnode(vn, path);
+    }
+    else
+        return -1;
 }
 
 void vfs_register_fs_type(filesystem_type_t *fs_type)
@@ -124,11 +128,9 @@ void vfs_register_fs_type(filesystem_type_t *fs_type)
 
 int vfs_open(const char *path, vnode_t **out)
 {
-    vfs_mountpoint_t *mp;
-    path = vfs_get_mountpoint(path, &mp);
-    ASSERT(mp != NULL);
-
-    vnode_t *curr = mp->root_node;
+    vnode_t *curr;
+    path = vfs_get_mountpoint(path, &curr);
+    ASSERT(curr != NULL);
     while (curr && *path)
     {
         while(*path == '/')
@@ -148,9 +150,175 @@ int vfs_open(const char *path, vnode_t **out)
     return EOK;
 }
 
-int vfs_close(vnode_t *out)
+int vfs_close(vnode_t *vn)
 {
+    rbtree_node_t *node = rb_first(&vn->page_cache);
+    while (node)
+    {
+        vnode_page_t *vp = RBTREE_GET_CONTAINER(node, vnode_page_t, rbtree_node);
 
+        u64 wrote_bytes = 0;
+        int st = vn->ops->write(
+            vn,
+            vp->rbtree_node.key,
+            (void*)vp->page_addr,
+            ARCH_PAGE_GRAN,
+            &wrote_bytes
+        );
+        if (st != EOK)
+            log("Failed to flush page when closing vnode!");
+
+        node = rb_next(node);
+
+        rb_remove(&vn->page_cache, vp->rbtree_node.key);
+        pmm_free((void *)vp->page_addr);
+        heap_free(vp);
+    }
+
+    if (vn->ops->close)
+        return vn->ops->close(vn);
+
+    return EOK;
+}
+
+int vfs_read(vnode_t *vn, u64 offset, void *buffer, u64 count, u64 *out)
+{
+    if (!vn->cached)
+        return vn->ops->read(
+            vn,
+            offset,
+            buffer,
+            count,
+            out
+        );
+
+    u64 done = 0;
+    while (done < count)
+    {
+        u64 off_in_page = (offset + done) % ARCH_PAGE_GRAN;
+        u64 page_off    = (offset + done) - off_in_page;
+        u64 to_copy     = ARCH_PAGE_GRAN - off_in_page;
+        if (to_copy > (count - done))
+            to_copy = count - done;
+
+        rbtree_node_t *node = rb_find(&vn->page_cache, page_off);
+        vnode_page_t *vp = NULL;
+        if (node)
+            vp = RBTREE_GET_CONTAINER(node, vnode_page_t, rbtree_node);
+        else
+        {
+            vp = heap_alloc(sizeof(vnode_page_t));
+            if (!vp)
+                return -ENOMEM;
+            *vp = (vnode_page_t) {
+                .page_addr = (uptr)pmm_alloc(0),
+                .rbtree_node.key = page_off
+            };
+
+            u64 read_bytes = 0;
+            int st = vn->ops->read(
+                vn,
+                page_off,
+                (void*)vp->page_addr + HHDM,
+                ARCH_PAGE_GRAN,
+                &read_bytes
+            );
+            if (st != EOK)
+            {
+                heap_free(vp);
+                return st;
+            }
+
+            rb_insert(&vn->page_cache, &vp->rbtree_node);
+        }
+
+        memcpy(
+            (u8 *)buffer + done,
+            (void *)(vp->page_addr + off_in_page + HHDM),
+            to_copy
+        );
+
+        done += to_copy;
+    }
+
+    if (out)
+        *out = done;
+    return EOK;
+}
+
+int vfs_write(vnode_t *vn, u64 offset, void *buffer, u64 count, u64 *out)
+{
+    if (!vn->cached)
+        return vn->ops->write(
+            vn,
+            offset,
+            buffer,
+            count,
+            out
+        );
+
+    u64 done = 0;
+    while (done < count)
+    {
+        u64 off_in_page = (offset + done) % ARCH_PAGE_GRAN;
+        u64 page_off    = (offset + done) - off_in_page;
+        u64 to_copy     = ARCH_PAGE_GRAN - off_in_page;
+        if (to_copy > (count - done))
+            to_copy = count - done;
+
+        rbtree_node_t *node = rb_find(&vn->page_cache, page_off);
+        vnode_page_t *vp = NULL;
+        if (node)
+            vp = RBTREE_GET_CONTAINER(node, vnode_page_t, rbtree_node);
+        else
+        {
+            vp = heap_alloc(sizeof(vnode_page_t));
+            if (!vp)
+                return -ENOMEM;
+            *vp = (vnode_page_t) {
+                .page_addr = (uptr)pmm_alloc(0),
+                .rbtree_node.key = page_off
+            };
+
+            if (off_in_page > 0 || to_copy < ARCH_PAGE_GRAN)
+            {
+                u64 read_bytes = 0;
+                vn->ops->read(
+                    vn,
+                    page_off,
+                    (void *)vp->page_addr + HHDM,
+                    ARCH_PAGE_GRAN,
+                    &read_bytes
+                );
+            }
+
+            rb_insert(&vn->page_cache, &vp->rbtree_node);
+        }
+
+        memcpy(
+            (void *)(vp->page_addr + off_in_page + HHDM),
+            (u8 *)buffer + done,
+            to_copy
+        );
+
+        u64 wrote_bytes = 0;
+        int st = vn->ops->write(
+            vn,
+            offset + done,
+            (u8 *)buffer + done,
+            to_copy,
+            &wrote_bytes
+        );
+        if (st != EOK)
+            return st;
+
+        done += to_copy;
+    }
+
+    if (out)
+        *out = done;
+
+    return 0;
 }
 
 int vfs_create(const char *path, vnode_type_t t, vnode_t **out)

@@ -10,8 +10,8 @@
 #define PROT_WRITE 0x02
 #define PROT_EXEC  0x04
 
-#define MAP_FAILED          ((void *)(-1))
-#define MAP_ANON            0x20
+#define MAP_FAILED  ((void *)(-1))
+#define MAP_ANON    0x20
 
 sys_ret_t syscall_mmap(void *addr, u64 length, int prot, int flags, int fd, u64 offset)
 {
@@ -33,7 +33,7 @@ sys_ret_t syscall_mmap(void *addr, u64 length, int prot, int flags, int fd, u64 
         vnode = NULL, offset = 0;
 
     return (sys_ret_t) {
-        (u64)vmm_map_vnode(as, (uptr)addr, length, 0, VMM_MAP_ANON | VMM_MAP_PRIVATE, vnode, offset),
+        (u64)vmm_mmap(as, (uptr)addr, length, 0, VMM_MAP_ANON | VMM_MAP_PRIVATE, vnode, offset),
         EOK
     };
 }

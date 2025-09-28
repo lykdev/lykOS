@@ -68,7 +68,7 @@ module_t *module_load(vnode_t *file)
         if (section->sh_type == SHT_PROGBITS)
         {
             u64 size = CEIL(section->sh_size, ARCH_PAGE_GRAN);
-            void *mem = vmm_map_vnode(
+            void *mem = vmm_mmap(
                 g_vmm_kernel_addr_space,
                 0,
                 size,
@@ -84,7 +84,7 @@ module_t *module_load(vnode_t *file)
         else if (section->sh_type == SHT_NOBITS) // Global data.
         {
             u64 size = CEIL(section->sh_size, ARCH_PAGE_GRAN);
-            void *mem = vmm_map_vnode(
+            void *mem = vmm_mmap(
                 g_vmm_kernel_addr_space,
                 0,
                 size,

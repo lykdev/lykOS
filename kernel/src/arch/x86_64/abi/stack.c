@@ -20,11 +20,11 @@
 
 uptr x86_64_abi_stack_setup(vmm_addr_space_t *as, size_t stack_size, char **argv, char **envp)
 {
-    void *stack_ptr = vmm_map_vnode(
+    void *stack_ptr = vmm_mmap(
         as,
         0, stack_size,
         VMM_PROT_FULL,
-        VMM_MAP_ANON |  VMM_MAP_POPULATE | VMM_MAP_PRIVATE,
+        VMM_MAP_ANON | VMM_MAP_POPULATE | VMM_MAP_PRIVATE,
         NULL, 0
     );
     ASSERT(stack_ptr != VMM_MAP_FAILED);

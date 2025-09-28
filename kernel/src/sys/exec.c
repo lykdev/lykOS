@@ -1,4 +1,5 @@
 #include "exec.h"
+#include "mm/vmm.h"
 
 #include <arch/types.h>
 #include <common/assert.h>
@@ -53,7 +54,7 @@ proc_t *exec_load(vnode_t *file)
             uptr end   = CEIL(ph->p_vaddr + ph->p_memsz, ARCH_PAGE_GRAN);
             u64  diff  = end - start;
 
-            vmm_map_vnode(
+            vmm_mmap(
                 proc->addr_space,
                 start,
                 diff,

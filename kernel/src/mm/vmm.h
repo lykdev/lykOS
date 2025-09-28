@@ -24,12 +24,13 @@
 
 typedef struct
 {
-    spinlock_t slock;
     list_t segments;
     uptr limit_low;
     uptr limit_high;
 
     arch_ptm_map_t ptm_map;
+
+    spinlock_t slock;
 }
 vmm_addr_space_t;
 
@@ -37,13 +38,15 @@ extern vmm_addr_space_t *g_vmm_kernel_addr_space;
 
 bool vmm_pagefault_handler(vmm_addr_space_t *as, uptr addr);
 
-void *vmm_map_vnode(vmm_addr_space_t *as, uptr virt, u64 len, int prot, int flags, vnode_t *vnode, u64 offset);
+void *vmm_mmap(vmm_addr_space_t *as, uptr virt, u64 len, int prot, int flags, vnode_t *vnode, u64 offset);
 
 void vmm_map_kernel(vmm_addr_space_t *as, uptr virt, u64 len, int prot, uptr phys);
 
 uptr vmm_virt_to_phys(vmm_addr_space_t *as, uptr virt);
 
 vmm_addr_space_t *vmm_new_addr_space(uptr limit_low, uptr limit_high);
+
+void vmm_destroy_addr_space(vmm_addr_space_t *as);
 
 void vmm_load_addr_space(vmm_addr_space_t *as);
 
